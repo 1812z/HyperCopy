@@ -1,0 +1,67 @@
+package io.github.hypercopy.data
+
+import android.content.ComponentName
+import android.content.Context
+import android.content.pm.PackageManager
+import androidx.core.content.edit
+import io.github.hypercopy.Config
+
+class SettingsRepository(private val context: Context) {
+    fun readLogLevel(): Int {
+        return preferences().getInt(Config.KEY_LOG_LEVEL, Config.DEFAULT_LOG_LEVEL)
+    }
+
+    fun persistLogLevel(value: Int) {
+        preferences().edit(commit = true) { putInt(Config.KEY_LOG_LEVEL, value) }
+    }
+
+    fun readAutoCheckUpdate(): Boolean {
+        return preferences().getBoolean(Config.KEY_AUTO_CHECK_UPDATE, Config.DEFAULT_AUTO_CHECK_UPDATE)
+    }
+
+    fun persistAutoCheckUpdate(value: Boolean) {
+        preferences().edit(commit = true) { putBoolean(Config.KEY_AUTO_CHECK_UPDATE, value) }
+    }
+
+    fun readAppLanguage(): String {
+        return preferences().getString(Config.KEY_APP_LANGUAGE, Config.DEFAULT_APP_LANGUAGE) ?: Config.DEFAULT_APP_LANGUAGE
+    }
+
+    fun persistAppLanguage(value: String) {
+        preferences().edit(commit = true) { putString(Config.KEY_APP_LANGUAGE, value) }
+    }
+
+    fun readColorMode(): String {
+        return preferences().getString(Config.KEY_COLOR_MODE, Config.DEFAULT_COLOR_MODE) ?: Config.DEFAULT_COLOR_MODE
+    }
+
+    fun persistColorMode(value: String) {
+        preferences().edit(commit = true) { putString(Config.KEY_COLOR_MODE, value) }
+    }
+
+    fun readDesktopIconHidden(): Boolean {
+        return context.packageManager.getComponentEnabledSetting(desktopIconComponent()) ==
+            PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+    }
+
+    fun persistDesktopIconHidden(value: Boolean) {
+        val state = if (value) {
+            PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+        } else {
+            PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+        }
+        context.packageManager.setComponentEnabledSetting(
+            desktopIconComponent(),
+            state,
+            PackageManager.DONT_KILL_APP,
+        )
+    }
+
+    private fun desktopIconComponent() = ComponentName(context.packageName, DESKTOP_ICON_ALIAS)
+
+    private fun preferences() = context.getSharedPreferences(Config.PREFS_NAME, Context.MODE_PRIVATE)
+
+    private companion object {
+        const val DESKTOP_ICON_ALIAS = "io.github.hypercopy.ui.MainActivityAlias"
+    }
+}

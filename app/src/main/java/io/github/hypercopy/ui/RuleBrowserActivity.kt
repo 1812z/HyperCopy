@@ -1,0 +1,210 @@
+package io.github.hypercopy.ui
+
+import android.annotation.SuppressLint
+import android.content.Intent
+import android.os.Bundle
+import android.webkit.WebResourceRequest
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
+import io.github.hypercopy.data.RuleCategory
+import io.github.hypercopy.data.SettingsRepository
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Back
+import top.yukonga.miuix.kmp.theme.ColorSchemeMode
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.theme.ThemeController
+
+class RuleBrowserActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            val settingsRepository = remember { SettingsRepository(applicationContext) }
+            val colorMode = remember { appColorModeFromValue(settingsRepository.readColorMode()) }
+            MiuixTheme(controller = ThemeController(colorMode.toColorSchemeMode())) {
+                RuleBrowserScreen(onBack = { finish() })
+            }
+        }
+    }
+}
+
+@Composable
+private fun RuleBrowserScreen(onBack: () -> Unit) {
+    val context = LocalContext.current
+    var pageUrl by remember { mutableStateOf(DEFAULT_URL) }
+    var address by remember { mutableStateOf(DEFAULT_URL) }
+    var intercepted by remember { mutableStateOf<InterceptedJump?>(null) }
+
+    Scaffold { paddingValues ->
+        Column(
+            modifier = Modifier.fillMaxSize().padding(paddingValues).padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Card(modifier = Modifier.size(42.dp), onClick = onBack) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Icon(imageVector = MiuixIcons.Back, contentDescription = "返回")
+                    }
+                }
+                TextField(
+                    value = address,
+                    onValueChange = { address = it },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    label = "分享链接或网址",
+                )
+                TextButton(text = "打开", onClick = { pageUrl = normalizeUrl(address) })
+            }
+
+            Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                LearningWebView(
+                    url = pageUrl,
+                    onPageUrlChange = {
+                        pageUrl = it
+                        address = it
+                    },
+                    onAppJump = { targetUrl -> intercepted = InterceptedJump(pageUrl, targetUrl) },
+                )
+                intercepted?.let { jump ->
+                    InterceptedJumpSheet(
+                        jump = jump,
+                        onDismiss = { intercepted = null },
+                        onAddRule = { sourceUrl, targetUrl ->
+                            context.startActivity(
+                                Intent(context, RuleEditorActivity::class.java)
+                                    .putExtra(RuleEditorActivity.EXTRA_CATEGORY, RuleCategory.Link.value)
+                                    .putExtra(RuleEditorActivity.EXTRA_SOURCE_URL, sourceUrl)
+                                    .putExtra(RuleEditorActivity.EXTRA_TARGET_URL, targetUrl),
+                            )
+                            intercepted = null
+                            onBack()
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@SuppressLint("SetJavaScriptEnabled")
+@Composable
+private fun LearningWebView(url: String, onPageUrlChange: (String) -> Unit, onAppJump: (String) -> Unit) {
+    AndroidView(
+        modifier = Modifier.fillMaxSize(),
+        factory = { context ->
+            WebView(context).apply {
+                settings.javaScriptEnabled = true
+                settings.domStorageEnabled = true
+                webViewClient = object : WebViewClient() {
+                    override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+                        val nextUrl = request.url.toString()
+                        if (isWebUrl(nextUrl)) return false
+                        onAppJump(nextUrl)
+                        return true
+                    }
+
+                    override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
+                        if (isWebUrl(url)) return false
+                        onAppJump(url)
+                        return true
+                    }
+
+                    override fun onPageFinished(view: WebView, url: String) {
+                        onPageUrlChange(url)
+                    }
+                }
+                loadUrl(url)
+            }
+        },
+        update = { webView ->
+            if (webView.url != url) webView.loadUrl(url)
+        },
+    )
+}
+
+@Composable
+private fun InterceptedJumpSheet(jump: InterceptedJump, onDismiss: () -> Unit, onAddRule: (String, String) -> Unit) {
+    var sourceUrl by remember(jump) { mutableStateOf(jump.sourceUrl) }
+    var targetUrl by remember(jump) { mutableStateOf(jump.targetUrl) }
+
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+        Card(modifier = Modifier.fillMaxWidth().wrapContentHeight()) {
+            Column(
+                modifier = Modifier.padding(18.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Text(text = "检测到 App 跳转", style = MiuixTheme.textStyles.title3)
+                Text(text = "下面内容可以长按复制。浏览器只负责拦截，规则请手动添加。", style = MiuixTheme.textStyles.body2, color = MiuixTheme.colorScheme.onSurfaceVariantSummary)
+                DraftField("网页", sourceUrl, onValueChange = { sourceUrl = it })
+                DraftField("跳转", targetUrl, onValueChange = { targetUrl = it })
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                    TextButton(text = "取消", onClick = onDismiss, modifier = Modifier.weight(1f))
+                    TextButton(
+                        text = "添加规则",
+                        onClick = { onAddRule(sourceUrl, targetUrl) },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.textButtonColorsPrimary(),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DraftField(title: String, content: String, onValueChange: (String) -> Unit, singleLine: Boolean = false) {
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(text = title, style = MiuixTheme.textStyles.headline1)
+        TextField(
+            value = content,
+            onValueChange = onValueChange,
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = singleLine,
+            maxLines = if (singleLine) 1 else 3,
+        )
+    }
+}
+
+private data class InterceptedJump(val sourceUrl: String, val targetUrl: String)
+
+private fun normalizeUrl(text: String): String {
+    val value = text.trim()
+    return if (value.startsWith("http://") || value.startsWith("https://")) value else "https://$value"
+}
+
+private fun AppColorMode.toColorSchemeMode(): ColorSchemeMode = when (this) {
+    AppColorMode.System -> ColorSchemeMode.System
+    AppColorMode.Light -> ColorSchemeMode.Light
+    AppColorMode.Dark -> ColorSchemeMode.Dark
+}
+
+private const val DEFAULT_URL = "https://www.bilibili.com"

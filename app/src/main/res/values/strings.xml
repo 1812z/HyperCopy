@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">HyperCopy</string>
+    <string name="xposed_description">HyperCopy Xposed 模块</string>
+</resources>
