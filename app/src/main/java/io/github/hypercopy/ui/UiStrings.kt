@@ -13,6 +13,10 @@ enum class AppColorMode(val value: String) {
     Dark(Config.COLOR_MODE_DARK),
 }
 
+enum class ClipboardMonitorMode(val value: String) {
+    LSPosed(Config.CLIPBOARD_MONITOR_MODE_LSPOSED),
+}
+
 val LocalAppStrings = staticCompositionLocalOf { zhStrings }
 
 fun appLanguageFromValue(value: String): AppLanguage = AppLanguage.Chinese
@@ -22,6 +26,8 @@ fun appColorModeFromValue(value: String): AppColorMode = when (value) {
     Config.COLOR_MODE_DARK -> AppColorMode.Dark
     else -> AppColorMode.System
 }
+
+fun clipboardMonitorModeFromValue(value: String): ClipboardMonitorMode = ClipboardMonitorMode.LSPosed
 
 data class UiStrings(
     val home: String,
@@ -52,6 +58,9 @@ data class UiStrings(
     val colorModeLight: String,
     val colorModeDark: String,
     val softwareSettings: String,
+    val clipboardMonitorMode: String,
+    val clipboardMonitorModeSummary: String,
+    val clipboardMonitorModeLSPosed: String,
     val logLevel: String,
     val logLevelSummary: String,
     val logOff: String,
@@ -97,6 +106,9 @@ val zhStrings = UiStrings(
     colorModeLight = "亮色",
     colorModeDark = "暗色",
     softwareSettings = "软件设置",
+    clipboardMonitorMode = "监听方案",
+    clipboardMonitorModeSummary = "当前使用 LSPosed Hook 系统剪贴板服务",
+    clipboardMonitorModeLSPosed = "LSPosed",
     logLevel = "日志级别",
     logLevelSummary = "控制模块输出日志的详细程度",
     logOff = "关闭",

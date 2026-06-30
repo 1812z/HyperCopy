@@ -54,6 +54,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity-alias>
+
+        <receiver
+            android:name=".clipboard.ClipboardTextReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="io.github.hypercopy.action.HANDLE_CLIPBOARD_TEXT" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

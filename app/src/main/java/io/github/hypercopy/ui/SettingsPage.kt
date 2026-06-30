@@ -39,10 +39,12 @@ fun SettingsPage(
     autoCheckUpdate: Boolean,
     desktopIconHidden: Boolean,
     appLanguage: AppLanguage,
+    clipboardMonitorMode: ClipboardMonitorMode,
     onLogLevelChange: (Int) -> Unit,
     onAutoCheckUpdateChange: (Boolean) -> Unit,
     onDesktopIconHiddenChange: (Boolean) -> Unit,
     onAppLanguageChange: (AppLanguage) -> Unit,
+    onClipboardMonitorModeChange: (ClipboardMonitorMode) -> Unit,
     onCheckUpdate: () -> Unit,
     onOpenTheme: () -> Unit,
     bottomContentPadding: Dp = 16.dp,
@@ -51,6 +53,7 @@ fun SettingsPage(
     val strings = LocalAppStrings.current
     val logLevelOptions = logLevelOptions(strings)
     val languageOptions = languageOptions(strings)
+    val clipboardMonitorModeOptions = clipboardMonitorModeOptions(strings)
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -88,6 +91,14 @@ fun SettingsPage(
         item { SmallTitle(text = strings.softwareSettings) }
         item {
             Card {
+                OverlayDropdownPreference(
+                    title = strings.clipboardMonitorMode,
+                    summary = strings.clipboardMonitorModeSummary,
+                    items = clipboardMonitorModeOptions.map { it.label },
+                    selectedIndex = clipboardMonitorModeOptions.indexOfFirst { it.value == clipboardMonitorMode }.coerceAtLeast(0),
+                    insideMargin = SettingsItemMargin,
+                    onSelectedIndexChange = { onClipboardMonitorModeChange(clipboardMonitorModeOptions[it].value) },
+                )
                 OverlayDropdownPreference(
                     title = strings.logLevel,
                     summary = strings.logLevelSummary,
@@ -209,6 +220,8 @@ private data class LogLevelOption(val label: String, val value: Int)
 
 private data class LanguageOption(val label: String, val value: AppLanguage)
 
+private data class ClipboardMonitorModeOption(val label: String, val value: ClipboardMonitorMode)
+
 private fun logLevelOptions(strings: UiStrings) = listOf(
     LogLevelOption(strings.logOff, Config.LOG_LEVEL_OFF),
     LogLevelOption(strings.logBasic, Config.LOG_LEVEL_BASIC),
@@ -217,6 +230,10 @@ private fun logLevelOptions(strings: UiStrings) = listOf(
 
 private fun languageOptions(strings: UiStrings) = listOf(
     LanguageOption(strings.languageChinese, AppLanguage.Chinese),
+)
+
+private fun clipboardMonitorModeOptions(strings: UiStrings) = listOf(
+    ClipboardMonitorModeOption(strings.clipboardMonitorModeLSPosed, ClipboardMonitorMode.LSPosed),
 )
 
 private val SettingsItemMargin = PaddingValues(horizontal = 18.dp, vertical = 14.dp)

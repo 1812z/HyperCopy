@@ -39,6 +39,17 @@ class SettingsRepository(private val context: Context) {
         preferences().edit(commit = true) { putString(Config.KEY_COLOR_MODE, value) }
     }
 
+    fun readClipboardMonitorMode(): String {
+        return preferences().getString(
+            Config.KEY_CLIPBOARD_MONITOR_MODE,
+            Config.DEFAULT_CLIPBOARD_MONITOR_MODE,
+        ) ?: Config.DEFAULT_CLIPBOARD_MONITOR_MODE
+    }
+
+    fun persistClipboardMonitorMode(value: String) {
+        preferences().edit(commit = true) { putString(Config.KEY_CLIPBOARD_MONITOR_MODE, value) }
+    }
+
     fun readDesktopIconHidden(): Boolean {
         return context.packageManager.getComponentEnabledSetting(desktopIconComponent()) ==
             PackageManager.COMPONENT_ENABLED_STATE_DISABLED

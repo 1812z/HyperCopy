@@ -74,6 +74,9 @@ fun AppScreen(
     var autoCheckUpdate by remember { mutableStateOf(settingsRepository.readAutoCheckUpdate()) }
     var desktopIconHidden by remember { mutableStateOf(settingsRepository.readDesktopIconHidden()) }
     var appLanguage by remember { mutableStateOf(appLanguageFromValue(settingsRepository.readAppLanguage())) }
+    var clipboardMonitorMode by remember {
+        mutableStateOf(clipboardMonitorModeFromValue(settingsRepository.readClipboardMonitorMode()))
+    }
 
     DisposableEffect(Unit) {
         val listener: (XposedService?) -> Unit = { service -> xposedService = service }
@@ -133,6 +136,7 @@ fun AppScreen(
                                     autoCheckUpdate = autoCheckUpdate,
                                     desktopIconHidden = desktopIconHidden,
                                     appLanguage = appLanguage,
+                                    clipboardMonitorMode = clipboardMonitorMode,
                                     onLogLevelChange = {
                                         logLevel = it
                                         settingsRepository.persistLogLevel(it)
@@ -148,6 +152,10 @@ fun AppScreen(
                                     onAppLanguageChange = {
                                         appLanguage = it
                                         settingsRepository.persistAppLanguage(it.value)
+                                    },
+                                    onClipboardMonitorModeChange = {
+                                        clipboardMonitorMode = it
+                                        settingsRepository.persistClipboardMonitorMode(it.value)
                                     },
                                     onCheckUpdate = {
                                         Toast.makeText(context, "暂未配置更新检查", Toast.LENGTH_SHORT).show()
