@@ -271,6 +271,7 @@ private fun PlaceholderHelpCard() {
             Text(text = stringResource(R.string.editor_placeholder_help_redirect), style = MiuixTheme.textStyles.body2)
             Text(text = stringResource(R.string.editor_placeholder_help_regex), style = MiuixTheme.textStyles.body2)
             Text(text = stringResource(R.string.editor_placeholder_help_regex_group), style = MiuixTheme.textStyles.body2)
+            Text(text = stringResource(R.string.editor_placeholder_help_raw), style = MiuixTheme.textStyles.body2)
         }
     }
 }

@@ -194,6 +194,10 @@ internal fun RuleCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            PackageIcon(
+                packageName = rule.target.packageName,
+                modifier = Modifier.padding(end = 12.dp),
+            )
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(text = rule.name, style = MiuixTheme.textStyles.headline1)
                 Text(

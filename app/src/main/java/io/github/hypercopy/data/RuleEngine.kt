@@ -71,7 +71,10 @@ fun RuleConfig.extractionPatterns(): List<String> = extractionRegexes.ifEmpty { 
 
 fun RuleTarget.toIntent(parameters: Map<String, String>): Intent {
     val resolved = parameters.entries.fold(template) { value, entry ->
-        value.replace("${'$'}{${entry.key}}", Uri.encode(entry.value))
+        val replacement = if (entry.key == "input" || entry.key == "redirectUrl") entry.value else Uri.encode(entry.value)
+        value
+            .replace("${'$'}{raw:${entry.key}}", entry.value)
+            .replace("${'$'}{${entry.key}}", replacement)
     }
     return when (type) {
         RuleTargetType.Intent -> runCatching { Intent.parseUri(resolved, Intent.URI_INTENT_SCHEME) }

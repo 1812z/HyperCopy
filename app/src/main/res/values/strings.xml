@@ -149,6 +149,7 @@
     <string name="editor_placeholder_help_redirect"><![CDATA[${redirectUrl}：跳转后解析模式下的一次重定向后 URL。]]></string>
     <string name="editor_placeholder_help_regex"><![CDATA[${r1}、${r2}：第 1、2 条提取正则的第一个捕获组。]]></string>
     <string name="editor_placeholder_help_regex_group"><![CDATA[${r1_2}：第 1 条提取正则的第 2 个捕获组。]]></string>
+    <string name="editor_placeholder_help_raw"><![CDATA[${raw:r1}：原样插入参数，不做 URL 编码，适合 intent:// 模板。]]></string>
     <string name="editor_default_address_name">地址规则</string>
     <string name="editor_rule_name_new">新规则</string>
     <string name="editor_rule_name_from_scheme">%1$s 跳转</string>

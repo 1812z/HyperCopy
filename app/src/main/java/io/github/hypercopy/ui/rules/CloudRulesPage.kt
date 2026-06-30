@@ -321,6 +321,10 @@ private fun CloudRuleCard(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            PackageIcon(
+                packageName = rule.packageName,
+                modifier = Modifier.padding(end = 12.dp),
+            )
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(text = rule.name, style = MiuixTheme.textStyles.headline1)
                 Text(
