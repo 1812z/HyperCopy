@@ -1,6 +1,7 @@
 package io.github.hypercopy.ui
 
 import android.content.Intent
+import android.content.Context
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
@@ -24,7 +25,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import io.github.hypercopy.R
 import io.github.hypercopy.data.RuleActionMode
 import io.github.hypercopy.data.RuleCategory
 import io.github.hypercopy.data.RuleConfig
@@ -86,7 +89,7 @@ private fun RuleEditorScreen(
     val editingRule = remember(ruleId) { repository.readRules().firstOrNull { it.id == ruleId } }
     val category = editingRule?.category ?: initialCategory
     val defaults = remember(category, initialSourceUrl, initialTargetUrl) {
-        defaultEditorValues(category, initialSourceUrl, initialTargetUrl)
+        defaultEditorValues(context, category, initialSourceUrl, initialTargetUrl)
     }
     var name by remember { mutableStateOf(editingRule?.name ?: defaults.name) }
     var sourceUrl by remember { mutableStateOf(editingRule?.sourceUrl ?: defaults.sourceUrl) }
@@ -105,38 +108,50 @@ private fun RuleEditorScreen(
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Card(modifier = Modifier.size(42.dp), onClick = onBack) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Icon(imageVector = MiuixIcons.Back, contentDescription = "返回")
+                        Icon(imageVector = MiuixIcons.Back, contentDescription = stringResource(R.string.action_back))
                     }
                 }
-                Text(text = if (editingRule == null) "添加${category.label()}规则" else "编辑${category.label()}规则", style = MiuixTheme.textStyles.title1)
+                Text(
+                    text = stringResource(
+                        if (editingRule == null) R.string.editor_title_add else R.string.editor_title_edit,
+                        stringResource(category.labelRes()),
+                    ),
+                    style = MiuixTheme.textStyles.title1,
+                )
             }
 
             Card {
                 Column(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    TextField(value = name, onValueChange = { name = it }, label = "名称", singleLine = true, modifier = Modifier.fillMaxWidth())
+                    TextField(value = name, onValueChange = { name = it }, label = stringResource(R.string.editor_label_name), singleLine = true, modifier = Modifier.fillMaxWidth())
                     if (category == RuleCategory.Link) {
-                        TextField(value = sourceUrl, onValueChange = { sourceUrl = it }, label = "来源 URL", maxLines = 3, modifier = Modifier.fillMaxWidth())
+                        TextField(value = sourceUrl, onValueChange = { sourceUrl = it }, label = stringResource(R.string.editor_label_source_url), maxLines = 3, modifier = Modifier.fillMaxWidth())
                     }
-                    TextField(value = matchRegex, onValueChange = { matchRegex = it }, label = "匹配正则", maxLines = 3, modifier = Modifier.fillMaxWidth())
+                    TextField(value = matchRegex, onValueChange = { matchRegex = it }, label = stringResource(R.string.editor_label_match_regex), maxLines = 3, modifier = Modifier.fillMaxWidth())
                     if (category == RuleCategory.Link) {
-                        TextField(value = parameterRegex, onValueChange = { parameterRegex = it }, label = "参数正则", maxLines = 3, modifier = Modifier.fillMaxWidth())
+                        TextField(value = parameterRegex, onValueChange = { parameterRegex = it }, label = stringResource(R.string.editor_label_parameter_regex), maxLines = 3, modifier = Modifier.fillMaxWidth())
                     }
-                    TextField(value = targetTemplate, onValueChange = { targetTemplate = it }, label = if (category == RuleCategory.Link) "跳转模板" else "打开内容模板", maxLines = 3, modifier = Modifier.fillMaxWidth())
+                    TextField(
+                        value = targetTemplate,
+                        onValueChange = { targetTemplate = it },
+                        label = stringResource(if (category == RuleCategory.Link) R.string.editor_label_target_template else R.string.editor_label_open_content_template),
+                        maxLines = 3,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                     if (category == RuleCategory.Link) {
-                        TextField(value = packageName, onValueChange = { packageName = it }, label = "包名，可留空", singleLine = true, modifier = Modifier.fillMaxWidth())
+                        TextField(value = packageName, onValueChange = { packageName = it }, label = stringResource(R.string.editor_label_package_name_optional), singleLine = true, modifier = Modifier.fillMaxWidth())
                         ActionModeSelector(selected = actionMode, onSelected = { actionMode = it })
                     } else {
                         CategoryOpenModeSelector(selected = openMode, onSelected = { openMode = it })
                         if (openMode == CategoryOpenMode.DirectApp) {
-                            TextField(value = packageName, onValueChange = { packageName = it }, label = "目标 App 包名，可留空", singleLine = true, modifier = Modifier.fillMaxWidth())
+                            TextField(value = packageName, onValueChange = { packageName = it }, label = stringResource(R.string.editor_label_target_app_package_optional), singleLine = true, modifier = Modifier.fillMaxWidth())
                         }
                     }
                     TextButton(
-                        text = "保存规则",
+                        text = stringResource(R.string.action_save_rule),
                         onClick = {
                             val rule = RuleConfig(
                                 id = editingRule?.id ?: ruleId.ifBlank { java.util.UUID.randomUUID().toString() },
-                                name = name.ifBlank { "未命名规则" },
+                                name = name.ifBlank { context.getString(R.string.rule_unnamed) },
                                 category = category,
                                 actionMode = if (category == RuleCategory.Link) actionMode else RuleActionMode.DirectOpen,
                                 matchRegex = matchRegex.ifBlank { ".*" },
@@ -149,7 +164,7 @@ private fun RuleEditorScreen(
                                 sourceUrl = if (category == RuleCategory.Link) sourceUrl else "",
                             )
                             repository.saveRule(rule)
-                            Toast.makeText(context, "规则已保存", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, R.string.rule_toast_saved, Toast.LENGTH_SHORT).show()
                             onBack()
                         },
                         modifier = Modifier.fillMaxWidth(),
@@ -176,12 +191,22 @@ private enum class CategoryOpenMode {
     Url,
 }
 
-private val linkActionTabs = listOf("解析参数", "直接打开", "模拟打开")
-private val categoryOpenModeTabs = listOf("直接打开 App", "打开 URL")
+@Composable
+private fun linkActionTabs() = listOf(
+    stringResource(R.string.editor_link_action_parse),
+    stringResource(R.string.editor_link_action_direct),
+    stringResource(R.string.editor_link_action_webview),
+)
 
-private fun defaultEditorValues(category: RuleCategory, sourceUrl: String, targetUrl: String): EditorDefaults = when (category) {
+@Composable
+private fun categoryOpenModeTabs() = listOf(
+    stringResource(R.string.editor_open_app),
+    stringResource(R.string.editor_open_url),
+)
+
+private fun defaultEditorValues(context: Context, category: RuleCategory, sourceUrl: String, targetUrl: String): EditorDefaults = when (category) {
     RuleCategory.Link -> EditorDefaults(
-        name = ruleNameFromTarget(targetUrl),
+        name = ruleNameFromTarget(context, targetUrl),
         sourceUrl = sourceUrl,
         matchRegex = if (sourceUrl.isBlank()) ".*" else ".*${Regex.escape(sourceUrl)}.*",
         parameterRegex = ".*(.+).*",
@@ -191,7 +216,7 @@ private fun defaultEditorValues(category: RuleCategory, sourceUrl: String, targe
     )
 
     RuleCategory.Address -> EditorDefaults(
-        name = "地址规则",
+        name = context.getString(R.string.editor_default_address_name),
         sourceUrl = "",
         matchRegex = "(?=.*(地址|省|市|区)).{10,}",
         parameterRegex = "(.+)",
@@ -216,18 +241,18 @@ private fun openModeFromRule(rule: RuleConfig?, category: RuleCategory): Categor
     return if (rule?.target?.packageName.isNullOrBlank()) CategoryOpenMode.Url else CategoryOpenMode.DirectApp
 }
 
-private fun RuleCategory.label(): String = when (this) {
-    RuleCategory.Link -> "链接"
-    RuleCategory.Address -> "地址"
-    RuleCategory.Express -> "快递"
+private fun RuleCategory.labelRes(): Int = when (this) {
+    RuleCategory.Link -> R.string.category_link
+    RuleCategory.Address -> R.string.category_address
+    RuleCategory.Express -> R.string.category_express
 }
 
 @Composable
 private fun ActionModeSelector(selected: RuleActionMode, onSelected: (RuleActionMode) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(text = "执行类型", style = MiuixTheme.textStyles.headline1)
+        Text(text = stringResource(R.string.editor_action_mode), style = MiuixTheme.textStyles.headline1)
         TabRowWithContour(
-            tabs = linkActionTabs,
+            tabs = linkActionTabs(),
             selectedTabIndex = selected.tabIndex(),
             onTabSelected = { onSelected(ruleActionModeFromTab(it)) },
             modifier = Modifier.fillMaxWidth(),
@@ -238,9 +263,9 @@ private fun ActionModeSelector(selected: RuleActionMode, onSelected: (RuleAction
 @Composable
 private fun CategoryOpenModeSelector(selected: CategoryOpenMode, onSelected: (CategoryOpenMode) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(text = "打开方式", style = MiuixTheme.textStyles.headline1)
+        Text(text = stringResource(R.string.editor_open_mode), style = MiuixTheme.textStyles.headline1)
         TabRowWithContour(
-            tabs = categoryOpenModeTabs,
+            tabs = categoryOpenModeTabs(),
             selectedTabIndex = selected.tabIndex(),
             onTabSelected = { onSelected(categoryOpenModeFromTab(it)) },
             modifier = Modifier.fillMaxWidth(),
@@ -270,11 +295,11 @@ private fun categoryOpenModeFromTab(index: Int): CategoryOpenMode = when (index)
     else -> CategoryOpenMode.DirectApp
 }
 
-private fun ruleNameFromTarget(targetUrl: String): String {
+private fun ruleNameFromTarget(context: Context, targetUrl: String): String {
     val uri = runCatching { Uri.parse(targetUrl) }.getOrNull()
     return when {
-        uri?.scheme?.isNotBlank() == true -> "${uri.scheme} 跳转"
-        else -> "新规则"
+        uri?.scheme?.isNotBlank() == true -> context.getString(R.string.editor_rule_name_from_scheme, uri.scheme)
+        else -> context.getString(R.string.editor_rule_name_new)
     }
 }
 

@@ -23,32 +23,53 @@ public class HookEntry extends XposedModule {
 
     private static String lastText = "";
     private static long lastSentAt = 0L;
+    private boolean hooksInstalled = false;
 
     @Override
     public void onModuleLoaded(@NonNull ModuleLoadedParam param) {
-        Log.i(TAG, "module loaded: process=" + param.getProcessName() + ", api=" + getApiVersion());
+        logDebug("module loaded: process=" + param.getProcessName()
+            + ", systemServer=" + param.isSystemServer()
+            + ", api=" + getApiVersion());
+        if (param.isSystemServer()) {
+            installClipboardHooks(getClass().getClassLoader(), "onModuleLoaded");
+        }
     }
 
     @Override
     public void onSystemServerStarting(@NonNull SystemServerStartingParam param) {
+        installClipboardHooks(param.getClassLoader(), "onSystemServerStarting");
+    }
+
+    private void installClipboardHooks(ClassLoader classLoader, String source) {
+        if (hooksInstalled) {
+            logDebug("ClipboardService hooks already installed, source=" + source);
+            return;
+        }
+        logDebug("installing ClipboardService hooks, source=" + source);
         try {
-            Class<?> clipboardServiceClass = Class.forName(CLIPBOARD_SERVICE_CLASS, false, param.getClassLoader());
+            Class<?> clipboardServiceClass = Class.forName(CLIPBOARD_SERVICE_CLASS, false, classLoader);
             int hookedCount = 0;
             for (Method method : clipboardServiceClass.getDeclaredMethods()) {
                 if (!isSetPrimaryClipMethod(method)) continue;
                 method.setAccessible(true);
+                logDebug("hook ClipboardService method: " + method.toGenericString());
                 hook(method).setId("hypercopy_clipboard_" + method.toGenericString()).intercept(chain -> {
                     Object result = chain.proceed();
-                    ClipData clipData = findClipData(chain.getArgs().toArray());
-                    Context context = findContext(chain.getThisObject());
-                    sendTextIfNeeded(context, clipData);
+                    try {
+                        ClipData clipData = findClipData(chain.getArgs().toArray());
+                        Context context = findContext(chain.getThisObject());
+                        sendTextIfNeeded(context, clipData);
+                    } catch (Throwable throwable) {
+                        logWarn("clipboard hook callback failed", throwable);
+                    }
                     return result;
                 });
                 hookedCount++;
             }
-            Log.i(TAG, "ClipboardService hooks installed: " + hookedCount);
+            hooksInstalled = hookedCount > 0;
+            logDebug("ClipboardService hooks installed: " + hookedCount);
         } catch (Throwable throwable) {
-            Log.e(TAG, "Failed to hook ClipboardService", throwable);
+            logError("Failed to hook ClipboardService", throwable);
         }
     }
 
@@ -85,7 +106,7 @@ public class HookEntry extends XposedModule {
         return null;
     }
 
-    private static void sendTextIfNeeded(Context context, ClipData clipData) {
+    private void sendTextIfNeeded(Context context, ClipData clipData) {
         if (context == null || clipData == null || clipData.getItemCount() == 0) return;
         CharSequence text = extractPlainText(context, clipData);
         if (text == null) return;
@@ -103,6 +124,7 @@ public class HookEntry extends XposedModule {
             .putExtra(Config.EXTRA_CLIPBOARD_TEXT, value)
             .putExtra(Config.EXTRA_CLIPBOARD_SOURCE, "lsposed")
             .addFlags(Intent.FLAG_RECEIVER_FOREGROUND | Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
+        logDebug("send clipboard text to app, length=" + value.length());
         context.sendBroadcast(intent);
     }
 
@@ -118,5 +140,20 @@ public class HookEntry extends XposedModule {
         if (item.getText() != null) return item.getText();
         if (item.getHtmlText() != null) return item.getHtmlText();
         return item.coerceToText(context);
+    }
+
+    private void logDebug(String message) {
+        Log.d(TAG, message);
+        log(Log.DEBUG, TAG, message);
+    }
+
+    private void logWarn(String message, Throwable throwable) {
+        Log.d(TAG, message, throwable);
+        log(Log.WARN, TAG, message, throwable);
+    }
+
+    private void logError(String message, Throwable throwable) {
+        Log.d(TAG, message, throwable);
+        log(Log.ERROR, TAG, message, throwable);
     }
 }

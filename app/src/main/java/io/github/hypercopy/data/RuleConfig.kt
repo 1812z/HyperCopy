@@ -62,7 +62,7 @@ fun RuleTarget.toJson(): JSONObject = JSONObject()
 
 fun ruleConfigFromJson(json: JSONObject): RuleConfig = RuleConfig(
     id = json.optString("id", UUID.randomUUID().toString()),
-    name = json.optString("name", "未命名规则"),
+    name = json.optString("name", ""),
     category = ruleCategoryFromValue(json.optString("category")),
     enabled = json.optBoolean("enabled", true),
     actionMode = ruleActionModeFromValue(json.optString("actionMode")),

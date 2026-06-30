@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -28,9 +27,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.hypercopy.App
+import io.github.hypercopy.R
 import io.github.hypercopy.data.SettingsRepository
+import io.github.hypercopy.ui.rules.CloudRulesPage
 import io.github.hypercopy.ui.rules.RulesPage
 import io.github.libxposed.service.XposedService
 import kotlinx.coroutines.launch
@@ -39,16 +41,16 @@ import top.yukonga.miuix.kmp.basic.NavigationBarItem
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.AppRecording
-import top.yukonga.miuix.kmp.icon.extended.Copy
+import top.yukonga.miuix.kmp.icon.extended.Carrier
 import top.yukonga.miuix.kmp.icon.extended.Lock
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-private enum class Tab(val icon: androidx.compose.ui.graphics.vector.ImageVector) {
-    Home(MiuixIcons.Lock),
-    Copy(MiuixIcons.Copy),
-    Rules(MiuixIcons.AppRecording),
-    Settings(MiuixIcons.Settings),
+private enum class Tab(val icon: androidx.compose.ui.graphics.vector.ImageVector, val labelRes: Int) {
+    Home(MiuixIcons.Lock, R.string.tab_home),
+    Copy(MiuixIcons.Carrier, R.string.tab_cloud_rules),
+    Rules(MiuixIcons.AppRecording, R.string.tab_rules),
+    Settings(MiuixIcons.Settings, R.string.tab_settings),
 }
 
 private enum class SettingsDestination {
@@ -93,86 +95,87 @@ fun AppScreen(
         settingsDestination = SettingsDestination.Main
     }
 
-    val strings = zhStrings
     val backgroundColor = appBackground(colorMode)
 
-    CompositionLocalProvider(LocalAppStrings provides strings) {
-        Scaffold(
-            bottomBar = {
-                BottomNavigation(tabs, selectedTab, strings) { index, tab ->
-                    selectedTab = tab
-                    settingsDestination = SettingsDestination.Main
-                    coroutineScope.launch { pagerState.animateScrollToPage(index) }
-                }
-            },
-        ) { paddingValues ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(backgroundColor)
-                    .padding(paddingValues),
-            ) {
-                HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
-                    when (tabs[page]) {
-                        Tab.Home -> HomePage(xposedService = xposedService, bottomContentPadding = 16.dp)
-                        Tab.Copy -> EmptyPage(title = strings.copy)
-                        Tab.Rules -> RulesPage(bottomContentPadding = 16.dp)
-                        Tab.Settings -> AnimatedContent(
-                            targetState = settingsDestination,
-                            transitionSpec = {
-                                val direction = if (targetState == SettingsDestination.Theme) {
-                                    AnimatedContentTransitionScope.SlideDirection.Left
-                                } else {
-                                    AnimatedContentTransitionScope.SlideDirection.Right
-                                }
-                                (slideIntoContainer(direction, tween(260)) + fadeIn(tween(160))) togetherWith
-                                    (slideOutOfContainer(direction, tween(260)) + fadeOut(tween(160)))
-                            },
-                            label = "SettingsDestination",
-                        ) { destination ->
-                            when (destination) {
-                                SettingsDestination.Main -> SettingsPage(
-                                    logLevel = logLevel,
-                                    autoCheckUpdate = autoCheckUpdate,
-                                    desktopIconHidden = desktopIconHidden,
-                                    appLanguage = appLanguage,
-                                    clipboardMonitorMode = clipboardMonitorMode,
-                                    onLogLevelChange = {
-                                        logLevel = it
-                                        settingsRepository.persistLogLevel(it)
-                                    },
-                                    onAutoCheckUpdateChange = {
-                                        autoCheckUpdate = it
-                                        settingsRepository.persistAutoCheckUpdate(it)
-                                    },
-                                    onDesktopIconHiddenChange = {
-                                        desktopIconHidden = it
-                                        settingsRepository.persistDesktopIconHidden(it)
-                                    },
-                                    onAppLanguageChange = {
-                                        appLanguage = it
-                                        settingsRepository.persistAppLanguage(it.value)
-                                    },
-                                    onClipboardMonitorModeChange = {
-                                        clipboardMonitorMode = it
-                                        settingsRepository.persistClipboardMonitorMode(it.value)
-                                    },
-                                    onCheckUpdate = {
-                                        Toast.makeText(context, "暂未配置更新检查", Toast.LENGTH_SHORT).show()
-                                    },
-                                    onOpenTheme = { settingsDestination = SettingsDestination.Theme },
-                                    bottomContentPadding = 16.dp,
-                                )
-
-                                SettingsDestination.Theme -> ThemeSettingsPage(
-                                    colorMode = colorMode,
-                                    onColorModeChange = {
-                                        onColorModeChange(it)
-                                        settingsRepository.persistColorMode(it.value)
-                                    },
-                                    bottomContentPadding = 16.dp,
-                                )
+    Scaffold(
+        bottomBar = {
+            BottomNavigation(tabs, selectedTab) { index, tab ->
+                selectedTab = tab
+                settingsDestination = SettingsDestination.Main
+                coroutineScope.launch { pagerState.animateScrollToPage(index) }
+            }
+        },
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(backgroundColor)
+                .padding(paddingValues),
+        ) {
+            HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
+                when (tabs[page]) {
+                    Tab.Home -> HomePage(xposedService = xposedService, bottomContentPadding = 16.dp)
+                    Tab.Copy -> CloudRulesPage(bottomContentPadding = 16.dp)
+                    Tab.Rules -> RulesPage(bottomContentPadding = 16.dp)
+                    Tab.Settings -> AnimatedContent(
+                        targetState = settingsDestination,
+                        transitionSpec = {
+                            val direction = if (targetState == SettingsDestination.Theme) {
+                                AnimatedContentTransitionScope.SlideDirection.Left
+                            } else {
+                                AnimatedContentTransitionScope.SlideDirection.Right
                             }
+                            (slideIntoContainer(direction, tween(260)) + fadeIn(tween(160))) togetherWith
+                                (slideOutOfContainer(direction, tween(260)) + fadeOut(tween(160)))
+                        },
+                        label = "SettingsDestination",
+                    ) { destination ->
+                        when (destination) {
+                            SettingsDestination.Main -> SettingsPage(
+                                logLevel = logLevel,
+                                autoCheckUpdate = autoCheckUpdate,
+                                desktopIconHidden = desktopIconHidden,
+                                appLanguage = appLanguage,
+                                clipboardMonitorMode = clipboardMonitorMode,
+                                onLogLevelChange = {
+                                    logLevel = it
+                                    settingsRepository.persistLogLevel(it)
+                                },
+                                onAutoCheckUpdateChange = {
+                                    autoCheckUpdate = it
+                                    settingsRepository.persistAutoCheckUpdate(it)
+                                },
+                                onDesktopIconHiddenChange = {
+                                    desktopIconHidden = it
+                                    settingsRepository.persistDesktopIconHidden(it)
+                                },
+                                onAppLanguageChange = {
+                                    appLanguage = it
+                                    settingsRepository.persistAppLanguage(it.value)
+                                },
+                                onClipboardMonitorModeChange = {
+                                    clipboardMonitorMode = it
+                                    settingsRepository.persistClipboardMonitorMode(it.value)
+                                },
+                                onCheckUpdate = {
+                                    Toast.makeText(
+                                        context,
+                                        context.getString(R.string.toast_update_check_unconfigured),
+                                        Toast.LENGTH_SHORT,
+                                    ).show()
+                                },
+                                onOpenTheme = { settingsDestination = SettingsDestination.Theme },
+                                bottomContentPadding = 16.dp,
+                            )
+
+                            SettingsDestination.Theme -> ThemeSettingsPage(
+                                colorMode = colorMode,
+                                onColorModeChange = {
+                                    onColorModeChange(it)
+                                    settingsRepository.persistColorMode(it.value)
+                                },
+                                bottomContentPadding = 16.dp,
+                            )
                         }
                     }
                 }
@@ -185,7 +188,6 @@ fun AppScreen(
 private fun BottomNavigation(
     tabs: List<Tab>,
     selectedTab: Tab,
-    strings: UiStrings,
     onTabClick: (Int, Tab) -> Unit,
 ) {
     NavigationBar(color = MiuixTheme.colorScheme.surface, showDivider = false) {
@@ -194,17 +196,10 @@ private fun BottomNavigation(
                 selected = tab == selectedTab,
                 onClick = { onTabClick(index, tab) },
                 icon = tab.icon,
-                label = tab.title(strings),
+                label = stringResource(tab.labelRes),
             )
         }
     }
-}
-
-private fun Tab.title(strings: UiStrings): String = when (this) {
-    Tab.Home -> strings.home
-    Tab.Copy -> strings.copy
-    Tab.Rules -> strings.rules
-    Tab.Settings -> strings.settings
 }
 
 @Composable

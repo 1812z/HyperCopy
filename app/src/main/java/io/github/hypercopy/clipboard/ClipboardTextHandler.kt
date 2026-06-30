@@ -5,7 +5,9 @@ import android.content.Intent
 import android.util.Log
 import android.widget.Toast
 import io.github.hypercopy.Config
+import io.github.hypercopy.R
 import io.github.hypercopy.data.RuleActionMode
+import io.github.hypercopy.data.RuleConfig
 import io.github.hypercopy.data.RuleRepository
 import io.github.hypercopy.data.directIntent
 import io.github.hypercopy.data.findRule
@@ -29,20 +31,38 @@ object ClipboardTextHandler {
 
         val appContext = context.applicationContext
         val rules = RuleRepository(appContext).readRules()
-        val intent = matchRule(input, rules)?.intent ?: run {
-            val rule = findRule(input, rules) ?: return
-            when (rule.actionMode) {
-                RuleActionMode.DirectOpen -> rule.directIntent(input)
-                RuleActionMode.ParseAndOpen -> return
-                RuleActionMode.WebViewResolveAndOpen -> return
-            }
+        val match = matchRule(input, rules)
+        if (match != null) {
+            launchRootOrFallback(appContext, match.intent)
+            return
         }
 
-        runCatching {
-            appContext.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-        }.onFailure { throwable ->
-            Log.w(TAG, "Failed to handle clipboard text from $source", throwable)
-            Toast.makeText(appContext, "打开目标应用失败", Toast.LENGTH_SHORT).show()
+        val rule = findRule(input, rules) ?: return
+        when (rule.actionMode) {
+            RuleActionMode.DirectOpen -> launchRootOrFallback(appContext, rule.directIntent(input))
+            RuleActionMode.WebViewResolveAndOpen -> startWebViewResolve(appContext, rule, input)
+            RuleActionMode.ParseAndOpen -> return
         }
+    }
+
+    private fun startWebViewResolve(context: Context, rule: RuleConfig, input: String) {
+        HeadlessWebViewResolver.resolveAndLaunch(context, normalizeUrl(input), rule.target.packageName)
+    }
+
+    private fun launchRootOrFallback(context: Context, intent: Intent) {
+        val resolvedIntent = intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK).withResolvedActivity(context.packageManager)
+        if (RootActivityLauncher.launch(resolvedIntent)) return
+        runCatching {
+            context.startActivity(resolvedIntent)
+        }.onFailure { throwable ->
+            Log.w(TAG, "Failed to start activity", throwable)
+            Toast.makeText(context, R.string.toast_open_target_failed, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun normalizeUrl(text: String): String {
+        val value = text.trim()
+        val uri = runCatching { android.net.Uri.parse(value) }.getOrNull()
+        return if (uri?.scheme.isNullOrBlank()) "https://$value" else value
     }
 }

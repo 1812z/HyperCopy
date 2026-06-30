@@ -7,8 +7,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import io.github.hypercopy.R
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
@@ -23,8 +25,7 @@ fun ThemeSettingsPage(
     onColorModeChange: (AppColorMode) -> Unit,
     bottomContentPadding: Dp = 16.dp,
 ) {
-    val strings = LocalAppStrings.current
-    val colorModeOptions = colorModeOptions(strings)
+    val colorModeOptions = colorModeOptions()
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -33,18 +34,18 @@ fun ThemeSettingsPage(
     ) {
         item {
             Text(
-                text = strings.theme,
+                text = stringResource(R.string.theme),
                 style = MiuixTheme.textStyles.title1,
                 modifier = Modifier.padding(top = 8.dp),
             )
         }
 
-        item { SmallTitle(text = strings.appearance) }
+        item { SmallTitle(text = stringResource(R.string.appearance)) }
         item {
             Card {
                 OverlayDropdownPreference(
-                    title = strings.colorMode,
-                    summary = strings.colorModeSummary,
+                    title = stringResource(R.string.color_mode),
+                    summary = stringResource(R.string.color_mode_summary),
                     items = colorModeOptions.map { it.label },
                     selectedIndex = colorModeOptions.indexOfFirst { it.value == colorMode }.coerceAtLeast(0),
                     startAction = { SettingsIcon(imageVector = MiuixIcons.Tune) },
@@ -58,10 +59,11 @@ fun ThemeSettingsPage(
 
 private data class ColorModeOption(val label: String, val value: AppColorMode)
 
-private fun colorModeOptions(strings: UiStrings) = listOf(
-    ColorModeOption(strings.colorModeSystem, AppColorMode.System),
-    ColorModeOption(strings.colorModeDark, AppColorMode.Dark),
-    ColorModeOption(strings.colorModeLight, AppColorMode.Light),
+@Composable
+private fun colorModeOptions() = listOf(
+    ColorModeOption(stringResource(R.string.color_mode_system), AppColorMode.System),
+    ColorModeOption(stringResource(R.string.color_mode_dark), AppColorMode.Dark),
+    ColorModeOption(stringResource(R.string.color_mode_light), AppColorMode.Light),
 )
 
 private val ThemeSettingsItemMargin = PaddingValues(horizontal = 18.dp, vertical = 14.dp)

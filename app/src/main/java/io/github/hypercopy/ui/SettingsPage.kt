@@ -15,10 +15,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.hypercopy.Config
+import io.github.hypercopy.R
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.SmallTitle
@@ -50,10 +52,9 @@ fun SettingsPage(
     bottomContentPadding: Dp = 16.dp,
 ) {
     val uriHandler = LocalUriHandler.current
-    val strings = LocalAppStrings.current
-    val logLevelOptions = logLevelOptions(strings)
-    val languageOptions = languageOptions(strings)
-    val clipboardMonitorModeOptions = clipboardMonitorModeOptions(strings)
+    val logLevelOptions = logLevelOptions()
+    val languageOptions = languageOptions()
+    val clipboardMonitorModeOptions = clipboardMonitorModeOptions()
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -62,18 +63,18 @@ fun SettingsPage(
     ) {
         item {
             Text(
-                text = strings.settings,
+                text = stringResource(R.string.tab_settings),
                 style = MiuixTheme.textStyles.title1,
                 modifier = Modifier.padding(top = 8.dp),
             )
         }
 
-        item { SmallTitle(text = strings.appearance) }
+        item { SmallTitle(text = stringResource(R.string.appearance)) }
         item {
             Card {
                 OverlayDropdownPreference(
-                    title = strings.language,
-                    summary = strings.languageSummary,
+                    title = stringResource(R.string.language),
+                    summary = stringResource(R.string.language_summary),
                     items = languageOptions.map { it.label },
                     selectedIndex = languageOptions.indexOfFirst { it.value == appLanguage }.coerceAtLeast(0),
                     insideMargin = SettingsItemMargin,
@@ -81,27 +82,27 @@ fun SettingsPage(
                 )
                 SettingsAction(
                     icon = MiuixIcons.Theme,
-                    title = strings.theme,
-                    summary = strings.themeSummary,
+                    title = stringResource(R.string.theme),
+                    summary = stringResource(R.string.theme_summary),
                     onClick = onOpenTheme,
                 )
             }
         }
 
-        item { SmallTitle(text = strings.softwareSettings) }
+        item { SmallTitle(text = stringResource(R.string.software_settings)) }
         item {
             Card {
                 OverlayDropdownPreference(
-                    title = strings.clipboardMonitorMode,
-                    summary = strings.clipboardMonitorModeSummary,
+                    title = stringResource(R.string.clipboard_monitor_mode),
+                    summary = stringResource(R.string.clipboard_monitor_mode_summary),
                     items = clipboardMonitorModeOptions.map { it.label },
                     selectedIndex = clipboardMonitorModeOptions.indexOfFirst { it.value == clipboardMonitorMode }.coerceAtLeast(0),
                     insideMargin = SettingsItemMargin,
                     onSelectedIndexChange = { onClipboardMonitorModeChange(clipboardMonitorModeOptions[it].value) },
                 )
                 OverlayDropdownPreference(
-                    title = strings.logLevel,
-                    summary = strings.logLevelSummary,
+                    title = stringResource(R.string.log_level),
+                    summary = stringResource(R.string.log_level_summary),
                     items = logLevelOptions.map { it.label },
                     selectedIndex = logLevelOptions.indexOfFirst { it.value == logLevel }.coerceAtLeast(0),
                     insideMargin = SettingsItemMargin,
@@ -109,34 +110,34 @@ fun SettingsPage(
                 )
                 SettingsAction(
                     icon = MiuixIcons.Download,
-                    title = strings.checkUpdate,
-                    summary = strings.checkUpdateSummary,
+                    title = stringResource(R.string.check_update),
+                    summary = stringResource(R.string.check_update_summary),
                     onClick = onCheckUpdate,
                 )
                 SwitchAction(
                     icon = MiuixIcons.Update,
-                    title = strings.autoCheckUpdate,
-                    summary = strings.autoCheckUpdateSummary,
+                    title = stringResource(R.string.auto_check_update),
+                    summary = stringResource(R.string.auto_check_update_summary),
                     checked = autoCheckUpdate,
                     onCheckedChange = { onAutoCheckUpdateChange(!autoCheckUpdate) },
                 )
                 SwitchAction(
                     icon = MiuixIcons.AppRecording,
-                    title = strings.hideDesktopIcon,
-                    summary = strings.hideDesktopIconSummary,
+                    title = stringResource(R.string.hide_desktop_icon),
+                    summary = stringResource(R.string.hide_desktop_icon_summary),
                     checked = desktopIconHidden,
                     onCheckedChange = { onDesktopIconHiddenChange(!desktopIconHidden) },
                 )
             }
         }
 
-        item { SmallTitle(text = strings.about) }
+        item { SmallTitle(text = stringResource(R.string.about)) }
         item {
             Card {
                 SettingsAction(
                     icon = MiuixIcons.Link,
-                    title = strings.openHomePage,
-                    summary = strings.openHomePageSummary,
+                    title = stringResource(R.string.open_home_page),
+                    summary = stringResource(R.string.open_home_page_summary),
                     onClick = { uriHandler.openUri(GITHUB_URL) },
                 )
             }
@@ -222,18 +223,22 @@ private data class LanguageOption(val label: String, val value: AppLanguage)
 
 private data class ClipboardMonitorModeOption(val label: String, val value: ClipboardMonitorMode)
 
-private fun logLevelOptions(strings: UiStrings) = listOf(
-    LogLevelOption(strings.logOff, Config.LOG_LEVEL_OFF),
-    LogLevelOption(strings.logBasic, Config.LOG_LEVEL_BASIC),
-    LogLevelOption(strings.logDebug, Config.LOG_LEVEL_DEBUG),
+@Composable
+private fun logLevelOptions() = listOf(
+    LogLevelOption(stringResource(R.string.log_off), Config.LOG_LEVEL_OFF),
+    LogLevelOption(stringResource(R.string.log_basic), Config.LOG_LEVEL_BASIC),
+    LogLevelOption(stringResource(R.string.log_debug), Config.LOG_LEVEL_DEBUG),
 )
 
-private fun languageOptions(strings: UiStrings) = listOf(
-    LanguageOption(strings.languageChinese, AppLanguage.Chinese),
+@Composable
+private fun languageOptions() = listOf(
+    LanguageOption(stringResource(R.string.language_chinese), AppLanguage.Chinese),
 )
 
-private fun clipboardMonitorModeOptions(strings: UiStrings) = listOf(
-    ClipboardMonitorModeOption(strings.clipboardMonitorModeLSPosed, ClipboardMonitorMode.LSPosed),
+@Composable
+private fun clipboardMonitorModeOptions() = listOf(
+    ClipboardMonitorModeOption(stringResource(R.string.clipboard_monitor_mode_lsposed), ClipboardMonitorMode.LSPosed),
+    ClipboardMonitorModeOption(stringResource(R.string.clipboard_monitor_mode_shizuku), ClipboardMonitorMode.Shizuku),
 )
 
 private val SettingsItemMargin = PaddingValues(horizontal = 18.dp, vertical = 14.dp)

@@ -26,8 +26,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import io.github.hypercopy.R
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import io.github.hypercopy.data.RuleActionMode
@@ -41,7 +43,6 @@ import io.github.hypercopy.data.findRule
 import io.github.hypercopy.data.matchRule
 import io.github.hypercopy.data.toIntent
 import io.github.hypercopy.ui.HiddenWebViewResolver
-import io.github.hypercopy.ui.LocalAppStrings
 import io.github.hypercopy.ui.RuleBrowserActivity
 import io.github.hypercopy.ui.RuleEditorActivity
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -58,7 +59,7 @@ fun RulesPage(bottomContentPadding: Dp = 16.dp) {
     var rules by remember { mutableStateOf(repository.readRules()) }
     var selectedCategory by remember { mutableStateOf(RulePageCategory.Link) }
     var testInput by remember { mutableStateOf("") }
-    var resultText by remember { mutableStateOf("等待测试") }
+    var resultText by remember { mutableStateOf(context.getString(R.string.rule_result_waiting)) }
     var resolvingUrl by remember { mutableStateOf<String?>(null) }
     var resolvingRule by remember { mutableStateOf<RuleConfig?>(null) }
     var selectedRuleIds by remember { mutableStateOf(emptySet<String>()) }
@@ -92,7 +93,7 @@ fun RulesPage(bottomContentPadding: Dp = 16.dp) {
         ) {
             item {
                 Text(
-                    text = LocalAppStrings.current.rules,
+                    text = stringResource(R.string.tab_rules),
                     style = MiuixTheme.textStyles.title1,
                     modifier = Modifier.padding(top = 8.dp),
                 )
@@ -102,7 +103,7 @@ fun RulesPage(bottomContentPadding: Dp = 16.dp) {
                     selectedCategory = selectedCategory,
                     onSelected = {
                         selectedCategory = it
-                        resultText = "等待测试"
+                        resultText = context.getString(R.string.rule_result_waiting)
                         selectedRuleIds = emptySet()
                     },
                 )
@@ -115,6 +116,7 @@ fun RulesPage(bottomContentPadding: Dp = 16.dp) {
                     onValueChange = { testInput = it },
                     onExecute = {
                         resultText = executeRuleTest(
+                            context = context,
                             input = testInput,
                             rules = categoryRules,
                             category = selectedCategory,
@@ -210,44 +212,44 @@ fun RulesPage(bottomContentPadding: Dp = 16.dp) {
                         template = resolvedUrl,
                         packageName = if (resolvedUrl.startsWith("intent://", true)) "" else rule?.target?.packageName.orEmpty(),
                     ).toIntent(emptyMap())
-                    resultText = "WebView 解析成功：$resolvedUrl"
+                    resultText = context.getString(R.string.rule_result_webview_resolved, resolvedUrl)
                     runCatching { context.startActivity(intent) }
-                        .onFailure { resultText = "启动失败：${it.message}" }
+                        .onFailure { resultText = context.getString(R.string.rule_result_launch_failed, it.message) }
                 },
                 onTimeout = {
                     val rule = resolvingRule
                     resolvingUrl = null
                     resolvingRule = null
                     if (rule == null) {
-                        resultText = "WebView 未解析到跳转"
+                        resultText = context.getString(R.string.rule_result_webview_no_jump)
                     } else {
                         val intent = rule.directIntent(url)
-                        resultText = "WebView 未解析到跳转，改为直接打开：${intent.data}"
+                        resultText = context.getString(R.string.rule_result_webview_fallback, intent.data)
                         runCatching { context.startActivity(intent) }
-                            .onFailure { resultText = "启动失败：${it.message}" }
+                            .onFailure { resultText = context.getString(R.string.rule_result_launch_failed, it.message) }
                     }
                 },
                 onPageLoaded = {
-                    Toast.makeText(context, "页面已加载，如无跳转可改用直接打开模式", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, R.string.rule_toast_page_loaded, Toast.LENGTH_SHORT).show()
                 },
                 modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(320.dp),
             )
         }
 
         OverlayDialog(
-            title = "删除规则",
-            summary = "确定删除已选择的 ${selectedRuleIds.size} 项规则？",
+            title = stringResource(R.string.rule_dialog_delete_title),
+            summary = stringResource(R.string.rule_dialog_delete_summary, selectedRuleIds.size),
             show = showDeleteDialog,
             onDismissRequest = { showDeleteDialog = false },
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
                 TextButton(
-                    text = "取消",
+                    text = stringResource(R.string.action_cancel),
                     onClick = { showDeleteDialog = false },
                     modifier = Modifier.weight(1f),
                 )
                 TextButton(
-                    text = "确定",
+                    text = stringResource(R.string.action_confirm),
                     onClick = {
                         repository.deleteRules(selectedRuleIds)
                         selectedRuleIds = emptySet()
@@ -263,6 +265,7 @@ fun RulesPage(bottomContentPadding: Dp = 16.dp) {
 }
 
 private fun executeRuleTest(
+    context: android.content.Context,
     input: String,
     rules: List<RuleConfig>,
     category: RulePageCategory,
@@ -270,15 +273,16 @@ private fun executeRuleTest(
     onStartActivity: (Intent) -> Unit,
 ): String {
     val value = input.trim()
-    if (value.isBlank()) return "请输入要测试的${category.title()}内容"
-    val rule = findRule(value, rules) ?: return "未命中${category.title()}规则"
+    val categoryTitle = context.getString(category.titleRes())
+    if (value.isBlank()) return context.getString(R.string.rule_result_input_required, categoryTitle)
+    val rule = findRule(value, rules) ?: return context.getString(R.string.rule_result_no_match, categoryTitle)
     return when (rule.actionMode) {
         RuleActionMode.ParseAndOpen -> {
-            val match = matchRule(value, listOf(rule)) ?: return "命中 ${rule.name}，但参数正则没有提取到内容"
+            val match = matchRule(value, listOf(rule)) ?: return context.getString(R.string.rule_result_match_no_param, rule.name)
             runCatching { onStartActivity(match.intent) }
                 .fold(
-                    onSuccess = { "命中 ${rule.name}，解析参数打开：${match.intent.data}" },
-                    onFailure = { "启动失败：${it.message}" },
+                    onSuccess = { context.getString(R.string.rule_result_match_parse_open, rule.name, match.intent.data) },
+                    onFailure = { context.getString(R.string.rule_result_launch_failed, it.message) },
                 )
         }
 
@@ -286,14 +290,14 @@ private fun executeRuleTest(
             val intent = rule.directIntent(value)
             runCatching { onStartActivity(intent) }
                 .fold(
-                    onSuccess = { "命中 ${rule.name}，直接打开：${intent.data}" },
-                    onFailure = { "启动失败：${it.message}" },
+                    onSuccess = { context.getString(R.string.rule_result_match_direct_open, rule.name, intent.data) },
+                    onFailure = { context.getString(R.string.rule_result_launch_failed, it.message) },
                 )
         }
 
         RuleActionMode.WebViewResolveAndOpen -> {
             onStartWebViewResolve(normalizeTestUrl(value), rule)
-            "命中 ${rule.name}，正在用 WebView 模拟打开。页面加载后会通用点击一次，2 秒无跳转则直接打开目标 App。"
+            context.getString(R.string.rule_result_match_webview, rule.name)
         }
     }
 }

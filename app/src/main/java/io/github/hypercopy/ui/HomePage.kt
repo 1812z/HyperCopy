@@ -20,11 +20,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.pm.PackageInfoCompat
+import io.github.hypercopy.R
 import io.github.libxposed.service.XposedService
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -40,7 +42,6 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 fun HomePage(xposedService: XposedService?, bottomContentPadding: Dp = 16.dp) {
     val context = LocalContext.current
-    val strings = LocalAppStrings.current
     val systemInfo = remember { homeSystemInfo(context) }
 
     LazyColumn(
@@ -50,19 +51,19 @@ fun HomePage(xposedService: XposedService?, bottomContentPadding: Dp = 16.dp) {
     ) {
         item {
             Text(
-                text = strings.home,
+                text = stringResource(R.string.tab_home),
                 style = MiuixTheme.textStyles.title1,
                 modifier = Modifier.padding(top = 8.dp),
             )
         }
-        item { StatusCard(strings = strings, active = xposedService != null) }
-        item { InfoCard(strings = strings, systemInfo = systemInfo, xposedService = xposedService) }
-        item { WorkModeCard(strings = strings) }
+        item { StatusCard(active = xposedService != null) }
+        item { InfoCard(systemInfo = systemInfo, xposedService = xposedService) }
+        item { WorkModeCard() }
     }
 }
 
 @Composable
-private fun StatusCard(strings: UiStrings, active: Boolean) {
+private fun StatusCard(active: Boolean) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -89,13 +90,15 @@ private fun StatusCard(strings: UiStrings, active: Boolean) {
                 }
                 Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
                     Text(
-                        text = if (active) strings.working else strings.notActive,
+                        text = stringResource(if (active) R.string.status_working else R.string.status_not_active),
                         fontSize = 20.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = Color(0xFF101010),
                     )
                     Text(
-                        text = if (active) strings.moduleConnected else strings.moduleDisconnected,
+                        text = stringResource(
+                            if (active) R.string.status_module_connected else R.string.status_module_disconnected,
+                        ),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium,
                         color = Color(0xFF2F3A32).copy(alpha = 0.78f),
@@ -123,15 +126,16 @@ private fun EmptyStatCard(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun InfoCard(strings: UiStrings, systemInfo: HomeSystemInfo, xposedService: XposedService?) {
+private fun InfoCard(systemInfo: HomeSystemInfo, xposedService: XposedService?) {
     Card {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-            InfoText(title = strings.systemVersion, content = systemInfo.systemVersion)
-            InfoText(title = strings.appVersion, content = systemInfo.appVersion)
-            InfoText(title = strings.androidVersion, content = systemInfo.androidVersion)
-            InfoText(title = strings.lsposedVersion, content = lsposedVersion(xposedService).ifBlank { strings.unknown })
-            InfoText(title = strings.buildDate, content = systemInfo.buildDate.ifBlank { strings.unknown })
-            InfoText(title = strings.deviceModel, content = systemInfo.deviceModel.ifBlank { strings.unknown }, bottomPadding = 0.dp)
+            val unknown = stringResource(R.string.info_unknown)
+            InfoText(title = stringResource(R.string.info_system_version), content = systemInfo.systemVersion)
+            InfoText(title = stringResource(R.string.info_app_version), content = systemInfo.appVersion)
+            InfoText(title = stringResource(R.string.info_android_version), content = systemInfo.androidVersion)
+            InfoText(title = stringResource(R.string.info_lsposed_version), content = lsposedVersion(xposedService).ifBlank { unknown })
+            InfoText(title = stringResource(R.string.info_build_date), content = systemInfo.buildDate.ifBlank { unknown })
+            InfoText(title = stringResource(R.string.info_device_model), content = systemInfo.deviceModel.ifBlank { unknown }, bottomPadding = 0.dp)
         }
     }
 }
@@ -153,10 +157,10 @@ private fun InfoText(title: String, content: String, bottomPadding: Dp = 24.dp) 
 }
 
 @Composable
-private fun WorkModeCard(strings: UiStrings) {
+private fun WorkModeCard() {
     Card {
         Column(Modifier.padding(20.dp)) {
-            Text(text = strings.workMode, style = MiuixTheme.textStyles.title3)
+            Text(text = stringResource(R.string.work_mode), style = MiuixTheme.textStyles.title3)
         }
     }
 }

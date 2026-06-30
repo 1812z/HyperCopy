@@ -25,6 +25,7 @@ object Config {
     const val COLOR_MODE_DARK = "dark"
 
     const val CLIPBOARD_MONITOR_MODE_LSPOSED = "lsposed"
+    const val CLIPBOARD_MONITOR_MODE_SHIZUKU = "shizuku"
 
     const val DEFAULT_LOG_LEVEL = LOG_LEVEL_BASIC
     const val DEFAULT_AUTO_CHECK_UPDATE = true

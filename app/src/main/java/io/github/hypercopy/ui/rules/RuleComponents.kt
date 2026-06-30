@@ -16,8 +16,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.unit.dp
+import io.github.hypercopy.R
 import io.github.hypercopy.data.RuleCategory
 import io.github.hypercopy.data.RuleConfig
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -44,12 +46,16 @@ import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-internal fun RuleCategoryTabs(selectedCategory: RulePageCategory, onSelected: (RulePageCategory) -> Unit) {
+internal fun RuleCategoryTabs(
+    selectedCategory: RulePageCategory,
+    onSelected: (RulePageCategory) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     TabRowWithContour(
-        tabs = ruleCategoryTabs,
+        tabs = ruleCategoryTabTitles.map { stringResource(it) },
         selectedTabIndex = selectedCategory.tabIndex(),
         onTabSelected = { onSelected(rulePageCategoryFromTab(it)) },
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
     )
 }
 
@@ -63,12 +69,12 @@ internal fun TestRuleCard(
 ) {
     Card {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(text = "测试${category.title()}复制内容", style = MiuixTheme.textStyles.title3)
+            Text(text = stringResource(R.string.rule_test_title, stringResource(category.titleRes())), style = MiuixTheme.textStyles.title3)
             TextField(
                 value = value,
                 onValueChange = onValueChange,
                 modifier = Modifier.fillMaxWidth(),
-                label = category.testHint(),
+                label = stringResource(category.testHintRes()),
                 singleLine = false,
                 maxLines = 3,
             )
@@ -78,7 +84,7 @@ internal fun TestRuleCard(
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             )
             TextButton(
-                text = "执行测试",
+                text = stringResource(R.string.action_run_test),
                 onClick = onExecute,
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.textButtonColorsPrimary(),
@@ -91,9 +97,9 @@ internal fun TestRuleCard(
 internal fun EmptyRulesCard(category: RulePageCategory) {
     Card {
         Column(modifier = Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(text = "还没有${category.title()}规则", style = MiuixTheme.textStyles.title3)
+            Text(text = stringResource(R.string.rule_empty_title, stringResource(category.titleRes())), style = MiuixTheme.textStyles.title3)
             Text(
-                text = category.emptyDescription(),
+                text = stringResource(category.emptyDescriptionRes()),
                 style = MiuixTheme.textStyles.body2,
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             )
@@ -124,13 +130,13 @@ internal fun RuleSelectionBar(
             ) {
                 Icon(
                     imageVector = MiuixIcons.Close,
-                    contentDescription = "取消选择",
+                    contentDescription = stringResource(R.string.action_cancel_selection),
                     tint = MiuixTheme.colorScheme.onSurface,
                     modifier = Modifier.size(18.dp),
                 )
             }
             Text(
-                text = "已选择 $selectedCount 项",
+                text = stringResource(R.string.rule_selected_count, selectedCount),
                 style = MiuixTheme.textStyles.headline1,
                 modifier = Modifier.weight(1f),
             )
@@ -143,7 +149,7 @@ internal fun RuleSelectionBar(
             ) {
                 Icon(
                     imageVector = MiuixIcons.SelectAll,
-                    contentDescription = if (allSelected) "全不选" else "全选",
+                    contentDescription = stringResource(if (allSelected) R.string.action_select_none else R.string.action_select_all),
                     tint = MiuixTheme.colorScheme.onSurface,
                     modifier = Modifier.size(18.dp),
                 )
@@ -157,7 +163,7 @@ internal fun RuleSelectionBar(
             ) {
                 Icon(
                     imageVector = MiuixIcons.Delete,
-                    contentDescription = "删除",
+                    contentDescription = stringResource(R.string.action_delete),
                     tint = MiuixTheme.colorScheme.onSurface,
                     modifier = Modifier.size(18.dp),
                 )
@@ -191,7 +197,7 @@ internal fun RuleCard(
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(text = rule.name, style = MiuixTheme.textStyles.headline1)
                 Text(
-                    text = ruleActionLabel(rule),
+                    text = stringResource(ruleActionLabelRes(rule)),
                     style = MiuixTheme.textStyles.body2,
                     color = MiuixTheme.colorScheme.primary,
                 )
@@ -215,7 +221,7 @@ internal fun RuleCard(
                 ) {
                     Icon(
                         imageVector = MiuixIcons.ChevronForward,
-                        contentDescription = "编辑",
+                        contentDescription = stringResource(R.string.action_edit),
                         tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         modifier = Modifier.size(16.dp),
                     )
@@ -234,13 +240,13 @@ internal fun AddRuleMenu(
     onExpressRuleClick: () -> Unit,
 ) {
     var showPopup by remember { mutableStateOf(false) }
-    val items = listOf("模拟浏览器", "添加规则")
+    val items = listOf(stringResource(R.string.rule_menu_browser), stringResource(R.string.action_add_rule))
 
     Box(modifier = modifier) {
         FloatingActionButton(onClick = { if (category == RulePageCategory.Link) showPopup = true else onExpressRuleClick() }) {
             Icon(
                 imageVector = MiuixIcons.Add,
-                contentDescription = "添加规则",
+                contentDescription = stringResource(R.string.action_add_rule),
                 tint = MiuixTheme.colorScheme.onPrimary,
                 modifier = Modifier.size(28.dp),
             )

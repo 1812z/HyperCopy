@@ -27,8 +27,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import io.github.hypercopy.R
 import io.github.hypercopy.data.RuleCategory
 import io.github.hypercopy.data.SettingsRepository
 import top.yukonga.miuix.kmp.basic.Card
@@ -72,7 +74,7 @@ private fun RuleBrowserScreen(onBack: () -> Unit) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Card(modifier = Modifier.size(42.dp), onClick = onBack) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Icon(imageVector = MiuixIcons.Back, contentDescription = "返回")
+                        Icon(imageVector = MiuixIcons.Back, contentDescription = stringResource(R.string.action_back))
                     }
                 }
                 TextField(
@@ -80,9 +82,9 @@ private fun RuleBrowserScreen(onBack: () -> Unit) {
                     onValueChange = { address = it },
                     modifier = Modifier.weight(1f),
                     singleLine = true,
-                    label = "分享链接或网址",
+                    label = stringResource(R.string.browser_hint_url),
                 )
-                TextButton(text = "打开", onClick = { pageUrl = normalizeUrl(address) })
+                TextButton(text = stringResource(R.string.action_open), onClick = { pageUrl = normalizeUrl(address) })
             }
 
             Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
@@ -162,14 +164,14 @@ private fun InterceptedJumpSheet(jump: InterceptedJump, onDismiss: () -> Unit, o
                 modifier = Modifier.padding(18.dp).verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Text(text = "检测到 App 跳转", style = MiuixTheme.textStyles.title3)
-                Text(text = "下面内容可以长按复制。浏览器只负责拦截，规则请手动添加。", style = MiuixTheme.textStyles.body2, color = MiuixTheme.colorScheme.onSurfaceVariantSummary)
-                DraftField("网页", sourceUrl, onValueChange = { sourceUrl = it })
-                DraftField("跳转", targetUrl, onValueChange = { targetUrl = it })
+                Text(text = stringResource(R.string.browser_dialog_jump_detected), style = MiuixTheme.textStyles.title3)
+                Text(text = stringResource(R.string.browser_dialog_jump_hint), style = MiuixTheme.textStyles.body2, color = MiuixTheme.colorScheme.onSurfaceVariantSummary)
+                DraftField(stringResource(R.string.browser_label_web_page), sourceUrl, onValueChange = { sourceUrl = it })
+                DraftField(stringResource(R.string.browser_label_jump), targetUrl, onValueChange = { targetUrl = it })
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-                    TextButton(text = "取消", onClick = onDismiss, modifier = Modifier.weight(1f))
+                    TextButton(text = stringResource(R.string.action_cancel), onClick = onDismiss, modifier = Modifier.weight(1f))
                     TextButton(
-                        text = "添加规则",
+                        text = stringResource(R.string.action_add_rule),
                         onClick = { onAddRule(sourceUrl, targetUrl) },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.textButtonColorsPrimary(),

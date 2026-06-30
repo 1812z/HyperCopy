@@ -1,5 +1,7 @@
 package io.github.hypercopy.ui.rules
 
+import androidx.annotation.StringRes
+import io.github.hypercopy.R
 import io.github.hypercopy.data.RuleActionMode
 import io.github.hypercopy.data.RuleCategory
 
@@ -8,7 +10,16 @@ internal enum class RulePageCategory {
     Text,
 }
 
-internal val ruleCategoryTabs = listOf("链接", "口令/文本")
+@StringRes
+internal fun rulePageTabTitle(category: RulePageCategory): Int = when (category) {
+    RulePageCategory.Link -> R.string.category_link
+    RulePageCategory.Text -> R.string.page_category_text
+}
+
+internal val ruleCategoryTabTitles: List<Int> = listOf(
+    R.string.category_link,
+    R.string.page_category_text,
+)
 
 internal fun RulePageCategory.tabIndex(): Int = when (this) {
     RulePageCategory.Link -> 0
@@ -25,36 +36,47 @@ internal fun RulePageCategory.ruleCategories(): Set<RuleCategory> = when (this) 
     RulePageCategory.Text -> setOf(RuleCategory.Address, RuleCategory.Express)
 }
 
-internal fun RulePageCategory.title(): String = when (this) {
-    RulePageCategory.Link -> "链接"
-    RulePageCategory.Text -> "口令/文本"
+@StringRes
+internal fun RulePageCategory.titleRes(): Int = when (this) {
+    RulePageCategory.Link -> R.string.category_link
+    RulePageCategory.Text -> R.string.page_category_text
 }
 
-internal fun RulePageCategory.testHint(): String = when (this) {
-    RulePageCategory.Link -> "输入复制后的 URL 或文本"
-    RulePageCategory.Text -> "输入复制后的口令或文本"
+internal fun RulePageCategory.folderName(): String = when (this) {
+    RulePageCategory.Link -> "link"
+    RulePageCategory.Text -> "text"
 }
 
-internal fun RulePageCategory.emptyDescription(): String = when (this) {
-    RulePageCategory.Link -> "点击右下角 + 打开内置浏览器，或手动添加链接规则。"
-    RulePageCategory.Text -> "口令和文本规则支持直接打开 App 或打开 URL。默认规则可点进编辑修改。"
+@StringRes
+internal fun RulePageCategory.testHintRes(): Int = when (this) {
+    RulePageCategory.Link -> R.string.rule_test_link_hint
+    RulePageCategory.Text -> R.string.rule_test_text_hint
 }
 
-internal fun RuleCategory.title(): String = when (this) {
-    RuleCategory.Link -> "链接"
-    RuleCategory.Address -> "地址"
-    RuleCategory.Express -> "快递"
+@StringRes
+internal fun RulePageCategory.emptyDescriptionRes(): Int = when (this) {
+    RulePageCategory.Link -> R.string.rule_empty_link_description
+    RulePageCategory.Text -> R.string.rule_empty_text_description
 }
 
-internal fun RuleActionMode.label(): String = when (this) {
-    RuleActionMode.ParseAndOpen -> "解析参数打开"
-    RuleActionMode.DirectOpen -> "直接打开 App"
-    RuleActionMode.WebViewResolveAndOpen -> "WebView 模拟打开"
+@StringRes
+internal fun RuleCategory.titleRes(): Int = when (this) {
+    RuleCategory.Link -> R.string.category_link
+    RuleCategory.Address -> R.string.category_address
+    RuleCategory.Express -> R.string.category_express
 }
 
-internal fun ruleActionLabel(rule: io.github.hypercopy.data.RuleConfig): String {
+@StringRes
+internal fun RuleActionMode.labelRes(): Int = when (this) {
+    RuleActionMode.ParseAndOpen -> R.string.rule_action_parse_and_open
+    RuleActionMode.DirectOpen -> R.string.rule_action_direct_open_app
+    RuleActionMode.WebViewResolveAndOpen -> R.string.rule_action_webview_open
+}
+
+@StringRes
+internal fun ruleActionLabelRes(rule: io.github.hypercopy.data.RuleConfig): Int {
     if (rule.category != RuleCategory.Link) {
-        return if (rule.target.packageName.isBlank()) "打开 URL" else "直接打开 App"
+        return if (rule.target.packageName.isBlank()) R.string.rule_action_open_url else R.string.rule_action_direct_open_app
     }
-    return rule.actionMode.label()
+    return rule.actionMode.labelRes()
 }
