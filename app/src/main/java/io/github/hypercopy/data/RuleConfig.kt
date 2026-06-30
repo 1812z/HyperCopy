@@ -127,8 +127,15 @@ fun rulesToJson(rules: List<RuleConfig>): String {
 
 fun rulesFromJson(text: String): List<RuleConfig> {
     if (text.isBlank()) return emptyList()
-    val root = JSONObject(text)
-    val items = root.optJSONArray("rules") ?: JSONArray()
+    val trimmed = text.trim()
+    if (trimmed.startsWith("[")) return rulesFromJsonArray(JSONArray(trimmed))
+
+    val root = JSONObject(trimmed)
+    val items = root.optJSONArray("rules") ?: return listOf(ruleConfigFromJson(root))
+    return rulesFromJsonArray(items)
+}
+
+private fun rulesFromJsonArray(items: JSONArray): List<RuleConfig> {
     return buildList {
         for (index in 0 until items.length()) {
             val item = items.optJSONObject(index) ?: continue

@@ -83,6 +83,8 @@
     <string name="action_run_test">执行测试</string>
     <string name="action_save_rule">保存规则</string>
     <string name="action_add_rule">添加规则</string>
+    <string name="action_import_rule">导入规则</string>
+    <string name="action_export_rule">导出规则</string>
     <string name="action_download_rule">下载规则</string>
     <string name="action_update_rule">更新规则</string>
 
@@ -115,6 +117,13 @@
     <string name="rule_result_webview_fallback">WebView 未解析到跳转，改为直接打开：%1$s</string>
     <string name="rule_result_launch_failed">启动失败：%1$s</string>
     <string name="rule_toast_page_loaded">页面已加载，如无跳转可改用直接打开模式</string>
+    <string name="rule_toast_imported">已导入 %1$d 条规则</string>
+    <string name="rule_toast_import_failed">导入失败：%1$s</string>
+    <string name="rule_toast_exported">规则 JSON 已复制到剪贴板</string>
+    <string name="rule_import_empty">没有可导入的规则</string>
+    <string name="rule_dialog_import_title">导入规则</string>
+    <string name="rule_dialog_import_summary">粘贴单条规则 JSON、规则数组，或包含 rules 字段的规则文件内容。</string>
+    <string name="rule_dialog_import_hint">规则 JSON</string>
     <string name="rule_dialog_delete_title">删除规则</string>
     <string name="rule_dialog_delete_summary">确定删除已选择的 %1$d 项规则？</string>
     <string name="rule_action_parse_and_open">解析参数打开</string>

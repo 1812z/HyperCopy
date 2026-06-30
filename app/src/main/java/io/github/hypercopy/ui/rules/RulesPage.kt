@@ -2,15 +2,19 @@ package io.github.hypercopy.ui.rules
 
 import android.content.Intent
 import android.net.Uri
+import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -26,9 +30,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.DialogWindowProvider
 import io.github.hypercopy.R
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -43,13 +51,19 @@ import io.github.hypercopy.data.directIntent
 import io.github.hypercopy.data.findRule
 import io.github.hypercopy.data.matchRule
 import io.github.hypercopy.data.parseIntent
+import io.github.hypercopy.data.rulesFromJson
 import io.github.hypercopy.data.toIntent
 import io.github.hypercopy.ui.HiddenWebViewResolver
 import io.github.hypercopy.ui.RuleBrowserActivity
 import io.github.hypercopy.ui.RuleEditorActivity
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Import
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.concurrent.thread
@@ -67,6 +81,8 @@ fun RulesPage(bottomContentPadding: Dp = 16.dp) {
     var resolvingRule by remember { mutableStateOf<RuleConfig?>(null) }
     var selectedRuleIds by remember { mutableStateOf(emptySet<String>()) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showImportDialog by remember { mutableStateOf(false) }
+    var importText by remember { mutableStateOf("") }
 
     DisposableEffect(lifecycleOwner, repository) {
         val observer = LifecycleEventObserver { _, event ->
@@ -95,11 +111,27 @@ fun RulesPage(bottomContentPadding: Dp = 16.dp) {
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item {
-                Text(
-                    text = stringResource(R.string.tab_rules),
-                    style = MiuixTheme.textStyles.title1,
-                    modifier = Modifier.padding(top = 8.dp),
-                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.tab_rules),
+                        style = MiuixTheme.textStyles.title1,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Card(onClick = { showImportDialog = true }) {
+                        Box(modifier = Modifier.padding(10.dp), contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = MiuixIcons.Import,
+                                contentDescription = stringResource(R.string.action_import_rule),
+                            )
+                        }
+                    }
+                }
             }
             item {
                 RuleCategoryTabs(
@@ -209,7 +241,9 @@ fun RulesPage(bottomContentPadding: Dp = 16.dp) {
 
         AddRuleMenu(
             category = selectedCategory,
-            modifier = Modifier.align(Alignment.BottomEnd).padding(end = 24.dp, bottom = bottomContentPadding + 24.dp),
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 24.dp, bottom = bottomContentPadding + 24.dp),
             onBrowserClick = { context.startActivity(Intent(context, RuleBrowserActivity::class.java)) },
             onLinkRuleClick = {
                 context.startActivity(
@@ -261,7 +295,10 @@ fun RulesPage(bottomContentPadding: Dp = 16.dp) {
                 onPageLoaded = {
                     Toast.makeText(context, R.string.rule_toast_page_loaded, Toast.LENGTH_SHORT).show()
                 },
-                modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(320.dp),
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .height(320.dp),
             )
         }
 
@@ -288,6 +325,76 @@ fun RulesPage(bottomContentPadding: Dp = 16.dp) {
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.textButtonColors(textColor = Color(0xFFFF5A52)),
                 )
+            }
+        }
+    }
+
+    if (showImportDialog) {
+        Dialog(
+            onDismissRequest = { showImportDialog = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false),
+        ) {
+            val dialogWindow = (LocalView.current.parent as? DialogWindowProvider)?.window
+            DisposableEffect(dialogWindow) {
+                val oldSoftInputMode = dialogWindow?.attributes?.softInputMode
+                dialogWindow?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING)
+                onDispose {
+                    if (oldSoftInputMode != null) dialogWindow.setSoftInputMode(oldSoftInputMode)
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.32f))
+                    .imePadding()
+                    .padding(24.dp),
+                contentAlignment = Alignment.BottomCenter,
+            ) {
+                Card(cornerRadius = 28.dp) {
+                    Column(modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text(text = stringResource(R.string.rule_dialog_import_title), style = MiuixTheme.textStyles.title3)
+                        Text(
+                            text = stringResource(R.string.rule_dialog_import_summary),
+                            style = MiuixTheme.textStyles.body2,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        )
+                        TextField(
+                            value = importText,
+                            onValueChange = { importText = it },
+                            label = stringResource(R.string.rule_dialog_import_hint),
+                            maxLines = 6,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                            TextButton(
+                                text = stringResource(R.string.action_cancel),
+                                onClick = { showImportDialog = false },
+                                modifier = Modifier.weight(1f),
+                            )
+                            TextButton(
+                                text = stringResource(R.string.action_import_rule),
+                                onClick = {
+                                    runCatching {
+                                        val importedRules = rulesFromJson(importText)
+                                        if (importedRules.isEmpty()) error(context.getString(R.string.rule_import_empty))
+                                        val importedIds = importedRules.map { it.id }.toSet()
+                                        repository.persistRules(repository.readRules().filterNot { it.id in importedIds } + importedRules)
+                                        rules = repository.readRules()
+                                        importText = ""
+                                        showImportDialog = false
+                                        Toast.makeText(context, context.getString(R.string.rule_toast_imported, importedRules.size), Toast.LENGTH_SHORT).show()
+                                    }.onFailure {
+                                        Toast.makeText(context, context.getString(R.string.rule_toast_import_failed, it.message.orEmpty()), Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.textButtonColorsPrimary(),
+                            )
+                        }
+                    }
+                }
             }
         }
     }

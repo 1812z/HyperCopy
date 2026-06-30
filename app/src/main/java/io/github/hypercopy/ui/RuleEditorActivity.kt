@@ -1,5 +1,7 @@
 package io.github.hypercopy.ui
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Intent
 import android.content.Context
 import android.net.Uri
@@ -38,6 +40,7 @@ import io.github.hypercopy.data.RuleTargetType
 import io.github.hypercopy.data.SettingsRepository
 import io.github.hypercopy.data.extractionPatterns
 import io.github.hypercopy.data.ruleCategoryFromValue
+import io.github.hypercopy.data.toJson
 import io.github.hypercopy.data.triggerPatterns
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
@@ -50,6 +53,7 @@ import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
+import top.yukonga.miuix.kmp.icon.extended.Forward
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
@@ -129,7 +133,27 @@ private fun RuleEditorScreen(
                         stringResource(category.labelRes()),
                     ),
                     style = MiuixTheme.textStyles.title1,
+                    modifier = Modifier.weight(1f),
                 )
+                if (editingRule != null) {
+                    Card(
+                        modifier = Modifier.size(42.dp),
+                        onClick = {
+                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                            clipboard.setPrimaryClip(
+                                ClipData.newPlainText(
+                                    context.getString(R.string.action_export_rule),
+                                    editingRule.toJson().toString(2),
+                                ),
+                            )
+                            Toast.makeText(context, R.string.rule_toast_exported, Toast.LENGTH_SHORT).show()
+                        },
+                    ) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Icon(imageVector = MiuixIcons.Forward, contentDescription = stringResource(R.string.action_export_rule))
+                        }
+                    }
+                }
             }
 
             Card {
