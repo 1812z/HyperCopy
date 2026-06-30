@@ -1,0 +1,15 @@
+package io.github.hypercopy.clipboard
+
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import io.github.hypercopy.Config
+
+class JumpConfirmReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action != Config.ACTION_CONFIRM_JUMP) return
+        val id = intent.getLongExtra(Config.EXTRA_PENDING_JUMP_ID, 0L)
+        if (id == 0L) return
+        PendingJumpCoordinator.confirm(context.applicationContext, id)
+    }
+}

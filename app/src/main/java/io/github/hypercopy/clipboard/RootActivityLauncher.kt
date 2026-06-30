@@ -11,7 +11,7 @@ object RootActivityLauncher {
     private const val TIMEOUT_SECONDS = 5L
 
     fun launch(intent: Intent): Boolean {
-        val command = intent.toAmStartCommand() ?: return false
+        val command = IntentAmStartCommand.build(intent)
         return runCatching {
             Log.d(TAG, "root start activity: $command")
             val process = ProcessBuilder("su", "-c", command).redirectErrorStream(true).start()
@@ -31,27 +31,7 @@ object RootActivityLauncher {
         }
     }
 
-    private fun Intent.toAmStartCommand(): String? {
-        val args = mutableListOf("am", "start", "--user", "0")
-        action?.takeIf { it.isNotBlank() }?.let { args += listOf("-a", it) }
-        dataString?.takeIf { it.isNotBlank() }?.let { args += listOf("-d", it) }
-        categories?.forEach { category -> args += listOf("-c", category) }
-        component?.flattenToString()?.takeIf { it.isNotBlank() }?.let { args += listOf("-n", it) }
-        if (component == null) {
-            `package`?.takeIf { it.isNotBlank() }?.let { args += listOf("-p", it) }
-        }
-        extras?.keySet()?.forEach { key ->
-            val value = extras?.get(key)
-            if (value is String) args += listOf("--es", key, value)
-        }
-        return args.joinToString(" ") { it.shellQuote() }
-    }
-
-    fun intentToCommandPreview(intent: Intent): String? = intent.toAmStartCommand()
-
-    private fun String.shellQuote(): String {
-        return "'" + replace("'", "'\\''") + "'"
-    }
+    fun intentToCommandPreview(intent: Intent): String = IntentAmStartCommand.build(intent)
 }
 
 fun Intent.withResolvedActivity(packageManager: android.content.pm.PackageManager): Intent {

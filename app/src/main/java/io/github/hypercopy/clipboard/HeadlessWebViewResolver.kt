@@ -8,6 +8,7 @@ import android.util.Log
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import java.util.concurrent.atomic.AtomicBoolean
 
 object HeadlessWebViewResolver {
     private const val TAG = "HyperCopy"
@@ -16,7 +17,47 @@ object HeadlessWebViewResolver {
 
     fun resolveAndLaunch(context: Context, url: String, packageName: String) {
         handler.post {
-            Resolver(context.applicationContext, url, packageName).start()
+            Resolver(context.applicationContext, url, packageName, launchWhenResolved = true).start()
+        }
+    }
+
+    fun preload(context: Context, url: String, packageName: String): Preload {
+        val preload = Preload(context.applicationContext, url, packageName)
+        handler.post { preload.start() }
+        return preload
+    }
+
+    class Preload internal constructor(
+        private val context: Context,
+        private val url: String,
+        private val packageName: String,
+    ) {
+        private val confirmed = AtomicBoolean(false)
+        private var resolver: Resolver? = null
+        private var resolvedIntent: android.content.Intent? = null
+
+        internal fun start() {
+            resolver = Resolver(context, url, packageName, launchWhenResolved = false) { intent ->
+                resolvedIntent = intent
+                if (confirmed.get()) ActivityLaunchStrategy.launch(context, intent)
+            }.also { it.start() }
+        }
+
+        fun continueLaunch(context: Context) {
+            confirmed.set(true)
+            handler.post {
+                val intent = resolvedIntent
+                if (intent != null) {
+                    ActivityLaunchStrategy.launch(context.applicationContext, intent)
+                }
+            }
+        }
+
+        fun cancel() {
+            handler.post {
+                resolver?.cancel()
+                resolver = null
+            }
         }
     }
 
@@ -24,6 +65,8 @@ object HeadlessWebViewResolver {
         private val context: Context,
         private val url: String,
         private val packageName: String,
+        private val launchWhenResolved: Boolean,
+        private val onResolved: ((android.content.Intent) -> Unit)? = null,
     ) {
         private var finished = false
         private var webView: WebView? = null
@@ -70,7 +113,17 @@ object HeadlessWebViewResolver {
             finished = true
             handler.removeCallbacks(timeoutRunnable)
             Log.d(TAG, "headless webview resolved: $targetUrl")
-            RootActivityLauncher.launch(targetUrl.toViewIntent(targetPackageName).withResolvedActivity(context.packageManager))
+            val intent = targetUrl.toViewIntent(targetPackageName)
+            onResolved?.invoke(intent)
+            if (launchWhenResolved) ActivityLaunchStrategy.launch(context, intent)
+            webView?.runCatchingDestroy()
+            webView = null
+        }
+
+        fun cancel() {
+            if (finished) return
+            finished = true
+            handler.removeCallbacks(timeoutRunnable)
             webView?.runCatchingDestroy()
             webView = null
         }

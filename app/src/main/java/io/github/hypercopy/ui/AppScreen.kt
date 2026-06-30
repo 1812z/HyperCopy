@@ -1,6 +1,10 @@
 package io.github.hypercopy.ui
 
+import android.Manifest
+import android.os.Build
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedContentTransitionScope
@@ -31,6 +35,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.hypercopy.App
 import io.github.hypercopy.R
+import io.github.hypercopy.clipboard.monitor.ClipboardMonitorController
 import io.github.hypercopy.data.SettingsRepository
 import io.github.hypercopy.ui.rules.CloudRulesPage
 import io.github.hypercopy.ui.rules.RulesPage
@@ -41,13 +46,13 @@ import top.yukonga.miuix.kmp.basic.NavigationBarItem
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.AppRecording
+import top.yukonga.miuix.kmp.icon.extended.Backup
 import top.yukonga.miuix.kmp.icon.extended.Carrier
-import top.yukonga.miuix.kmp.icon.extended.Lock
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private enum class Tab(val icon: androidx.compose.ui.graphics.vector.ImageVector, val labelRes: Int) {
-    Home(MiuixIcons.Lock, R.string.tab_home),
+    Home(MiuixIcons.Backup, R.string.tab_home),
     Copy(MiuixIcons.Carrier, R.string.tab_cloud_rules),
     Rules(MiuixIcons.AppRecording, R.string.tab_rules),
     Settings(MiuixIcons.Settings, R.string.tab_settings),
@@ -65,6 +70,9 @@ fun AppScreen(
 ) {
     val context = LocalContext.current
     val settingsRepository = remember { SettingsRepository(context.applicationContext) }
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) {}
     val tabs = remember { Tab.entries.toList() }
     val pagerState = rememberPagerState(pageCount = { tabs.size })
     val coroutineScope = rememberCoroutineScope()
@@ -78,6 +86,9 @@ fun AppScreen(
     var appLanguage by remember { mutableStateOf(appLanguageFromValue(settingsRepository.readAppLanguage())) }
     var clipboardMonitorMode by remember {
         mutableStateOf(clipboardMonitorModeFromValue(settingsRepository.readClipboardMonitorMode()))
+    }
+    var jumpNotificationMode by remember {
+        mutableStateOf(jumpNotificationModeFromValue(settingsRepository.readJumpNotificationMode()))
     }
 
     DisposableEffect(Unit) {
@@ -137,6 +148,7 @@ fun AppScreen(
                                 desktopIconHidden = desktopIconHidden,
                                 appLanguage = appLanguage,
                                 clipboardMonitorMode = clipboardMonitorMode,
+                                jumpNotificationMode = jumpNotificationMode,
                                 onLogLevelChange = {
                                     logLevel = it
                                     settingsRepository.persistLogLevel(it)
@@ -156,6 +168,14 @@ fun AppScreen(
                                 onClipboardMonitorModeChange = {
                                     clipboardMonitorMode = it
                                     settingsRepository.persistClipboardMonitorMode(it.value)
+                                    ClipboardMonitorController.onModeChanged(context.applicationContext, it.value)
+                                },
+                                onJumpNotificationModeChange = {
+                                    jumpNotificationMode = it
+                                    settingsRepository.persistJumpNotificationMode(it.value)
+                                    if (it != JumpNotificationMode.None && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                    }
                                 },
                                 onCheckUpdate = {
                                     Toast.makeText(

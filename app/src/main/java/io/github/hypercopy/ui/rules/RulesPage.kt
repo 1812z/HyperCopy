@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import io.github.hypercopy.R
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import io.github.hypercopy.clipboard.OneRedirectResolver
 import io.github.hypercopy.data.RuleActionMode
 import io.github.hypercopy.data.RuleCategory
 import io.github.hypercopy.data.RuleConfig
@@ -41,6 +42,7 @@ import io.github.hypercopy.data.RuleTargetType
 import io.github.hypercopy.data.directIntent
 import io.github.hypercopy.data.findRule
 import io.github.hypercopy.data.matchRule
+import io.github.hypercopy.data.parseIntent
 import io.github.hypercopy.data.toIntent
 import io.github.hypercopy.ui.HiddenWebViewResolver
 import io.github.hypercopy.ui.RuleBrowserActivity
@@ -50,6 +52,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import kotlin.concurrent.thread
 
 @Composable
 fun RulesPage(bottomContentPadding: Dp = 16.dp) {
@@ -123,6 +126,28 @@ fun RulesPage(bottomContentPadding: Dp = 16.dp) {
                             onStartWebViewResolve = { url, rule ->
                                 resolvingUrl = url
                                 resolvingRule = rule
+                            },
+                            onStartRedirectParse = { url, rule ->
+                                resultText = context.getString(R.string.rule_result_match_redirect_parse, rule.name)
+                                thread(name = "HyperCopyRedirectTest") {
+                                    val redirectedUrl = OneRedirectResolver.resolve(url)
+                                    val intent = rule.parseIntent(
+                                        redirectedUrl,
+                                        requireMatch = false,
+                                        extraParameters = mapOf("input" to testInput.trim(), "redirectUrl" to redirectedUrl),
+                                    )
+                                    (context as? android.app.Activity)?.runOnUiThread {
+                                        if (intent == null) {
+                                            resultText = context.getString(R.string.rule_result_redirect_parse_no_param, redirectedUrl)
+                                        } else {
+                                            resultText = runCatching { context.startActivity(intent) }
+                                                .fold(
+                                                    onSuccess = { context.getString(R.string.rule_result_match_parse_open, rule.name, intent.data) },
+                                                    onFailure = { context.getString(R.string.rule_result_launch_failed, it.message) },
+                                                )
+                                        }
+                                    }
+                                }
                             },
                             onStartActivity = { context.startActivity(it) },
                         )
@@ -223,7 +248,11 @@ fun RulesPage(bottomContentPadding: Dp = 16.dp) {
                     if (rule == null) {
                         resultText = context.getString(R.string.rule_result_webview_no_jump)
                     } else {
-                        val intent = rule.directIntent(url)
+                        val intent = RuleTarget(
+                            type = RuleTargetType.Url,
+                            template = url,
+                            packageName = rule.target.packageName,
+                        ).toIntent(emptyMap())
                         resultText = context.getString(R.string.rule_result_webview_fallback, intent.data)
                         runCatching { context.startActivity(intent) }
                             .onFailure { resultText = context.getString(R.string.rule_result_launch_failed, it.message) }
@@ -270,6 +299,7 @@ private fun executeRuleTest(
     rules: List<RuleConfig>,
     category: RulePageCategory,
     onStartWebViewResolve: (String, RuleConfig) -> Unit,
+    onStartRedirectParse: (String, RuleConfig) -> Unit,
     onStartActivity: (Intent) -> Unit,
 ): String {
     val value = input.trim()
@@ -287,7 +317,7 @@ private fun executeRuleTest(
         }
 
         RuleActionMode.DirectOpen -> {
-            val intent = rule.directIntent(value)
+            val intent = rule.directIntent(value, context.packageManager)
             runCatching { onStartActivity(intent) }
                 .fold(
                     onSuccess = { context.getString(R.string.rule_result_match_direct_open, rule.name, intent.data) },
@@ -296,6 +326,10 @@ private fun executeRuleTest(
         }
 
         RuleActionMode.WebViewResolveAndOpen -> {
+            if (rule.parseAfterRedirect) {
+                onStartRedirectParse(normalizeTestUrl(value), rule)
+                return context.getString(R.string.rule_result_match_redirect_parse, rule.name)
+            }
             onStartWebViewResolve(normalizeTestUrl(value), rule)
             context.getString(R.string.rule_result_match_webview, rule.name)
         }

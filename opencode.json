@@ -1,0 +1,10 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "jadx": {
+      "type": "remote",
+      "url": "http://127.0.0.1:9999/mcp",
+      "enabled": true
+    }
+  }
+}

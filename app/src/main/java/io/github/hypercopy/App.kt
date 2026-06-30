@@ -1,6 +1,7 @@
 package io.github.hypercopy
 
 import android.app.Application
+import io.github.hypercopy.clipboard.monitor.ClipboardMonitorController
 import io.github.libxposed.service.XposedService
 import io.github.libxposed.service.XposedServiceHelper
 import java.util.concurrent.CopyOnWriteArraySet
@@ -9,6 +10,7 @@ class App : Application(), XposedServiceHelper.OnServiceListener {
     override fun onCreate() {
         super.onCreate()
         XposedServiceHelper.registerListener(this)
+        ClipboardMonitorController.startForCurrentMode(this)
     }
 
     override fun onServiceBind(service: XposedService) {

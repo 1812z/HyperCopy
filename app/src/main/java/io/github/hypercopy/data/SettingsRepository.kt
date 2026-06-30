@@ -50,6 +50,17 @@ class SettingsRepository(private val context: Context) {
         preferences().edit(commit = true) { putString(Config.KEY_CLIPBOARD_MONITOR_MODE, value) }
     }
 
+    fun readJumpNotificationMode(): String {
+        return preferences().getString(
+            Config.KEY_JUMP_NOTIFICATION_MODE,
+            Config.DEFAULT_JUMP_NOTIFICATION_MODE,
+        ) ?: Config.DEFAULT_JUMP_NOTIFICATION_MODE
+    }
+
+    fun persistJumpNotificationMode(value: String) {
+        preferences().edit(commit = true) { putString(Config.KEY_JUMP_NOTIFICATION_MODE, value) }
+    }
+
     fun readDesktopIconHidden(): Boolean {
         return context.packageManager.getComponentEnabledSetting(desktopIconComponent()) ==
             PackageManager.COMPONENT_ENABLED_STATE_DISABLED

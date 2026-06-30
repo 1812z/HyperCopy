@@ -17,6 +17,12 @@ enum class ClipboardMonitorMode(val value: String) {
     Shizuku(Config.CLIPBOARD_MONITOR_MODE_SHIZUKU),
 }
 
+enum class JumpNotificationMode(val value: String) {
+    None(Config.JUMP_NOTIFICATION_MODE_NONE),
+    Live(Config.JUMP_NOTIFICATION_MODE_LIVE),
+    MiuiIsland(Config.JUMP_NOTIFICATION_MODE_MIUI_ISLAND),
+}
+
 fun appLanguageFromValue(value: String): AppLanguage = AppLanguage.Chinese
 
 fun appColorModeFromValue(value: String): AppColorMode = when (value) {
@@ -28,4 +34,10 @@ fun appColorModeFromValue(value: String): AppColorMode = when (value) {
 fun clipboardMonitorModeFromValue(value: String): ClipboardMonitorMode = when (value) {
     Config.CLIPBOARD_MONITOR_MODE_SHIZUKU -> ClipboardMonitorMode.Shizuku
     else -> ClipboardMonitorMode.LSPosed
+}
+
+fun jumpNotificationModeFromValue(value: String): JumpNotificationMode = when (value) {
+    Config.JUMP_NOTIFICATION_MODE_LIVE -> JumpNotificationMode.Live
+    Config.JUMP_NOTIFICATION_MODE_MIUI_ISLAND -> JumpNotificationMode.MiuiIsland
+    else -> JumpNotificationMode.None
 }

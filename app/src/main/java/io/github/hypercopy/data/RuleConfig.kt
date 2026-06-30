@@ -13,8 +13,10 @@ data class RuleConfig(
     val actionMode: RuleActionMode = RuleActionMode.ParseAndOpen,
     val matchRegex: String,
     val parameterRegex: String,
+    val triggerRegexes: List<String> = emptyList(),
+    val extractionRegexes: List<String> = emptyList(),
+    val parseAfterRedirect: Boolean = false,
     val target: RuleTarget,
-    val sourceUrl: String = "",
     val createdAt: Long = System.currentTimeMillis(),
 )
 
@@ -50,9 +52,15 @@ fun RuleConfig.toJson(): JSONObject = JSONObject()
     .put("actionMode", actionMode.value)
     .put("matchRegex", matchRegex)
     .put("parameterRegex", parameterRegex)
+    .put("triggerRegexes", triggerRegexes.toJsonArray())
+    .put("extractionRegexes", extractionRegexes.toJsonArray())
+    .put("parseAfterRedirect", parseAfterRedirect)
     .put("target", target.toJson())
-    .put("sourceUrl", sourceUrl)
     .put("createdAt", createdAt)
+
+private fun List<String>.toJsonArray(): JSONArray = JSONArray().also { array ->
+    filter { it.isNotBlank() }.forEach { array.put(it) }
+}
 
 fun RuleTarget.toJson(): JSONObject = JSONObject()
     .put("type", type.value)
@@ -68,10 +76,22 @@ fun ruleConfigFromJson(json: JSONObject): RuleConfig = RuleConfig(
     actionMode = ruleActionModeFromValue(json.optString("actionMode")),
     matchRegex = json.optString("matchRegex"),
     parameterRegex = json.optString("parameterRegex"),
+    triggerRegexes = json.optStringArray("triggerRegexes"),
+    extractionRegexes = json.optStringArray("extractionRegexes"),
+    parseAfterRedirect = json.optBoolean("parseAfterRedirect", false),
     target = ruleTargetFromJson(json.optJSONObject("target") ?: JSONObject()),
-    sourceUrl = json.optString("sourceUrl"),
     createdAt = json.optLong("createdAt", System.currentTimeMillis()),
 )
+
+private fun JSONObject.optStringArray(name: String): List<String> {
+    val array = optJSONArray(name) ?: return emptyList()
+    return buildList {
+        for (index in 0 until array.length()) {
+            val value = array.optString(index)
+            if (value.isNotBlank()) add(value)
+        }
+    }
+}
 
 fun ruleCategoryFromValue(value: String): RuleCategory = when (value) {
     RuleCategory.Address.value -> RuleCategory.Address

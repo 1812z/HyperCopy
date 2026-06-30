@@ -43,6 +43,11 @@
     <string name="clipboard_monitor_mode_summary">选择 LSPosed 或 Shizuku 监听剪贴板变化</string>
     <string name="clipboard_monitor_mode_lsposed">LSPosed</string>
     <string name="clipboard_monitor_mode_shizuku">Shizuku</string>
+    <string name="jump_notification_mode">跳转通知</string>
+    <string name="jump_notification_mode_summary">复制命中规则后是否先通知确认再跳转</string>
+    <string name="jump_notification_mode_none">无（直接跳转）</string>
+    <string name="jump_notification_mode_live">实时通知</string>
+    <string name="jump_notification_mode_miui_island">小米超级岛</string>
     <string name="log_level">日志级别</string>
     <string name="log_level_summary">控制模块输出日志的详细程度</string>
     <string name="log_off">关闭</string>
@@ -67,6 +72,7 @@
     <string name="action_delete">删除</string>
     <string name="action_edit">编辑</string>
     <string name="action_open">打开</string>
+    <string name="action_jump">跳转</string>
     <string name="action_refresh">刷新</string>
     <string name="action_retry">重试</string>
     <string name="action_select_all">全选</string>
@@ -100,6 +106,8 @@
     <string name="rule_result_match_parse_open">命中 %1$s，解析参数打开：%2$s</string>
     <string name="rule_result_match_direct_open">命中 %1$s，直接打开：%2$s</string>
     <string name="rule_result_match_webview">命中 %1$s，正在用 WebView 模拟打开。页面加载后会通用点击一次，2 秒无跳转则直接打开目标 App。</string>
+    <string name="rule_result_match_redirect_parse">命中 %1$s，正在解析一次重定向。</string>
+    <string name="rule_result_redirect_parse_no_param">重定向后未提取到参数：%1$s</string>
     <string name="rule_result_webview_resolved">WebView 解析成功：%1$s</string>
     <string name="rule_result_webview_no_jump">WebView 未解析到跳转</string>
     <string name="rule_result_webview_fallback">WebView 未解析到跳转，改为直接打开：%1$s</string>
@@ -116,13 +124,14 @@
     <string name="editor_title_add">添加%1$s规则</string>
     <string name="editor_title_edit">编辑%1$s规则</string>
     <string name="editor_label_name">名称</string>
-    <string name="editor_label_source_url">来源 URL</string>
     <string name="editor_label_match_regex">匹配正则</string>
     <string name="editor_label_parameter_regex">参数正则</string>
+    <string name="editor_label_trigger_regexes">触发正则</string>
+    <string name="editor_label_extraction_regexes">提取正则</string>
     <string name="editor_label_target_template">跳转模板</string>
     <string name="editor_label_open_content_template">打开内容模板</string>
     <string name="editor_label_package_name_optional">包名，可留空</string>
-    <string name="editor_label_target_app_package_optional">目标 App 包名，可留空</string>
+    <string name="editor_label_package_name_required">包名，必填</string>
     <string name="editor_action_mode">执行类型</string>
     <string name="editor_open_mode">打开方式</string>
     <string name="editor_link_action_parse">解析参数</string>
@@ -130,11 +139,20 @@
     <string name="editor_link_action_webview">模拟打开</string>
     <string name="editor_open_app">直接打开 App</string>
     <string name="editor_open_url">打开 URL</string>
+    <string name="editor_parse_after_redirect">跳转后解析</string>
+    <string name="editor_parse_after_redirect_summary">只跟随一次 HTTP 重定向，不加载网页，再用展开后的 URL 提取参数并跳转</string>
+    <string name="editor_action_add_regex">添加正则</string>
+    <string name="editor_placeholder_help_title">占位符说明</string>
+    <string name="editor_placeholder_help_input"><![CDATA[${input}：完整复制内容。]]></string>
+    <string name="editor_placeholder_help_redirect"><![CDATA[${redirectUrl}：跳转后解析模式下的一次重定向后 URL。]]></string>
+    <string name="editor_placeholder_help_regex"><![CDATA[${r1}、${r2}：第 1、2 条提取正则的第一个捕获组。]]></string>
+    <string name="editor_placeholder_help_regex_group"><![CDATA[${r1_2}：第 1 条提取正则的第 2 个捕获组。]]></string>
     <string name="editor_default_address_name">地址规则</string>
     <string name="editor_rule_name_new">新规则</string>
     <string name="editor_rule_name_from_scheme">%1$s 跳转</string>
     <string name="rule_unnamed">未命名规则</string>
     <string name="rule_toast_saved">规则已保存</string>
+    <string name="rule_toast_package_required">直接打开 App 必须填写包名</string>
 
     <!-- 规则浏览器 -->
     <string name="browser_hint_url">分享链接或网址</string>
@@ -169,4 +187,8 @@
     <string name="toast_shizuku_unavailable">Shizuku 不可用，请先启动 Shizuku</string>
     <string name="toast_shizuku_permission_denied">Shizuku 授权被拒绝</string>
     <string name="toast_update_check_unconfigured">暂未配置更新检查</string>
+    <string name="notification_channel_jump_name">跳转通知</string>
+    <string name="notification_channel_jump_description">复制命中规则后的实时跳转确认</string>
+    <string name="notification_jump_title">等待跳转确认</string>
+    <string name="notification_jump_text">点击"跳转"以进入应用</string>
 </resources>

@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.READ_LOGS" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
     <application
         android:name=".App"
         android:allowBackup="false"
@@ -25,6 +28,14 @@
             android:name="libxposed"
             android:value="true" />
 
+        <provider
+            android:name="rikka.shizuku.ShizukuProvider"
+            android:authorities="${applicationId}.shizuku"
+            android:enabled="true"
+            android:exported="true"
+            android:multiprocess="false"
+            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
+
         <activity
             android:name=".ui.MainActivity"
             android:exported="true">
@@ -41,6 +52,16 @@
         <activity
             android:name=".ui.RuleEditorActivity"
             android:exported="false" />
+
+        <activity
+            android:name=".clipboard.ClipboardFloatingActivity"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:finishOnTaskLaunch="true"
+            android:launchMode="singleTask"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@style/ClipboardFloatingTheme" />
 
         <activity-alias
             android:name=".ui.MainActivityAlias"
@@ -61,6 +82,10 @@
                 <action android:name="io.github.hypercopy.action.HANDLE_CLIPBOARD_TEXT" />
             </intent-filter>
         </receiver>
+
+        <receiver
+            android:name=".clipboard.JumpConfirmReceiver"
+            android:exported="false" />
     </application>
 
 </manifest>

@@ -42,11 +42,13 @@ fun SettingsPage(
     desktopIconHidden: Boolean,
     appLanguage: AppLanguage,
     clipboardMonitorMode: ClipboardMonitorMode,
+    jumpNotificationMode: JumpNotificationMode,
     onLogLevelChange: (Int) -> Unit,
     onAutoCheckUpdateChange: (Boolean) -> Unit,
     onDesktopIconHiddenChange: (Boolean) -> Unit,
     onAppLanguageChange: (AppLanguage) -> Unit,
     onClipboardMonitorModeChange: (ClipboardMonitorMode) -> Unit,
+    onJumpNotificationModeChange: (JumpNotificationMode) -> Unit,
     onCheckUpdate: () -> Unit,
     onOpenTheme: () -> Unit,
     bottomContentPadding: Dp = 16.dp,
@@ -55,6 +57,7 @@ fun SettingsPage(
     val logLevelOptions = logLevelOptions()
     val languageOptions = languageOptions()
     val clipboardMonitorModeOptions = clipboardMonitorModeOptions()
+    val jumpNotificationModeOptions = jumpNotificationModeOptions()
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -99,6 +102,14 @@ fun SettingsPage(
                     selectedIndex = clipboardMonitorModeOptions.indexOfFirst { it.value == clipboardMonitorMode }.coerceAtLeast(0),
                     insideMargin = SettingsItemMargin,
                     onSelectedIndexChange = { onClipboardMonitorModeChange(clipboardMonitorModeOptions[it].value) },
+                )
+                OverlayDropdownPreference(
+                    title = stringResource(R.string.jump_notification_mode),
+                    summary = stringResource(R.string.jump_notification_mode_summary),
+                    items = jumpNotificationModeOptions.map { it.label },
+                    selectedIndex = jumpNotificationModeOptions.indexOfFirst { it.value == jumpNotificationMode }.coerceAtLeast(0),
+                    insideMargin = SettingsItemMargin,
+                    onSelectedIndexChange = { onJumpNotificationModeChange(jumpNotificationModeOptions[it].value) },
                 )
                 OverlayDropdownPreference(
                     title = stringResource(R.string.log_level),
@@ -223,6 +234,8 @@ private data class LanguageOption(val label: String, val value: AppLanguage)
 
 private data class ClipboardMonitorModeOption(val label: String, val value: ClipboardMonitorMode)
 
+private data class JumpNotificationModeOption(val label: String, val value: JumpNotificationMode)
+
 @Composable
 private fun logLevelOptions() = listOf(
     LogLevelOption(stringResource(R.string.log_off), Config.LOG_LEVEL_OFF),
@@ -239,6 +252,13 @@ private fun languageOptions() = listOf(
 private fun clipboardMonitorModeOptions() = listOf(
     ClipboardMonitorModeOption(stringResource(R.string.clipboard_monitor_mode_lsposed), ClipboardMonitorMode.LSPosed),
     ClipboardMonitorModeOption(stringResource(R.string.clipboard_monitor_mode_shizuku), ClipboardMonitorMode.Shizuku),
+)
+
+@Composable
+private fun jumpNotificationModeOptions() = listOf(
+    JumpNotificationModeOption(stringResource(R.string.jump_notification_mode_none), JumpNotificationMode.None),
+    JumpNotificationModeOption(stringResource(R.string.jump_notification_mode_live), JumpNotificationMode.Live),
+    JumpNotificationModeOption(stringResource(R.string.jump_notification_mode_miui_island), JumpNotificationMode.MiuiIsland),
 )
 
 private val SettingsItemMargin = PaddingValues(horizontal = 18.dp, vertical = 14.dp)

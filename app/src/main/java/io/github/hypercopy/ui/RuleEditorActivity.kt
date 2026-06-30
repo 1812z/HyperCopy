@@ -20,6 +20,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -35,11 +36,14 @@ import io.github.hypercopy.data.RuleRepository
 import io.github.hypercopy.data.RuleTarget
 import io.github.hypercopy.data.RuleTargetType
 import io.github.hypercopy.data.SettingsRepository
+import io.github.hypercopy.data.extractionPatterns
 import io.github.hypercopy.data.ruleCategoryFromValue
+import io.github.hypercopy.data.triggerPatterns
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -92,13 +96,21 @@ private fun RuleEditorScreen(
         defaultEditorValues(context, category, initialSourceUrl, initialTargetUrl)
     }
     var name by remember { mutableStateOf(editingRule?.name ?: defaults.name) }
-    var sourceUrl by remember { mutableStateOf(editingRule?.sourceUrl ?: defaults.sourceUrl) }
-    var matchRegex by remember { mutableStateOf(editingRule?.matchRegex ?: defaults.matchRegex) }
-    var parameterRegex by remember { mutableStateOf(editingRule?.parameterRegex ?: defaults.parameterRegex) }
+    val triggerRegexes = remember(editingRule?.id) { mutableStateListOf(*(editingRule?.triggerPatterns() ?: listOf(defaults.matchRegex)).toTypedArray()) }
+    val extractionRegexes = remember(editingRule?.id) { mutableStateListOf(*(editingRule?.extractionPatterns() ?: listOf(defaults.parameterRegex)).toTypedArray()) }
     var targetTemplate by remember { mutableStateOf(editingRule?.target?.template ?: defaults.targetTemplate) }
     var packageName by remember { mutableStateOf(editingRule?.target?.packageName ?: defaults.packageName) }
     var openMode by remember { mutableStateOf(openModeFromRule(editingRule, category)) }
     var actionMode by remember { mutableStateOf(editingRule?.actionMode ?: defaults.actionMode) }
+    var parseAfterRedirect by remember { mutableStateOf(editingRule?.parseAfterRedirect ?: false) }
+    val isLinkDirectOpen = category == RuleCategory.Link && actionMode == RuleActionMode.DirectOpen
+    val isCategoryDirectAppOpen = category != RuleCategory.Link && openMode == CategoryOpenMode.DirectApp
+    val isDirectAppOpen = isLinkDirectOpen || isCategoryDirectAppOpen
+    val usesTemplate = when {
+        category == RuleCategory.Link -> actionMode == RuleActionMode.ParseAndOpen
+            || (actionMode == RuleActionMode.WebViewResolveAndOpen && parseAfterRedirect)
+        else -> openMode == CategoryOpenMode.Url
+    }
 
     Scaffold { paddingValues ->
         Column(
@@ -124,44 +136,70 @@ private fun RuleEditorScreen(
                 Column(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     TextField(value = name, onValueChange = { name = it }, label = stringResource(R.string.editor_label_name), singleLine = true, modifier = Modifier.fillMaxWidth())
                     if (category == RuleCategory.Link) {
-                        TextField(value = sourceUrl, onValueChange = { sourceUrl = it }, label = stringResource(R.string.editor_label_source_url), maxLines = 3, modifier = Modifier.fillMaxWidth())
-                    }
-                    TextField(value = matchRegex, onValueChange = { matchRegex = it }, label = stringResource(R.string.editor_label_match_regex), maxLines = 3, modifier = Modifier.fillMaxWidth())
-                    if (category == RuleCategory.Link) {
-                        TextField(value = parameterRegex, onValueChange = { parameterRegex = it }, label = stringResource(R.string.editor_label_parameter_regex), maxLines = 3, modifier = Modifier.fillMaxWidth())
-                    }
-                    TextField(
-                        value = targetTemplate,
-                        onValueChange = { targetTemplate = it },
-                        label = stringResource(if (category == RuleCategory.Link) R.string.editor_label_target_template else R.string.editor_label_open_content_template),
-                        maxLines = 3,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    if (category == RuleCategory.Link) {
-                        TextField(value = packageName, onValueChange = { packageName = it }, label = stringResource(R.string.editor_label_package_name_optional), singleLine = true, modifier = Modifier.fillMaxWidth())
                         ActionModeSelector(selected = actionMode, onSelected = { actionMode = it })
+                        if (actionMode == RuleActionMode.WebViewResolveAndOpen) {
+                            ParseAfterRedirectSwitch(checked = parseAfterRedirect, onCheckedChange = { parseAfterRedirect = it })
+                        }
+                    }
+                    RegexListEditor(
+                        title = stringResource(R.string.editor_label_trigger_regexes),
+                        values = triggerRegexes,
+                        onChange = { index, value -> triggerRegexes[index] = value },
+                        onAdd = { triggerRegexes += "" },
+                        onRemove = { index -> if (triggerRegexes.size > 1) triggerRegexes.removeAt(index) },
+                    )
+                    if (usesTemplate) {
+                        RegexListEditor(
+                            title = stringResource(R.string.editor_label_extraction_regexes),
+                            values = extractionRegexes,
+                            onChange = { index, value -> extractionRegexes[index] = value },
+                            onAdd = { extractionRegexes += "" },
+                            onRemove = { index -> if (extractionRegexes.size > 1) extractionRegexes.removeAt(index) },
+                        )
+                        TextField(
+                            value = targetTemplate,
+                            onValueChange = { targetTemplate = it },
+                            label = stringResource(if (category == RuleCategory.Link) R.string.editor_label_target_template else R.string.editor_label_open_content_template),
+                            maxLines = 3,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                    if (category == RuleCategory.Link) {
+                        TextField(
+                            value = packageName,
+                            onValueChange = { packageName = it },
+                            label = stringResource(if (isLinkDirectOpen) R.string.editor_label_package_name_required else R.string.editor_label_package_name_optional),
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
                     } else {
                         CategoryOpenModeSelector(selected = openMode, onSelected = { openMode = it })
                         if (openMode == CategoryOpenMode.DirectApp) {
-                            TextField(value = packageName, onValueChange = { packageName = it }, label = stringResource(R.string.editor_label_target_app_package_optional), singleLine = true, modifier = Modifier.fillMaxWidth())
+                            TextField(value = packageName, onValueChange = { packageName = it }, label = stringResource(R.string.editor_label_package_name_required), singleLine = true, modifier = Modifier.fillMaxWidth())
                         }
                     }
                     TextButton(
                         text = stringResource(R.string.action_save_rule),
                         onClick = {
+                            if (isDirectAppOpen && packageName.isBlank()) {
+                                Toast.makeText(context, R.string.rule_toast_package_required, Toast.LENGTH_SHORT).show()
+                                return@TextButton
+                            }
                             val rule = RuleConfig(
                                 id = editingRule?.id ?: ruleId.ifBlank { java.util.UUID.randomUUID().toString() },
                                 name = name.ifBlank { context.getString(R.string.rule_unnamed) },
                                 category = category,
                                 actionMode = if (category == RuleCategory.Link) actionMode else RuleActionMode.DirectOpen,
-                                matchRegex = matchRegex.ifBlank { ".*" },
-                                parameterRegex = parameterRegex.ifBlank { ".*(.+).*" },
+                                matchRegex = triggerRegexes.firstNonBlankOr(".*"),
+                                parameterRegex = if (usesTemplate) extractionRegexes.firstNonBlankOr(".*(.+).*") else "",
+                                triggerRegexes = triggerRegexes.filter { it.isNotBlank() }.ifEmpty { listOf(".*") },
+                                extractionRegexes = if (usesTemplate) extractionRegexes.filter { it.isNotBlank() }.ifEmpty { listOf(".*(.+).*") } else emptyList(),
+                                parseAfterRedirect = category == RuleCategory.Link && actionMode == RuleActionMode.WebViewResolveAndOpen && parseAfterRedirect,
                                 target = RuleTarget(
                                     type = if (targetTemplate.startsWith("intent://", true)) RuleTargetType.Intent else RuleTargetType.Url,
-                                    template = targetTemplate,
-                                    packageName = if (category == RuleCategory.Link || openMode == CategoryOpenMode.DirectApp) packageName else "",
+                                    template = if (usesTemplate) targetTemplate else "",
+                                    packageName = if (category == RuleCategory.Link || isCategoryDirectAppOpen) packageName else "",
                                 ),
-                                sourceUrl = if (category == RuleCategory.Link) sourceUrl else "",
                             )
                             repository.saveRule(rule)
                             Toast.makeText(context, R.string.rule_toast_saved, Toast.LENGTH_SHORT).show()
@@ -172,13 +210,67 @@ private fun RuleEditorScreen(
                     )
                 }
             }
+            PlaceholderHelpCard()
+        }
+    }
+}
+
+@Composable
+private fun ParseAfterRedirectSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(text = stringResource(R.string.editor_parse_after_redirect), style = MiuixTheme.textStyles.headline1)
+            Text(text = stringResource(R.string.editor_parse_after_redirect_summary), style = MiuixTheme.textStyles.body2)
+        }
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
+    }
+}
+
+@Composable
+private fun RegexListEditor(
+    title: String,
+    values: List<String>,
+    onChange: (Int, String) -> Unit,
+    onAdd: () -> Unit,
+    onRemove: (Int) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(text = title, style = MiuixTheme.textStyles.headline1)
+        values.forEachIndexed { index, value ->
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                TextField(
+                    value = value,
+                    onValueChange = { onChange(index, it) },
+                    label = "${title} ${index + 1}",
+                    maxLines = 3,
+                    modifier = Modifier.weight(1f),
+                )
+                if (values.size > 1) TextButton(text = stringResource(R.string.action_delete), onClick = { onRemove(index) })
+            }
+        }
+        TextButton(text = stringResource(R.string.editor_action_add_regex), onClick = onAdd, modifier = Modifier.fillMaxWidth())
+    }
+}
+
+@Composable
+private fun PlaceholderHelpCard() {
+    Card {
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(text = stringResource(R.string.editor_placeholder_help_title), style = MiuixTheme.textStyles.headline1)
+            Text(text = stringResource(R.string.editor_placeholder_help_input), style = MiuixTheme.textStyles.body2)
+            Text(text = stringResource(R.string.editor_placeholder_help_redirect), style = MiuixTheme.textStyles.body2)
+            Text(text = stringResource(R.string.editor_placeholder_help_regex), style = MiuixTheme.textStyles.body2)
+            Text(text = stringResource(R.string.editor_placeholder_help_regex_group), style = MiuixTheme.textStyles.body2)
         }
     }
 }
 
 private data class EditorDefaults(
     val name: String,
-    val sourceUrl: String,
     val matchRegex: String,
     val parameterRegex: String,
     val targetTemplate: String,
@@ -207,7 +299,6 @@ private fun categoryOpenModeTabs() = listOf(
 private fun defaultEditorValues(context: Context, category: RuleCategory, sourceUrl: String, targetUrl: String): EditorDefaults = when (category) {
     RuleCategory.Link -> EditorDefaults(
         name = ruleNameFromTarget(context, targetUrl),
-        sourceUrl = sourceUrl,
         matchRegex = if (sourceUrl.isBlank()) ".*" else ".*${Regex.escape(sourceUrl)}.*",
         parameterRegex = ".*(.+).*",
         targetTemplate = targetUrl.ifBlank { "${'$'}{input}" },
@@ -217,7 +308,6 @@ private fun defaultEditorValues(context: Context, category: RuleCategory, source
 
     RuleCategory.Address -> EditorDefaults(
         name = context.getString(R.string.editor_default_address_name),
-        sourceUrl = "",
         matchRegex = "(?=.*(地址|省|市|区)).{10,}",
         parameterRegex = "(.+)",
         targetTemplate = "${'$'}{input}",
@@ -227,7 +317,6 @@ private fun defaultEditorValues(context: Context, category: RuleCategory, source
 
     RuleCategory.Express -> EditorDefaults(
         name = "",
-        sourceUrl = "",
         matchRegex = "",
         parameterRegex = "",
         targetTemplate = "",
@@ -306,6 +395,8 @@ private fun ruleNameFromTarget(context: Context, targetUrl: String): String {
 private fun parsePackageName(targetUrl: String): String {
     return runCatching { Intent.parseUri(targetUrl, Intent.URI_INTENT_SCHEME).`package`.orEmpty() }.getOrDefault("")
 }
+
+private fun List<String>.firstNonBlankOr(default: String): String = firstOrNull { it.isNotBlank() } ?: default
 
 private fun AppColorMode.toColorSchemeMode(): ColorSchemeMode = when (this) {
     AppColorMode.System -> ColorSchemeMode.System

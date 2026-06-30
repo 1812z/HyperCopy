@@ -1,17 +1,16 @@
 package io.github.hypercopy.clipboard
 
 import android.content.Context
-import android.content.Intent
 import android.util.Log
-import android.widget.Toast
 import io.github.hypercopy.Config
-import io.github.hypercopy.R
 import io.github.hypercopy.data.RuleActionMode
 import io.github.hypercopy.data.RuleConfig
 import io.github.hypercopy.data.RuleRepository
 import io.github.hypercopy.data.directIntent
 import io.github.hypercopy.data.findRule
 import io.github.hypercopy.data.matchRule
+import io.github.hypercopy.data.parseIntent
+import kotlin.concurrent.thread
 
 object ClipboardTextHandler {
     private const val TAG = "HyperCopy"
@@ -33,31 +32,40 @@ object ClipboardTextHandler {
         val rules = RuleRepository(appContext).readRules()
         val match = matchRule(input, rules)
         if (match != null) {
-            launchRootOrFallback(appContext, match.intent)
+            submitJump(appContext, PendingJump.IntentJump(match.rule.name, match.intent))
             return
         }
 
         val rule = findRule(input, rules) ?: return
         when (rule.actionMode) {
-            RuleActionMode.DirectOpen -> launchRootOrFallback(appContext, rule.directIntent(input))
+            RuleActionMode.DirectOpen -> submitJump(appContext, PendingJump.IntentJump(rule.name, rule.directIntent(input, appContext.packageManager)))
             RuleActionMode.WebViewResolveAndOpen -> startWebViewResolve(appContext, rule, input)
             RuleActionMode.ParseAndOpen -> return
         }
     }
 
     private fun startWebViewResolve(context: Context, rule: RuleConfig, input: String) {
-        HeadlessWebViewResolver.resolveAndLaunch(context, normalizeUrl(input), rule.target.packageName)
+        if (rule.parseAfterRedirect) {
+            thread(name = "HyperCopyRedirectResolve") {
+                val redirectedUrl = OneRedirectResolver.resolve(normalizeUrl(input))
+                Log.d(TAG, "redirect parse url: $redirectedUrl")
+                val intent = rule.parseIntent(
+                    redirectedUrl,
+                    requireMatch = false,
+                    extraParameters = mapOf("input" to input, "redirectUrl" to redirectedUrl),
+                ) ?: run {
+                    Log.d(TAG, "redirect parse no parameters: $redirectedUrl")
+                    return@thread
+                }
+                submitJump(context, PendingJump.IntentJump(rule.name, intent))
+            }
+            return
+        }
+        submitJump(context, PendingJump.WebViewJump(rule.name, normalizeUrl(input), rule.target.packageName))
     }
 
-    private fun launchRootOrFallback(context: Context, intent: Intent) {
-        val resolvedIntent = intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK).withResolvedActivity(context.packageManager)
-        if (RootActivityLauncher.launch(resolvedIntent)) return
-        runCatching {
-            context.startActivity(resolvedIntent)
-        }.onFailure { throwable ->
-            Log.w(TAG, "Failed to start activity", throwable)
-            Toast.makeText(context, R.string.toast_open_target_failed, Toast.LENGTH_SHORT).show()
-        }
+    private fun submitJump(context: Context, jump: PendingJump) {
+        PendingJumpCoordinator.submit(context, jump)
     }
 
     private fun normalizeUrl(text: String): String {
