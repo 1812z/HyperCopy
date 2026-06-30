@@ -24,7 +24,7 @@ fun findRule(text: String, rules: List<RuleConfig>): RuleConfig? {
 }
 
 fun RuleConfig.directIntent(text: String, packageManager: PackageManager? = null): Intent {
-    if (actionMode == RuleActionMode.DirectOpen && target.packageName.isNotBlank()) {
+    if (actionMode == RuleActionMode.DirectOpen && target.template.isBlank() && target.packageName.isNotBlank()) {
         return (packageManager?.getLaunchIntentForPackage(target.packageName) ?: Intent(Intent.ACTION_MAIN).apply {
             addCategory(Intent.CATEGORY_LAUNCHER)
             setPackage(target.packageName)

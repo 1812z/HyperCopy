@@ -26,7 +26,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.pm.PackageInfoCompat
+import io.github.hypercopy.Config
 import io.github.hypercopy.R
+import io.github.hypercopy.data.RuleRepository
+import io.github.hypercopy.data.SettingsRepository
 import io.github.libxposed.service.XposedService
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -43,6 +46,11 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 fun HomePage(xposedService: XposedService?, bottomContentPadding: Dp = 16.dp) {
     val context = LocalContext.current
     val systemInfo = remember { homeSystemInfo(context) }
+    val settingsRepository = remember { SettingsRepository(context) }
+    val ruleRepository = remember { RuleRepository(context) }
+    val workMode = remember { settingsRepository.readClipboardMonitorMode() }
+    val enabledRuleCount = remember { ruleRepository.readRules().count { it.enabled } }
+    val isShizukuMode = workMode == Config.CLIPBOARD_MONITOR_MODE_SHIZUKU
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -56,14 +64,19 @@ fun HomePage(xposedService: XposedService?, bottomContentPadding: Dp = 16.dp) {
                 modifier = Modifier.padding(top = 8.dp),
             )
         }
-        item { StatusCard(active = xposedService != null) }
-        item { InfoCard(systemInfo = systemInfo, xposedService = xposedService) }
-        item { WorkModeCard() }
+        item {
+            StatusCard(
+                active = isShizukuMode || xposedService != null,
+                workMode = workMode,
+                enabledRuleCount = enabledRuleCount,
+            )
+        }
+        item { InfoCard(systemInfo = systemInfo, xposedService = xposedService, showLsposedVersion = !isShizukuMode) }
     }
 }
 
 @Composable
-private fun StatusCard(active: Boolean) {
+private fun StatusCard(active: Boolean, workMode: String, enabledRuleCount: Int) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -112,28 +125,54 @@ private fun StatusCard(active: Boolean) {
             modifier = Modifier.weight(1f).aspectRatio(1f),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            EmptyStatCard(modifier = Modifier.weight(1f))
-            EmptyStatCard(modifier = Modifier.weight(1f))
+            StatCard(
+                title = stringResource(R.string.home_work_mode),
+                content = workModeLabel(workMode),
+                modifier = Modifier.weight(1f),
+            )
+            StatCard(
+                title = stringResource(R.string.home_rule_count),
+                content = stringResource(R.string.home_enabled_rule_count, enabledRuleCount),
+                modifier = Modifier.weight(1f),
+            )
         }
     }
 }
 
 @Composable
-private fun EmptyStatCard(modifier: Modifier = Modifier) {
+private fun StatCard(title: String, content: String, modifier: Modifier = Modifier) {
     Card(modifier = modifier.fillMaxWidth()) {
-        Box(modifier = Modifier.fillMaxSize().padding(14.dp))
+        Column(
+            modifier = Modifier.fillMaxSize().padding(14.dp),
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Text(
+                text = title,
+                fontSize = 13.sp,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            )
+            Text(
+                text = content,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MiuixTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+        }
     }
 }
 
 @Composable
-private fun InfoCard(systemInfo: HomeSystemInfo, xposedService: XposedService?) {
+private fun InfoCard(systemInfo: HomeSystemInfo, xposedService: XposedService?, showLsposedVersion: Boolean) {
     Card {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
             val unknown = stringResource(R.string.info_unknown)
             InfoText(title = stringResource(R.string.info_system_version), content = systemInfo.systemVersion)
             InfoText(title = stringResource(R.string.info_app_version), content = systemInfo.appVersion)
             InfoText(title = stringResource(R.string.info_android_version), content = systemInfo.androidVersion)
-            InfoText(title = stringResource(R.string.info_lsposed_version), content = lsposedVersion(xposedService).ifBlank { unknown })
+            if (showLsposedVersion) {
+                InfoText(title = stringResource(R.string.info_lsposed_version), content = lsposedVersion(xposedService).ifBlank { unknown })
+            }
             InfoText(title = stringResource(R.string.info_build_date), content = systemInfo.buildDate.ifBlank { unknown })
             InfoText(title = stringResource(R.string.info_device_model), content = systemInfo.deviceModel.ifBlank { unknown }, bottomPadding = 0.dp)
         }
@@ -154,15 +193,6 @@ private fun InfoText(title: String, content: String, bottomPadding: Dp = 24.dp) 
         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
         modifier = Modifier.padding(top = 2.dp, bottom = bottomPadding),
     )
-}
-
-@Composable
-private fun WorkModeCard() {
-    Card {
-        Column(Modifier.padding(20.dp)) {
-            Text(text = stringResource(R.string.work_mode), style = MiuixTheme.textStyles.title3)
-        }
-    }
 }
 
 private data class HomeSystemInfo(
@@ -192,3 +222,12 @@ private fun lsposedVersion(service: XposedService?): String {
         "${service.frameworkName} ${service.frameworkVersion} (${service.frameworkVersionCode}), API ${service.apiVersion}"
     }.getOrDefault("")
 }
+
+@Composable
+private fun workModeLabel(value: String): String = stringResource(
+    if (value == Config.CLIPBOARD_MONITOR_MODE_SHIZUKU) {
+        R.string.clipboard_monitor_mode_shizuku
+    } else {
+        R.string.clipboard_monitor_mode_lsposed
+    },
+)

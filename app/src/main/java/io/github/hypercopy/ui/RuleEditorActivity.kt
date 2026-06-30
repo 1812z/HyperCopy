@@ -105,12 +105,12 @@ private fun RuleEditorScreen(
     var parseAfterRedirect by remember { mutableStateOf(editingRule?.parseAfterRedirect ?: false) }
     val isLinkDirectOpen = category == RuleCategory.Link && actionMode == RuleActionMode.DirectOpen
     val isCategoryDirectAppOpen = category != RuleCategory.Link && openMode == CategoryOpenMode.DirectApp
-    val isDirectAppOpen = isLinkDirectOpen || isCategoryDirectAppOpen
-    val usesTemplate = when {
+    val usesExtraction = when {
         category == RuleCategory.Link -> actionMode == RuleActionMode.ParseAndOpen
             || (actionMode == RuleActionMode.WebViewResolveAndOpen && parseAfterRedirect)
         else -> openMode == CategoryOpenMode.Url
     }
+    val usesTemplate = usesExtraction || isLinkDirectOpen
 
     Scaffold { paddingValues ->
         Column(
@@ -148,7 +148,7 @@ private fun RuleEditorScreen(
                         onAdd = { triggerRegexes += "" },
                         onRemove = { index -> if (triggerRegexes.size > 1) triggerRegexes.removeAt(index) },
                     )
-                    if (usesTemplate) {
+                    if (usesExtraction) {
                         RegexListEditor(
                             title = stringResource(R.string.editor_label_extraction_regexes),
                             values = extractionRegexes,
@@ -156,6 +156,8 @@ private fun RuleEditorScreen(
                             onAdd = { extractionRegexes += "" },
                             onRemove = { index -> if (extractionRegexes.size > 1) extractionRegexes.removeAt(index) },
                         )
+                    }
+                    if (usesTemplate) {
                         TextField(
                             value = targetTemplate,
                             onValueChange = { targetTemplate = it },
@@ -168,7 +170,7 @@ private fun RuleEditorScreen(
                         TextField(
                             value = packageName,
                             onValueChange = { packageName = it },
-                            label = stringResource(if (isLinkDirectOpen) R.string.editor_label_package_name_required else R.string.editor_label_package_name_optional),
+                            label = stringResource(R.string.editor_label_package_name_optional),
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
                         )
@@ -181,7 +183,11 @@ private fun RuleEditorScreen(
                     TextButton(
                         text = stringResource(R.string.action_save_rule),
                         onClick = {
-                            if (isDirectAppOpen && packageName.isBlank()) {
+                            if (isLinkDirectOpen && targetTemplate.isBlank() && packageName.isBlank()) {
+                                Toast.makeText(context, R.string.rule_toast_template_or_package_required, Toast.LENGTH_SHORT).show()
+                                return@TextButton
+                            }
+                            if (isCategoryDirectAppOpen && packageName.isBlank()) {
                                 Toast.makeText(context, R.string.rule_toast_package_required, Toast.LENGTH_SHORT).show()
                                 return@TextButton
                             }
@@ -191,9 +197,9 @@ private fun RuleEditorScreen(
                                 category = category,
                                 actionMode = if (category == RuleCategory.Link) actionMode else RuleActionMode.DirectOpen,
                                 matchRegex = triggerRegexes.firstNonBlankOr(".*"),
-                                parameterRegex = if (usesTemplate) extractionRegexes.firstNonBlankOr(".*(.+).*") else "",
+                                parameterRegex = if (usesExtraction) extractionRegexes.firstNonBlankOr(".*(.+).*") else "",
                                 triggerRegexes = triggerRegexes.filter { it.isNotBlank() }.ifEmpty { listOf(".*") },
-                                extractionRegexes = if (usesTemplate) extractionRegexes.filter { it.isNotBlank() }.ifEmpty { listOf(".*(.+).*") } else emptyList(),
+                                extractionRegexes = if (usesExtraction) extractionRegexes.filter { it.isNotBlank() }.ifEmpty { listOf(".*(.+).*") } else emptyList(),
                                 parseAfterRedirect = category == RuleCategory.Link && actionMode == RuleActionMode.WebViewResolveAndOpen && parseAfterRedirect,
                                 target = RuleTarget(
                                     type = if (targetTemplate.startsWith("intent://", true)) RuleTargetType.Intent else RuleTargetType.Url,
