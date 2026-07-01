@@ -1,5 +1,7 @@
 package io.github.hypercopy.data
 
+import io.github.hypercopy.Config
+import io.github.hypercopy.HyperLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -8,15 +10,71 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 /**
- * 远端规则仓库。从 https://github.com/1812z/HyperCopy_Rules 拉取 [link] / [text] 两个目录下的
- * JSON 规则文件，文件名约定：规则名称_应用包名.json。
+ * 远端规则仓库。支持从 GitHub API 或加速源拉取规则。
  */
-class CloudRulesRepository {
+class CloudRulesRepository(private val source: String = Config.CLOUD_SOURCE_GITHUB) {
 
     suspend fun listRules(folder: String): List<CloudRule> = withContext(Dispatchers.IO) {
-        val endpoint = "$API_BASE/repos/$REPO/contents/$folder"
+        HyperLog.d(TAG, "listRules: source=$source, folder=$folder")
+        when (source) {
+            Config.CLOUD_SOURCE_ACCELERATED -> listRulesFromAccelerated(folder)
+            else -> listRulesFromGithub(folder)
+        }
+    }
+
+    suspend fun downloadRule(cloudRule: CloudRule): RuleConfig = withContext(Dispatchers.IO) {
+        HyperLog.d(TAG, "downloadRule: url=${cloudRule.downloadUrl}")
+        when (source) {
+            Config.CLOUD_SOURCE_ACCELERATED -> downloadRuleFromAccelerated(cloudRule)
+            else -> downloadRuleFromGithub(cloudRule)
+        }
+    }
+
+    // ===== 加速源 =====
+
+    private fun listRulesFromAccelerated(folder: String): List<CloudRule> {
+        val indexUrl = "$ACCELERATED_BASE/index.json"
+        HyperLog.d(TAG, "listRulesFromAccelerated: $indexUrl")
+        val (status, body) = httpGet(indexUrl)
+        if (status != HttpURLConnection.HTTP_OK) throw CloudRuleException(CloudRuleError.LoadFailed)
+        val array = JSONArray(body)
+        return buildList {
+            for (i in 0 until array.length()) {
+                val entry = array.optJSONObject(i) ?: continue
+                val file = entry.optString("file")
+                if (!file.contains("/$folder/")) continue
+                val fileName = file.substringAfterLast("/")
+                val parsed = parseRuleFileName(fileName) ?: continue
+                add(
+                    CloudRule(
+                        name = entry.optString("name", parsed.name),
+                        packageName = parsed.packageName,
+                        fileName = fileName,
+                        folder = folder,
+                        downloadUrl = "$ACCELERATED_BASE/${file.removePrefix("rules/")}",
+                        size = 0L,
+                    ),
+                )
+            }
+        }
+    }
+
+    private fun downloadRuleFromAccelerated(cloudRule: CloudRule): RuleConfig {
+        if (cloudRule.downloadUrl.isBlank()) throw CloudRuleException(CloudRuleError.MissingDownloadUrl)
+        HyperLog.d(TAG, "downloadRuleFromAccelerated: ${cloudRule.downloadUrl}")
+        val raw = readText(cloudRule.downloadUrl)
+        val parsed = parseRuleContent(raw)
+        val stableId = "cloud_${cloudRule.folder}_${cloudRule.fileNameWithoutExt()}"
+        val category = resolveCategory(cloudRule.folder, parsed.category)
+        return parsed.copy(id = stableId, name = cloudRule.name, category = category)
+    }
+
+    // ===== GitHub =====
+
+    private fun listRulesFromGithub(folder: String): List<CloudRule> {
+        val endpoint = "$GITHUB_API_BASE/repos/$REPO/contents/$folder"
         val response = readJsonArray(endpoint)
-        buildList {
+        return buildList {
             for (index in 0 until response.length()) {
                 val entry = response.optJSONObject(index) ?: continue
                 if (entry.optString("type") != "file") continue
@@ -37,15 +95,16 @@ class CloudRulesRepository {
         }
     }
 
-    suspend fun downloadRule(cloudRule: CloudRule): RuleConfig = withContext(Dispatchers.IO) {
+    private fun downloadRuleFromGithub(cloudRule: CloudRule): RuleConfig {
         if (cloudRule.downloadUrl.isBlank()) throw CloudRuleException(CloudRuleError.MissingDownloadUrl)
         val raw = readText(cloudRule.downloadUrl)
         val parsed = parseRuleContent(raw)
-        // 以云端来源作为稳定 ID，重复下载为更新而非新增
         val stableId = "cloud_${cloudRule.folder}_${cloudRule.fileNameWithoutExt()}"
         val category = resolveCategory(cloudRule.folder, parsed.category)
-        parsed.copy(id = stableId, name = cloudRule.name, category = category)
+        return parsed.copy(id = stableId, name = cloudRule.name, category = category)
     }
+
+    // ===== 通用 =====
 
     private fun parseRuleContent(text: String): RuleConfig {
         if (text.isBlank()) return RuleConfig(name = "", matchRegex = "", parameterRegex = "", target = RuleTarget(type = RuleTargetType.Url, template = ""))
@@ -94,6 +153,7 @@ class CloudRulesRepository {
     private fun httpGet(url: String): HttpResult {
         var connection: HttpURLConnection? = null
         return try {
+            HyperLog.d(TAG, "httpGet: $url")
             connection = (URL(url).openConnection() as HttpURLConnection).apply {
                 requestMethod = "GET"
                 connectTimeout = TIMEOUT_MS
@@ -107,8 +167,10 @@ class CloudRulesRepository {
                 ?.bufferedReader()
                 ?.use { it.readText() }
                 .orEmpty()
+            HyperLog.d(TAG, "httpGet: code=$code, body.length=${body.length}")
             HttpResult(code, body)
         } catch (e: Exception) {
+            HyperLog.e(TAG, "httpGet failed: $url", e)
             throw CloudRuleException(CloudRuleError.NetworkError, e)
         } finally {
             connection?.disconnect()
@@ -131,8 +193,10 @@ class CloudRulesRepository {
     private data class HttpResult(val status: Int, val body: String)
 
     companion object {
-        private const val API_BASE = "https://api.github.com"
+        private const val TAG = "HyperCopy-CloudRules"
+        private const val GITHUB_API_BASE = "https://api.github.com"
         private const val REPO = "1812z/HyperCopy_Rules"
+        private const val ACCELERATED_BASE = "https://hypercopy.1812z.top/rules"
         private const val FOLDER_LINK = "link"
         private const val FOLDER_TEXT = "text"
         private const val TIMEOUT_MS = 15_000

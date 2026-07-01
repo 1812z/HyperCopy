@@ -30,10 +30,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.hypercopy.R
+import io.github.hypercopy.Config
 import io.github.hypercopy.data.CloudRule
 import io.github.hypercopy.data.CloudRuleException
 import io.github.hypercopy.data.CloudRulesRepository
 import io.github.hypercopy.data.RuleRepository
+import io.github.hypercopy.data.SettingsRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -62,7 +64,9 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 fun CloudRulesPage(bottomContentPadding: Dp = 16.dp) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val cloudRepository = remember { CloudRulesRepository() }
+    val settingsRepository = remember { SettingsRepository(context.applicationContext) }
+    var cloudSource by remember { mutableStateOf(settingsRepository.readCloudSource()) }
+    val cloudRepository = remember(cloudSource) { CloudRulesRepository(cloudSource) }
     val localRepository = remember { RuleRepository(context.applicationContext) }
 
     var selectedCategory by remember { mutableStateOf(RulePageCategory.Link) }
@@ -186,6 +190,13 @@ fun CloudRulesPage(bottomContentPadding: Dp = 16.dp) {
             showInstalledOnly = showInstalledOnly,
             onShowInstalledOnlyChange = { showInstalledOnly = it },
             onDownloadInstalledRules = { downloadInstalledRules() },
+            cloudSource = cloudSource,
+            onCloudSourceChange = { source ->
+                settingsRepository.persistCloudSource(source)
+                cloudSource = source
+                rulesCache.clear()
+                loadRules(selectedCategory, forceRefresh = true)
+            },
         )
         RuleCategoryTabs(
             selectedCategory = selectedCategory,
@@ -253,11 +264,15 @@ private fun CloudRulesHeader(
     showInstalledOnly: Boolean,
     onShowInstalledOnlyChange: (Boolean) -> Unit,
     onDownloadInstalledRules: () -> Unit,
+    cloudSource: String,
+    onCloudSourceChange: (String) -> Unit,
 ) {
     var showPopup by remember { mutableStateOf(false) }
-    val items = listOf(
+    var showSourcePopup by remember { mutableStateOf(false) }
+    val menuItems = listOf(
         stringResource(R.string.cloud_menu_show_installed_only),
         stringResource(R.string.cloud_menu_download_installed),
+        stringResource(R.string.cloud_menu_switch_source),
     )
 
     Column(
@@ -303,19 +318,43 @@ private fun CloudRulesHeader(
                     onDismissRequest = { showPopup = false },
                 ) {
                     ListPopupColumn {
-                        items.forEachIndexed { index, text ->
+                        menuItems.forEachIndexed { index, text ->
                             DropdownImpl(
                                 text = text,
-                                optionSize = items.size,
+                                optionSize = menuItems.size,
                                 isSelected = index == 0 && showInstalledOnly,
                                 index = index,
                                 onSelectedIndexChange = {
                                     showPopup = false
-                                    if (index == 0) {
-                                        onShowInstalledOnlyChange(!showInstalledOnly)
-                                    } else {
-                                        onDownloadInstalledRules()
+                                    when (index) {
+                                        0 -> onShowInstalledOnlyChange(!showInstalledOnly)
+                                        1 -> onDownloadInstalledRules()
+                                        2 -> showSourcePopup = true
                                     }
+                                },
+                            )
+                        }
+                    }
+                }
+                OverlayListPopup(
+                    show = showSourcePopup,
+                    alignment = PopupPositionProvider.Align.End,
+                    onDismissRequest = { showSourcePopup = false },
+                ) {
+                    ListPopupColumn {
+                        val sources = listOf(
+                            Config.CLOUD_SOURCE_ACCELERATED to stringResource(R.string.cloud_source_accelerated),
+                            Config.CLOUD_SOURCE_GITHUB to stringResource(R.string.cloud_source_github),
+                        )
+                        sources.forEachIndexed { index, (value, label) ->
+                            DropdownImpl(
+                                text = label,
+                                optionSize = sources.size,
+                                isSelected = cloudSource == value,
+                                index = index,
+                                onSelectedIndexChange = {
+                                    showSourcePopup = false
+                                    onCloudSourceChange(value)
                                 },
                             )
                         }

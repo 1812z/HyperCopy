@@ -106,6 +106,15 @@ class SettingsRepository(private val context: Context) {
         )
     }
 
+    fun readCloudSource(): String {
+        return preferences().getString(Config.KEY_CLOUD_SOURCE, Config.DEFAULT_CLOUD_SOURCE)
+            ?: Config.DEFAULT_CLOUD_SOURCE
+    }
+
+    fun persistCloudSource(value: String) {
+        preferences().edit(commit = true) { putString(Config.KEY_CLOUD_SOURCE, value) }
+    }
+
     private fun desktopIconComponent() = ComponentName(context.packageName, DESKTOP_ICON_ALIAS)
 
     private fun preferences() = context.getSharedPreferences(Config.PREFS_NAME, Context.MODE_PRIVATE)

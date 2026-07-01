@@ -49,5 +49,10 @@ object Config {
     const val DEFAULT_APP_LIST_WORK_MODE = APP_LIST_WORK_MODE_BLACKLIST
     const val DEFAULT_IGNORE_JUMP_APP = true
 
+    const val KEY_CLOUD_SOURCE = "cloud_source"
+    const val CLOUD_SOURCE_GITHUB = "github"
+    const val CLOUD_SOURCE_ACCELERATED = "accelerated"
+    const val DEFAULT_CLOUD_SOURCE = CLOUD_SOURCE_ACCELERATED
+
     const val CLIPBOARD_TEXT_MAX_LENGTH = 16_384
 }

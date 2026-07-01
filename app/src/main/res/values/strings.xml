@@ -219,6 +219,9 @@
     <string name="cloud_menu_options">云规则选项</string>
     <string name="cloud_menu_show_installed_only">仅显示已安装应用</string>
     <string name="cloud_menu_download_installed">一键下载已安装应用</string>
+    <string name="cloud_menu_switch_source">切换数据源</string>
+    <string name="cloud_source_github">GitHub</string>
+    <string name="cloud_source_accelerated">加速源</string>
     <string name="cloud_toast_added">已添加：%1$s</string>
     <string name="cloud_toast_batch_added">已添加 %1$d 条规则</string>
     <string name="cloud_toast_download_failed">下载失败：%1$s</string>
