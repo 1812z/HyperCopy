@@ -87,6 +87,7 @@
     <!-- 通用操作 -->
     <string name="action_back">返回</string>
     <string name="action_cancel">取消</string>
+    <string name="action_close">关闭</string>
     <string name="action_confirm">确定</string>
     <string name="action_delete">删除</string>
     <string name="action_edit">编辑</string>
@@ -232,7 +233,11 @@
     <string name="toast_open_target_failed">打开目标应用失败</string>
     <string name="toast_shizuku_unavailable">Shizuku 不可用，请先启动 Shizuku</string>
     <string name="toast_shizuku_permission_denied">Shizuku 授权被拒绝</string>
-    <string name="toast_update_check_unconfigured">暂未配置更新检查</string>
+    <string name="update_new_version">发现新版本</string>
+    <string name="update_current_latest_version">当前版本：%1$s\n最新版本：%2$s</string>
+    <string name="update_latest_version">已是最新版本</string>
+    <string name="update_current_version">当前版本：%1$s</string>
+    <string name="update_check_failed">检查更新失败</string>
     <string name="notification_channel_jump_name">跳转通知</string>
     <string name="notification_channel_jump_description">复制命中规则后的实时跳转确认</string>
     <string name="notification_jump_title">等待跳转确认</string>

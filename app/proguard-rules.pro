@@ -19,3 +19,20 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Loaded by libxposed from META-INF/xposed/java_init.list. The class name must
+# remain stable even when release builds are obfuscated.
+-keep class io.github.hypercopy.hook.HookEntry { *; }
+
+# Keep Android component class names because some of them are launched by
+# explicit class names from hooks, shell commands, or manifest/provider glue.
+-keep class io.github.hypercopy.App { *; }
+-keep class io.github.hypercopy.ui.** extends android.app.Activity { *; }
+-keep class io.github.hypercopy.clipboard.** extends android.app.Activity { *; }
+-keep class io.github.hypercopy.clipboard.** extends android.content.BroadcastReceiver { *; }
+
+# Shizuku and libxposed use binder/service integration and generated provider
+# metadata. Preserve public API shape while still allowing unused code removal.
+-keep class rikka.shizuku.** { *; }
+-keep class moe.shizuku.** { *; }
+-keep class io.github.libxposed.** { *; }

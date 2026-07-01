@@ -9,11 +9,15 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
@@ -29,22 +33,29 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.hypercopy.App
 import io.github.hypercopy.R
 import io.github.hypercopy.clipboard.monitor.ClipboardMonitorController
 import io.github.hypercopy.data.SettingsRepository
+import io.github.hypercopy.data.UpdateCheckResult
+import io.github.hypercopy.data.UpdateRepository
 import io.github.hypercopy.ui.rules.CloudRulesPage
 import io.github.hypercopy.ui.rules.RulesPage
 import io.github.libxposed.service.XposedService
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.NavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBarItem
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.basic.rememberTopAppBarState
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -53,6 +64,7 @@ import top.yukonga.miuix.kmp.icon.extended.Backup
 import top.yukonga.miuix.kmp.icon.extended.Carrier
 import top.yukonga.miuix.kmp.icon.extended.Import
 import top.yukonga.miuix.kmp.icon.extended.Settings
+import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private enum class Tab(val icon: androidx.compose.ui.graphics.vector.ImageVector, val labelRes: Int) {
@@ -68,7 +80,9 @@ fun AppScreen(
     onColorModeChange: (AppColorMode) -> Unit = {},
 ) {
     val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
     val settingsRepository = remember { SettingsRepository(context.applicationContext) }
+    val updateRepository = remember { UpdateRepository(context.applicationContext) }
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
     ) {}
@@ -88,6 +102,8 @@ fun AppScreen(
     var jumpNotificationMode by remember {
         mutableStateOf(jumpNotificationModeFromValue(settingsRepository.readJumpNotificationMode()))
     }
+    var updateDialog by remember { mutableStateOf<UpdateDialogState?>(null) }
+    var checkingUpdate by remember { mutableStateOf(false) }
 
     DisposableEffect(Unit) {
         val listener: (XposedService?) -> Unit = { service -> xposedService = service }
@@ -97,6 +113,59 @@ fun AppScreen(
 
     LaunchedEffect(pagerState.settledPage) {
         selectedTab = tabs[pagerState.settledPage]
+    }
+
+    LaunchedEffect(Unit) {
+        if (autoCheckUpdate) {
+            checkingUpdate = true
+            val result = withContext(Dispatchers.IO) { updateRepository.checkLatestRelease() }
+            checkingUpdate = false
+            if (result is UpdateCheckResult.HasUpdate) {
+                updateDialog = UpdateDialogState(
+                    title = context.getString(R.string.update_new_version),
+                    message = context.getString(
+                        R.string.update_current_latest_version,
+                        result.currentVersion,
+                        result.release.version,
+                    ),
+                    url = result.release.url,
+                    showOpenButton = true,
+                )
+            }
+        }
+    }
+
+    fun checkUpdate(showNoUpdate: Boolean) {
+        if (checkingUpdate) return
+        checkingUpdate = true
+        coroutineScope.launch {
+            val result = withContext(Dispatchers.IO) { updateRepository.checkLatestRelease() }
+            checkingUpdate = false
+            when (result) {
+                is UpdateCheckResult.HasUpdate -> updateDialog = UpdateDialogState(
+                    title = context.getString(R.string.update_new_version),
+                    message = context.getString(
+                        R.string.update_current_latest_version,
+                        result.currentVersion,
+                        result.release.version,
+                    ),
+                    url = result.release.url,
+                    showOpenButton = true,
+                )
+
+                is UpdateCheckResult.NoUpdate -> if (showNoUpdate) {
+                    updateDialog = UpdateDialogState(
+                        title = context.getString(R.string.update_latest_version),
+                        message = context.getString(R.string.update_current_version, result.currentVersion),
+                    )
+                }
+
+                is UpdateCheckResult.Failed -> updateDialog = UpdateDialogState(
+                    title = context.getString(R.string.update_check_failed),
+                    message = localizedUpdateFailure(context.getString(R.string.update_check_failed), result.message),
+                )
+            }
+        }
     }
 
     val backgroundColor = appBackground(colorMode)
@@ -227,13 +296,7 @@ fun AppScreen(
                                         notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                                     }
                                 },
-                                onCheckUpdate = {
-                                    Toast.makeText(
-                                        context,
-                                        context.getString(R.string.toast_update_check_unconfigured),
-                                        Toast.LENGTH_SHORT,
-                                    ).show()
-                                },
+                                onCheckUpdate = { checkUpdate(showNoUpdate = true) },
                                 onOpenTheme = { context.startActivity(Intent(context, ThemeSettingsActivity::class.java)) },
                                 onOpenAppList = { context.startActivity(Intent(context, AppListActivity::class.java)) },
                                 topContentPadding = pagePadding.calculateTopPadding() + 12.dp,
@@ -243,9 +306,52 @@ fun AppScreen(
                     }
                 }
             }
+
+            updateDialog?.let { dialog ->
+                OverlayDialog(
+                    title = dialog.title,
+                    summary = dialog.message,
+                    show = true,
+                    onDismissRequest = { updateDialog = null },
+                ) {
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        TextButton(
+                            text = stringResource(R.string.action_close),
+                            onClick = { updateDialog = null },
+                            modifier = Modifier.weight(1f),
+                        )
+
+                        if (dialog.showOpenButton && dialog.url != null) {
+                            Spacer(Modifier.width(20.dp))
+                            TextButton(
+                                text = stringResource(R.string.action_open),
+                                onClick = {
+                                    updateDialog = null
+                                    uriHandler.openUri(dialog.url)
+                                },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.textButtonColorsPrimary(),
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }
+
+private fun localizedUpdateFailure(defaultMessage: String, message: String): String = when (message) {
+    "未找到 Release 版本号" -> "未找到 Release 版本号"
+    "检查更新失败" -> defaultMessage
+    else -> message
+}
+
+private data class UpdateDialogState(
+    val title: String,
+    val message: String,
+    val url: String? = null,
+    val showOpenButton: Boolean = false,
+)
 
 @Composable
 private fun BottomNavigation(
