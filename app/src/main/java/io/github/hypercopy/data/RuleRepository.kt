@@ -13,7 +13,12 @@ class RuleRepository(private val context: Context) {
     }
 
     fun saveRule(rule: RuleConfig) {
-        val rules = readRules().filterNot { it.id == rule.id } + rule
+        val currentRules = readRules()
+        val rules = if (currentRules.any { it.id == rule.id }) {
+            currentRules.map { if (it.id == rule.id) rule else it }
+        } else {
+            currentRules + rule
+        }
         persistRules(rules)
     }
 

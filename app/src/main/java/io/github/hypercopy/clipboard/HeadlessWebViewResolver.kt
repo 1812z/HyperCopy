@@ -15,14 +15,14 @@ object HeadlessWebViewResolver {
     private const val TIMEOUT_MILLIS = 3_000L
     private val handler = Handler(Looper.getMainLooper())
 
-    fun resolveAndLaunch(context: Context, url: String, packageName: String) {
+    fun resolveAndLaunch(context: Context, url: String, packageName: String, clearClipboardAfterJump: Boolean = false) {
         handler.post {
-            Resolver(context.applicationContext, url, packageName, launchWhenResolved = true).start()
+            Resolver(context.applicationContext, url, packageName, clearClipboardAfterJump, launchWhenResolved = true).start()
         }
     }
 
-    fun preload(context: Context, url: String, packageName: String): Preload {
-        val preload = Preload(context.applicationContext, url, packageName)
+    fun preload(context: Context, url: String, packageName: String, clearClipboardAfterJump: Boolean = false): Preload {
+        val preload = Preload(context.applicationContext, url, packageName, clearClipboardAfterJump)
         handler.post { preload.start() }
         return preload
     }
@@ -31,15 +31,18 @@ object HeadlessWebViewResolver {
         private val context: Context,
         private val url: String,
         private val packageName: String,
+        private val clearClipboardAfterJump: Boolean,
     ) {
         private val confirmed = AtomicBoolean(false)
         private var resolver: Resolver? = null
         private var resolvedIntent: android.content.Intent? = null
 
         internal fun start() {
-            resolver = Resolver(context, url, packageName, launchWhenResolved = false) { intent ->
+            resolver = Resolver(context, url, packageName, clearClipboardAfterJump, launchWhenResolved = false) { intent ->
                 resolvedIntent = intent
-                if (confirmed.get()) ActivityLaunchStrategy.launch(context, intent)
+                if (confirmed.get() && ActivityLaunchStrategy.launch(context, intent)) {
+                    PendingJumpCoordinator.clearClipboardIfNeeded(context, clearClipboardAfterJump)
+                }
             }.also { it.start() }
         }
 
@@ -48,7 +51,9 @@ object HeadlessWebViewResolver {
             handler.post {
                 val intent = resolvedIntent
                 if (intent != null) {
-                    ActivityLaunchStrategy.launch(context.applicationContext, intent)
+                    if (ActivityLaunchStrategy.launch(context.applicationContext, intent)) {
+                        PendingJumpCoordinator.clearClipboardIfNeeded(context, clearClipboardAfterJump)
+                    }
                 }
             }
         }
@@ -65,6 +70,7 @@ object HeadlessWebViewResolver {
         private val context: Context,
         private val url: String,
         private val packageName: String,
+        private val clearClipboardAfterJump: Boolean,
         private val launchWhenResolved: Boolean,
         private val onResolved: ((android.content.Intent) -> Unit)? = null,
     ) {
@@ -115,7 +121,9 @@ object HeadlessWebViewResolver {
             Log.d(TAG, "headless webview resolved: $targetUrl")
             val intent = targetUrl.toViewIntent(targetPackageName)
             onResolved?.invoke(intent)
-            if (launchWhenResolved) ActivityLaunchStrategy.launch(context, intent)
+            if (launchWhenResolved && ActivityLaunchStrategy.launch(context, intent)) {
+                PendingJumpCoordinator.clearClipboardIfNeeded(context, clearClipboardAfterJump)
+            }
             webView?.runCatchingDestroy()
             webView = null
         }

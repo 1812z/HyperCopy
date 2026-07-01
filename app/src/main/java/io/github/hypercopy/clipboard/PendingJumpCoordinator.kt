@@ -4,6 +4,8 @@ import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -25,33 +27,39 @@ object PendingJumpCoordinator {
     private const val CHANNEL_ID = "hypercopy_jump_live"
     private const val NOTIFICATION_ID = 2001
     private const val EXPIRE_MILLIS = 5_000L
+    private const val CLEAR_CLIPBOARD_DELAY_MILLIS = 300L
 
     private val handler = Handler(Looper.getMainLooper())
     private val nextId = AtomicLong(1L)
     private var pending: Entry? = null
 
-    fun submit(context: Context, jump: PendingJump) {
+    fun submit(context: Context, jump: PendingJump, clearClipboardAfterJump: Boolean = false) {
         val appContext = context.applicationContext
         val notificationMode = SettingsRepository(appContext).readJumpNotificationMode()
         if (notificationMode == Config.JUMP_NOTIFICATION_MODE_NONE) {
-            launch(appContext, jump)
+            launch(appContext, jump, clearClipboardAfterJump)
             return
         }
         if (!canPostNotification(appContext)) {
             Log.d(TAG, "jump notification permission missing, launch directly")
-            launch(appContext, jump)
+            launch(appContext, jump, clearClipboardAfterJump)
             return
         }
 
         val id = nextId.getAndIncrement()
-        val entry = Entry(id, jump)
+        val entry = Entry(id, jump, clearClipboardAfterJump)
         entry.expireRunnable = Runnable { expire(appContext, id) }
         pending?.cancel(appContext)
         pending = entry
         createChannel(appContext)
         postNotification(appContext, entry, notificationMode)
         if (jump is PendingJump.WebViewJump) {
-            entry.preload = HeadlessWebViewResolver.preload(appContext, jump.url, jump.packageName)
+            entry.preload = HeadlessWebViewResolver.preload(
+                appContext,
+                jump.url,
+                jump.packageName,
+                clearClipboardAfterJump,
+            )
         }
         handler.postDelayed(entry.expireRunnable, EXPIRE_MILLIS)
     }
@@ -64,9 +72,9 @@ object PendingJumpCoordinator {
         NotificationManagerCompat.from(appContext).cancel(NOTIFICATION_ID)
         handler.removeCallbacks(entry.expireRunnable)
         when (val jump = entry.jump) {
-            is PendingJump.IntentJump -> ActivityLaunchStrategy.launch(appContext, jump.intent)
+            is PendingJump.IntentJump -> if (ActivityLaunchStrategy.launch(appContext, jump.intent)) clearClipboardIfNeeded(appContext, entry.clearClipboardAfterJump)
             is PendingJump.WebViewJump -> entry.preload?.continueLaunch(appContext)
-                ?: HeadlessWebViewResolver.resolveAndLaunch(appContext, jump.url, jump.packageName)
+                ?: HeadlessWebViewResolver.resolveAndLaunch(appContext, jump.url, jump.packageName, entry.clearClipboardAfterJump)
         }
     }
 
@@ -78,10 +86,10 @@ object PendingJumpCoordinator {
         Log.d(TAG, "jump notification expired")
     }
 
-    private fun launch(context: Context, jump: PendingJump) {
+    private fun launch(context: Context, jump: PendingJump, clearClipboardAfterJump: Boolean) {
         when (jump) {
-            is PendingJump.IntentJump -> ActivityLaunchStrategy.launch(context, jump.intent)
-            is PendingJump.WebViewJump -> HeadlessWebViewResolver.resolveAndLaunch(context, jump.url, jump.packageName)
+            is PendingJump.IntentJump -> if (ActivityLaunchStrategy.launch(context, jump.intent)) clearClipboardIfNeeded(context, clearClipboardAfterJump)
+            is PendingJump.WebViewJump -> HeadlessWebViewResolver.resolveAndLaunch(context, jump.url, jump.packageName, clearClipboardAfterJump)
         }
     }
 
@@ -120,6 +128,18 @@ object PendingJumpCoordinator {
         NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
     }
 
+    internal fun clearClipboardIfNeeded(context: Context, clearClipboardAfterJump: Boolean) {
+        if (!clearClipboardAfterJump) return
+        handler.postDelayed({
+            val clipboard = context.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                clipboard.clearPrimaryClip()
+            } else {
+                clipboard.setPrimaryClip(ClipData.newPlainText("", ""))
+            }
+        }, CLEAR_CLIPBOARD_DELAY_MILLIS)
+    }
+
     private fun createChannel(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val channel = NotificationChannel(
@@ -150,6 +170,7 @@ object PendingJumpCoordinator {
     private data class Entry(
         val id: Long,
         val jump: PendingJump,
+        val clearClipboardAfterJump: Boolean,
         var preload: HeadlessWebViewResolver.Preload? = null,
         var expireRunnable: Runnable = Runnable {},
     ) {

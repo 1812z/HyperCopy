@@ -107,10 +107,12 @@ private fun RuleEditorScreen(
     var openMode by remember { mutableStateOf(openModeFromRule(editingRule, category)) }
     var actionMode by remember { mutableStateOf(editingRule?.actionMode ?: defaults.actionMode) }
     var parseAfterRedirect by remember { mutableStateOf(editingRule?.parseAfterRedirect ?: false) }
+    var clearClipboardAfterJump by remember { mutableStateOf(editingRule?.clearClipboardAfterJump ?: false) }
     val isLinkDirectOpen = category == RuleCategory.Link && actionMode == RuleActionMode.DirectOpen
     val isCategoryDirectAppOpen = category != RuleCategory.Link && openMode == CategoryOpenMode.DirectApp
     val usesExtraction = when {
         category == RuleCategory.Link -> actionMode == RuleActionMode.ParseAndOpen
+            || isLinkDirectOpen
             || (actionMode == RuleActionMode.WebViewResolveAndOpen && parseAfterRedirect)
         else -> openMode == CategoryOpenMode.Url
     }
@@ -165,6 +167,7 @@ private fun RuleEditorScreen(
                             ParseAfterRedirectSwitch(checked = parseAfterRedirect, onCheckedChange = { parseAfterRedirect = it })
                         }
                     }
+                    ClearClipboardAfterJumpSwitch(checked = clearClipboardAfterJump, onCheckedChange = { clearClipboardAfterJump = it })
                     RegexListEditor(
                         title = stringResource(R.string.editor_label_trigger_regexes),
                         values = triggerRegexes,
@@ -225,6 +228,7 @@ private fun RuleEditorScreen(
                                 triggerRegexes = triggerRegexes.filter { it.isNotBlank() }.ifEmpty { listOf(".*") },
                                 extractionRegexes = if (usesExtraction) extractionRegexes.filter { it.isNotBlank() }.ifEmpty { listOf(".*(.+).*") } else emptyList(),
                                 parseAfterRedirect = category == RuleCategory.Link && actionMode == RuleActionMode.WebViewResolveAndOpen && parseAfterRedirect,
+                                clearClipboardAfterJump = clearClipboardAfterJump,
                                 target = RuleTarget(
                                     type = if (targetTemplate.startsWith("intent://", true)) RuleTargetType.Intent else RuleTargetType.Url,
                                     template = if (usesTemplate) targetTemplate else "",
@@ -242,6 +246,21 @@ private fun RuleEditorScreen(
             }
             PlaceholderHelpCard()
         }
+    }
+}
+
+@Composable
+private fun ClearClipboardAfterJumpSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(text = stringResource(R.string.editor_clear_clipboard_after_jump), style = MiuixTheme.textStyles.headline1)
+            Text(text = stringResource(R.string.editor_clear_clipboard_after_jump_summary), style = MiuixTheme.textStyles.body2)
+        }
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
 

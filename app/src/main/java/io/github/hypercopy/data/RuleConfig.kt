@@ -17,6 +17,7 @@ data class RuleConfig(
     val extractionRegexes: List<String> = emptyList(),
     val parseAfterRedirect: Boolean = false,
     val target: RuleTarget,
+    val clearClipboardAfterJump: Boolean = false,
     val createdAt: Long = System.currentTimeMillis(),
 )
 
@@ -55,6 +56,7 @@ fun RuleConfig.toJson(): JSONObject = JSONObject()
     .put("triggerRegexes", triggerRegexes.toJsonArray())
     .put("extractionRegexes", extractionRegexes.toJsonArray())
     .put("parseAfterRedirect", parseAfterRedirect)
+    .also { json -> if (clearClipboardAfterJump) json.put("clearClipboardAfterJump", true) }
     .put("target", target.toJson())
     .put("createdAt", createdAt)
 
@@ -80,6 +82,7 @@ fun ruleConfigFromJson(json: JSONObject): RuleConfig = RuleConfig(
     extractionRegexes = json.optStringArray("extractionRegexes"),
     parseAfterRedirect = json.optBoolean("parseAfterRedirect", false),
     target = ruleTargetFromJson(json.optJSONObject("target") ?: JSONObject()),
+    clearClipboardAfterJump = json.optBoolean("clearClipboardAfterJump", false),
     createdAt = json.optLong("createdAt", System.currentTimeMillis()),
 )
 

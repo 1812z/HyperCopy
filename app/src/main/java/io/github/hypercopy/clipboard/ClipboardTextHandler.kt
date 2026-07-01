@@ -34,7 +34,12 @@ object ClipboardTextHandler {
         if (match != null) {
             submitJump(
                 appContext,
-                PendingJump.IntentJump(match.rule.name, match.intent, match.rule.target.packageName),
+                PendingJump.IntentJump(
+                    title = match.rule.name,
+                    intent = match.intent,
+                    packageName = match.rule.target.packageName,
+                ),
+                match.rule.clearClipboardAfterJump,
             )
             return
         }
@@ -44,10 +49,11 @@ object ClipboardTextHandler {
             RuleActionMode.DirectOpen -> submitJump(
                 appContext,
                 PendingJump.IntentJump(
-                    rule.name,
-                    rule.directIntent(input, appContext.packageManager),
-                    rule.target.packageName,
+                    title = rule.name,
+                    intent = rule.directIntent(input, appContext.packageManager),
+                    packageName = rule.target.packageName,
                 ),
+                rule.clearClipboardAfterJump,
             )
             RuleActionMode.WebViewResolveAndOpen -> startWebViewResolve(appContext, rule, input)
             RuleActionMode.ParseAndOpen -> return
@@ -67,15 +73,31 @@ object ClipboardTextHandler {
                     Log.d(TAG, "redirect parse no parameters: $redirectedUrl")
                     return@thread
                 }
-                submitJump(context, PendingJump.IntentJump(rule.name, intent, rule.target.packageName))
+                submitJump(
+                    context,
+                    PendingJump.IntentJump(
+                        title = rule.name,
+                        intent = intent,
+                        packageName = rule.target.packageName,
+                    ),
+                    rule.clearClipboardAfterJump,
+                )
             }
             return
         }
-        submitJump(context, PendingJump.WebViewJump(rule.name, normalizeUrl(input), rule.target.packageName))
+        submitJump(
+            context,
+            PendingJump.WebViewJump(
+                title = rule.name,
+                url = normalizeUrl(input),
+                packageName = rule.target.packageName,
+            ),
+            rule.clearClipboardAfterJump,
+        )
     }
 
-    private fun submitJump(context: Context, jump: PendingJump) {
-        PendingJumpCoordinator.submit(context, jump)
+    private fun submitJump(context: Context, jump: PendingJump, clearClipboardAfterJump: Boolean) {
+        PendingJumpCoordinator.submit(context, jump, clearClipboardAfterJump)
     }
 
     private fun normalizeUrl(text: String): String {

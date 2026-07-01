@@ -152,6 +152,8 @@
     <string name="editor_open_url">打开 URL</string>
     <string name="editor_parse_after_redirect">跳转后解析</string>
     <string name="editor_parse_after_redirect_summary">只跟随一次 HTTP 重定向，不加载网页，再用展开后的 URL 提取参数并跳转</string>
+    <string name="editor_clear_clipboard_after_jump">跳转后清空剪贴板</string>
+    <string name="editor_clear_clipboard_after_jump_summary">确认跳转后自动清空当前剪贴板，避免进入目标软件后再次询问跳转</string>
     <string name="editor_action_add_regex">添加正则</string>
     <string name="editor_placeholder_help_title">占位符说明</string>
     <string name="editor_placeholder_help_input"><![CDATA[${input}：完整复制内容。]]></string>
