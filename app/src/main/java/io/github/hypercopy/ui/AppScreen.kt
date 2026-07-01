@@ -85,8 +85,8 @@ fun AppScreen(
         onDispose { App.removeServiceListener(listener) }
     }
 
-    LaunchedEffect(pagerState.currentPage) {
-        selectedTab = tabs[pagerState.currentPage]
+    LaunchedEffect(pagerState.settledPage) {
+        selectedTab = tabs[pagerState.settledPage]
     }
 
     val backgroundColor = appBackground(colorMode)
