@@ -32,13 +32,23 @@ object ClipboardTextHandler {
         val rules = RuleRepository(appContext).readRules()
         val match = matchRule(input, rules)
         if (match != null) {
-            submitJump(appContext, PendingJump.IntentJump(match.rule.name, match.intent))
+            submitJump(
+                appContext,
+                PendingJump.IntentJump(match.rule.name, match.intent, match.rule.target.packageName),
+            )
             return
         }
 
         val rule = findRule(input, rules) ?: return
         when (rule.actionMode) {
-            RuleActionMode.DirectOpen -> submitJump(appContext, PendingJump.IntentJump(rule.name, rule.directIntent(input, appContext.packageManager)))
+            RuleActionMode.DirectOpen -> submitJump(
+                appContext,
+                PendingJump.IntentJump(
+                    rule.name,
+                    rule.directIntent(input, appContext.packageManager),
+                    rule.target.packageName,
+                ),
+            )
             RuleActionMode.WebViewResolveAndOpen -> startWebViewResolve(appContext, rule, input)
             RuleActionMode.ParseAndOpen -> return
         }
@@ -57,7 +67,7 @@ object ClipboardTextHandler {
                     Log.d(TAG, "redirect parse no parameters: $redirectedUrl")
                     return@thread
                 }
-                submitJump(context, PendingJump.IntentJump(rule.name, intent))
+                submitJump(context, PendingJump.IntentJump(rule.name, intent, rule.target.packageName))
             }
             return
         }

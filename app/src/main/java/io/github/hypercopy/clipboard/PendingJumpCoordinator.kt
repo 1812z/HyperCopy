@@ -115,7 +115,7 @@ object PendingJumpCoordinator {
             .build()
             .apply { flags = flags or Notification.FLAG_ONGOING_EVENT }
         if (notificationMode == Config.JUMP_NOTIFICATION_MODE_MIUI_ISLAND) {
-            MiuiSuperIslandNotification.apply(context, notification, title, content, pendingIntent)
+            MiuiSuperIslandNotification.apply(context, notification, title, content, entry.jump.packageName, pendingIntent)
         }
         NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
     }

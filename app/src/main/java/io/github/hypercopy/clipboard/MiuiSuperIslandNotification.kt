@@ -5,24 +5,27 @@ import android.app.PendingIntent
 import android.content.Context
 import android.graphics.drawable.Icon
 import android.os.Bundle
+import io.github.hypercopy.AppIconCache
 import io.github.hypercopy.R
 import org.json.JSONArray
 import org.json.JSONObject
 
 object MiuiSuperIslandNotification {
     private const val ACTION_JUMP = "miui.focus.action_jump"
-    private const val PIC_ICON = "miui.focus.pic_icon"
+    private const val PIC_APP_ICON = "miui.focus.pic_app_icon"
+    private const val PIC_ARROW_RIGHT = "miui.focus.pic_arrow_right"
 
     fun apply(
         context: Context,
         notification: Notification,
         title: String,
         content: String,
+        packageName: String,
         jumpPendingIntent: PendingIntent,
     ) {
         val extras = Bundle()
         extras.putBundle("miui.focus.actions", actionBundle(context, jumpPendingIntent))
-        extras.putBundle("miui.focus.pics", pictureBundle(context))
+        extras.putBundle("miui.focus.pics", pictureBundle(context, packageName))
         notification.extras.putAll(extras)
         notification.extras.putString("miui.focus.param", islandParams(title, content))
     }
@@ -38,10 +41,17 @@ object MiuiSuperIslandNotification {
         return actions
     }
 
-    private fun pictureBundle(context: Context): Bundle {
+    private fun pictureBundle(context: Context, packageName: String): Bundle {
         val pics = Bundle()
-        pics.putParcelable(PIC_ICON, Icon.createWithResource(context, android.R.drawable.ic_menu_upload))
+        pics.putParcelable(PIC_APP_ICON, appIcon(context, packageName))
+        pics.putParcelable(PIC_ARROW_RIGHT, Icon.createWithResource(context, R.drawable.ic_arrow_right))
         return pics
+    }
+
+    private fun appIcon(context: Context, packageName: String): Icon {
+        AppIconCache.loadNow(context, packageName)?.let { return Icon.createWithBitmap(it) }
+        val moduleIcon = context.applicationInfo.icon.takeIf { it != 0 } ?: android.R.drawable.ic_menu_upload
+        return Icon.createWithResource(context, moduleIcon)
     }
 
     private fun islandParams(title: String, content: String): String {
@@ -57,7 +67,7 @@ object MiuiSuperIslandNotification {
                     .put("enableFloat", true)
                     .put("isShowNotification", true)
                     .put("islandFirstFloat", true)
-                    .put("tickerPic", PIC_ICON)
+                    .put("tickerPic", PIC_APP_ICON)
                     .put(
                         "param_island",
                         JSONObject()
@@ -78,7 +88,7 @@ object MiuiSuperIslandNotification {
                                                 "picInfo",
                                                 JSONObject()
                                                     .put("type", 1)
-                                                    .put("pic", PIC_ICON),
+                                                    .put("pic", PIC_APP_ICON),
                                             )
                                             .put(
                                                 "miui.focus.paramtextInfo",
@@ -93,7 +103,7 @@ object MiuiSuperIslandNotification {
                                         "picInfo",
                                         JSONObject()
                                             .put("type", 1)
-                                            .put("pic", PIC_ICON),
+                                            .put("pic", PIC_ARROW_RIGHT),
                                     ),
                             )
                             .put(
@@ -102,7 +112,7 @@ object MiuiSuperIslandNotification {
                                     "picInfo",
                                     JSONObject()
                                         .put("type", 1)
-                                        .put("pic", PIC_ICON)
+                                        .put("pic", PIC_APP_ICON)
                                         .put("loop", false)
                                         .put("autoplay", false)
                                         .put("number", 0),
@@ -120,7 +130,7 @@ object MiuiSuperIslandNotification {
                                 "animIconInfo",
                                 JSONObject()
                                     .put("type", 0)
-                                    .put("src", PIC_ICON)
+                                    .put("src", PIC_APP_ICON)
                                     .put("loop", true)
                                     .put("autoplay", true),
                             )
