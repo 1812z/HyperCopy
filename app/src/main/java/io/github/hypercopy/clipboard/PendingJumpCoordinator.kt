@@ -27,8 +27,6 @@ object PendingJumpCoordinator {
     private const val CHANNEL_ID = "hypercopy_jump_live"
     private const val NOTIFICATION_ID = 2001
     private const val EXPIRE_MILLIS = 5_000L
-    private const val CLEAR_CLIPBOARD_DELAY_MILLIS = 300L
-
     private val handler = Handler(Looper.getMainLooper())
     private val nextId = AtomicLong(1L)
     private var pending: Entry? = null
@@ -130,14 +128,12 @@ object PendingJumpCoordinator {
 
     internal fun clearClipboardIfNeeded(context: Context, clearClipboardAfterJump: Boolean) {
         if (!clearClipboardAfterJump) return
-        handler.postDelayed({
-            val clipboard = context.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                clipboard.clearPrimaryClip()
-            } else {
-                clipboard.setPrimaryClip(ClipData.newPlainText("", ""))
-            }
-        }, CLEAR_CLIPBOARD_DELAY_MILLIS)
+        val clipboard = context.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            clipboard.clearPrimaryClip()
+        } else {
+            clipboard.setPrimaryClip(ClipData.newPlainText("", ""))
+        }
     }
 
     private fun createChannel(context: Context) {
