@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.content.BroadcastReceiver
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -11,6 +12,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Handler
+import android.os.HandlerThread
 import android.os.Looper
 import android.app.Notification
 import androidx.core.app.NotificationCompat
@@ -19,15 +21,21 @@ import androidx.core.content.ContextCompat
 import io.github.hypercopy.Config
 import io.github.hypercopy.HyperLog
 import io.github.hypercopy.R
+import io.github.hypercopy.clipboard.monitor.ClipboardFocusRequester
 import io.github.hypercopy.data.SettingsRepository
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.TimeUnit
 
 object PendingJumpCoordinator {
     private const val TAG = "HyperCopy"
     private const val CHANNEL_ID = "hypercopy_jump_live"
     private const val NOTIFICATION_ID = 2001
     private const val EXPIRE_MILLIS = 5_000L
+    private const val CLIPBOARD_CLEAR_TIMEOUT_MILLIS = 500L
+    private const val SHIZUKU_FOREGROUND_CLEAR_TIMEOUT_MILLIS = 1_200L
     private val handler = Handler(Looper.getMainLooper())
+    private val clipboardClearHandler = Handler(HandlerThread("HyperCopyClipboardClear").apply { start() }.looper)
     private val nextId = AtomicLong(1L)
     private var pending: Entry? = null
 
@@ -70,7 +78,9 @@ object PendingJumpCoordinator {
         NotificationManagerCompat.from(appContext).cancel(NOTIFICATION_ID)
         handler.removeCallbacks(entry.expireRunnable)
         when (val jump = entry.jump) {
-            is PendingJump.IntentJump -> if (ActivityLaunchStrategy.launch(appContext, jump.intent)) clearClipboardIfNeeded(appContext, entry.clearClipboardAfterJump)
+            is PendingJump.IntentJump -> launchAfterClipboardClear(appContext, entry.clearClipboardAfterJump) {
+                ActivityLaunchStrategy.launch(appContext, jump.intent)
+            }
             is PendingJump.WebViewJump -> entry.preload?.continueLaunch(appContext)
                 ?: HeadlessWebViewResolver.resolveAndLaunch(appContext, jump.url, jump.packageName, entry.clearClipboardAfterJump)
         }
@@ -86,7 +96,9 @@ object PendingJumpCoordinator {
 
     private fun launch(context: Context, jump: PendingJump, clearClipboardAfterJump: Boolean) {
         when (jump) {
-            is PendingJump.IntentJump -> if (ActivityLaunchStrategy.launch(context, jump.intent)) clearClipboardIfNeeded(context, clearClipboardAfterJump)
+            is PendingJump.IntentJump -> launchAfterClipboardClear(context, clearClipboardAfterJump) {
+                ActivityLaunchStrategy.launch(context, jump.intent)
+            }
             is PendingJump.WebViewJump -> HeadlessWebViewResolver.resolveAndLaunch(context, jump.url, jump.packageName, clearClipboardAfterJump)
         }
     }
@@ -128,12 +140,83 @@ object PendingJumpCoordinator {
 
     internal fun clearClipboardIfNeeded(context: Context, clearClipboardAfterJump: Boolean) {
         if (!clearClipboardAfterJump) return
-        val clipboard = context.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            clipboard.clearPrimaryClip()
-        } else {
-            clipboard.setPrimaryClip(ClipData.newPlainText("", ""))
+        if (clearClipboardByLsposed(context)) return
+        writeEmptyClipboardByApp(context)
+    }
+
+    internal fun launchAfterClipboardClear(context: Context, clearClipboardAfterJump: Boolean, launch: () -> Unit) {
+        if (!clearClipboardAfterJump) {
+            launch()
+            return
         }
+        if (clearClipboardByLsposed(context)) {
+            launch()
+            return
+        }
+        if (launchAfterShizukuForegroundClear(context, launch)) return
+        clearClipboardIfNeeded(context, clearClipboardAfterJump)
+        launch()
+    }
+
+    private fun clearClipboardByLsposed(context: Context): Boolean {
+        if (SettingsRepository(context.applicationContext).readClipboardMonitorMode() != Config.CLIPBOARD_MONITOR_MODE_LSPOSED) return false
+        val latch = CountDownLatch(1)
+        var cleared = false
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                cleared = resultCode == android.app.Activity.RESULT_OK
+                latch.countDown()
+            }
+        }
+        return runCatching {
+            context.applicationContext.sendOrderedBroadcast(
+                Intent(Config.ACTION_CLEAR_CLIPBOARD)
+                    .setPackage("android")
+                    .addFlags(Intent.FLAG_RECEIVER_FOREGROUND),
+                Config.PERMISSION_CLEAR_CLIPBOARD,
+                receiver,
+                clipboardClearHandler,
+                android.app.Activity.RESULT_CANCELED,
+                null,
+                null,
+            )
+            latch.await(CLIPBOARD_CLEAR_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
+            if (cleared) HyperLog.d(TAG, "clipboard cleared by LSPosed") else HyperLog.d(TAG, "LSPosed clipboard clear did not complete")
+            cleared
+        }.getOrElse { throwable ->
+            HyperLog.d(TAG, "LSPosed clipboard clear exception", throwable)
+            false
+        }
+    }
+
+    private fun launchAfterShizukuForegroundClear(context: Context, launch: () -> Unit): Boolean {
+        if (SettingsRepository(context.applicationContext).readClipboardMonitorMode() != Config.CLIPBOARD_MONITOR_MODE_SHIZUKU) return false
+        var completed = false
+        val token = ClipboardFocusRequester.requestClear(context.applicationContext) { success ->
+            if (completed) return@requestClear
+            completed = true
+            if (success) {
+                HyperLog.d(TAG, "clipboard replaced with empty text by Shizuku foreground")
+            } else {
+                writeEmptyClipboardByApp(context)
+            }
+            launch()
+        } ?: return false
+        handler.postDelayed({
+            if (completed) return@postDelayed
+            completed = true
+            ClipboardFocusRequester.cancelClearToken(token)
+            HyperLog.d(TAG, "Shizuku foreground clipboard clear timed out")
+            writeEmptyClipboardByApp(context)
+            launch()
+        }, SHIZUKU_FOREGROUND_CLEAR_TIMEOUT_MILLIS)
+        return true
+    }
+
+    private fun writeEmptyClipboardByApp(context: Context) {
+        val clipboard = context.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        clipboard.setPrimaryClip(ClipData.newPlainText("", ""))
+        HyperLog.d(TAG, "clipboard replaced with empty text by app")
     }
 
     private fun createChannel(context: Context) {

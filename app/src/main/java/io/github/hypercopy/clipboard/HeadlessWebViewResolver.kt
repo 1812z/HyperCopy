@@ -40,8 +40,10 @@ object HeadlessWebViewResolver {
         internal fun start() {
             resolver = Resolver(context, url, packageName, clearClipboardAfterJump, launchWhenResolved = false) { intent ->
                 resolvedIntent = intent
-                if (confirmed.get() && ActivityLaunchStrategy.launch(context, intent)) {
-                    PendingJumpCoordinator.clearClipboardIfNeeded(context, clearClipboardAfterJump)
+                if (confirmed.get()) {
+                    PendingJumpCoordinator.launchAfterClipboardClear(context, clearClipboardAfterJump) {
+                        ActivityLaunchStrategy.launch(context, intent)
+                    }
                 }
             }.also { it.start() }
         }
@@ -51,8 +53,8 @@ object HeadlessWebViewResolver {
             handler.post {
                 val intent = resolvedIntent
                 if (intent != null) {
-                    if (ActivityLaunchStrategy.launch(context.applicationContext, intent)) {
-                        PendingJumpCoordinator.clearClipboardIfNeeded(context, clearClipboardAfterJump)
+                    PendingJumpCoordinator.launchAfterClipboardClear(context, clearClipboardAfterJump) {
+                        ActivityLaunchStrategy.launch(context.applicationContext, intent)
                     }
                 }
             }
@@ -124,8 +126,10 @@ object HeadlessWebViewResolver {
             HyperLog.d(TAG, "headless webview resolved: $targetUrl")
             val intent = targetUrl.toViewIntent(targetPackageName)
             onResolved?.invoke(intent)
-            if (launchWhenResolved && ActivityLaunchStrategy.launch(context, intent)) {
-                PendingJumpCoordinator.clearClipboardIfNeeded(context, clearClipboardAfterJump)
+            if (launchWhenResolved) {
+                PendingJumpCoordinator.launchAfterClipboardClear(context, clearClipboardAfterJump) {
+                    ActivityLaunchStrategy.launch(context, intent)
+                }
             }
             webView?.runCatchingDestroy()
             webView = null

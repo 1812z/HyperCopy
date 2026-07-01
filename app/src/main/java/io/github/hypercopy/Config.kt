@@ -15,7 +15,9 @@ object Config {
     const val KEY_APP_LIST_PACKAGES = "app_list_packages"
 
     const val ACTION_HANDLE_CLIPBOARD_TEXT = "io.github.hypercopy.action.HANDLE_CLIPBOARD_TEXT"
+    const val ACTION_CLEAR_CLIPBOARD = "io.github.hypercopy.action.CLEAR_CLIPBOARD"
     const val ACTION_CONFIRM_JUMP = "io.github.hypercopy.action.CONFIRM_JUMP"
+    const val PERMISSION_CLEAR_CLIPBOARD = "io.github.hypercopy.permission.CLEAR_CLIPBOARD"
     const val EXTRA_CLIPBOARD_TEXT = "io.github.hypercopy.extra.CLIPBOARD_TEXT"
     const val EXTRA_CLIPBOARD_SOURCE = "io.github.hypercopy.extra.CLIPBOARD_SOURCE"
     const val EXTRA_PENDING_JUMP_ID = "io.github.hypercopy.extra.PENDING_JUMP_ID"

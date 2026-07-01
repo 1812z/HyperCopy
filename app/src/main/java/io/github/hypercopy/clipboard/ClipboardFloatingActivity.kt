@@ -17,7 +17,7 @@ class ClipboardFloatingActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (!ClipboardFocusRequester.consumeToken(intent.getStringExtra(EXTRA_START_TOKEN))) {
+        if (!consumeStartToken()) {
             finish()
             return
         }
@@ -37,7 +37,19 @@ class ClipboardFloatingActivity : Activity() {
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
-        if (hasFocus) readClipboardAndFinish()
+        if (!hasFocus) return
+        when (intent.getStringExtra(ClipboardFocusRequester.EXTRA_ACTION)) {
+            ClipboardFocusRequester.ACTION_CLEAR_CLIPBOARD -> clearClipboardAndFinish()
+            else -> readClipboardAndFinish()
+        }
+    }
+
+    private fun consumeStartToken(): Boolean {
+        val token = intent.getStringExtra(ClipboardFocusRequester.EXTRA_START_TOKEN)
+        return when (intent.getStringExtra(ClipboardFocusRequester.EXTRA_ACTION)) {
+            ClipboardFocusRequester.ACTION_CLEAR_CLIPBOARD -> ClipboardFocusRequester.isPendingClearToken(token)
+            else -> ClipboardFocusRequester.consumeToken(token)
+        }
     }
 
     private fun readClipboardAndFinish() {
@@ -47,9 +59,23 @@ class ClipboardFloatingActivity : Activity() {
         finishWithoutAnimation()
         if (!text.isNullOrBlank()) {
             Handler(Looper.getMainLooper()).postDelayed({
-                ClipboardTextHandler.handle(applicationContext, text, intent.getStringExtra(EXTRA_SOURCE_PACKAGE).orEmpty())
+                ClipboardTextHandler.handle(applicationContext, text, intent.getStringExtra(ClipboardFocusRequester.EXTRA_SOURCE_PACKAGE).orEmpty())
             }, HANDLE_AFTER_FINISH_DELAY_MILLIS)
         }
+    }
+
+    private fun clearClipboardAndFinish() {
+        if (handled) return
+        handled = true
+        val cleared = runCatching {
+            val manager = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            manager.setPrimaryClip(ClipData.newPlainText("", ""))
+        }.isSuccess
+        ClipboardFocusRequester.consumeClearToken(
+            intent.getStringExtra(ClipboardFocusRequester.EXTRA_START_TOKEN),
+            cleared,
+        )
+        finishWithoutAnimation()
     }
 
     private fun finishWithoutAnimation() {
@@ -71,8 +97,6 @@ class ClipboardFloatingActivity : Activity() {
     }
 
     private companion object {
-        const val EXTRA_START_TOKEN = "io.github.hypercopy.extra.FLOATING_START_TOKEN"
-        const val EXTRA_SOURCE_PACKAGE = "io.github.hypercopy.extra.CLIPBOARD_SOURCE_PACKAGE"
         const val HANDLE_AFTER_FINISH_DELAY_MILLIS = 120L
     }
 }

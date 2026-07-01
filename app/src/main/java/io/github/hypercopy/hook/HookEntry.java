@@ -2,9 +2,16 @@ package io.github.hypercopy.hook;
 
 import android.content.ClipData;
 import android.content.ClipDescription;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.ClipboardManager;
+import android.app.Activity;
+import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -20,30 +27,42 @@ public class HookEntry extends XposedModule {
     private static final String CLIPBOARD_SERVICE_CLASS = "com.android.server.clipboard.ClipboardService";
     private static final String RECEIVER_CLASS = "io.github.hypercopy.clipboard.ClipboardTextReceiver";
     private static final long DUPLICATE_WINDOW_MILLIS = 1500L;
+    private static final int INSTALL_RETRY_LIMIT = 20;
+    private static final long INSTALL_RETRY_DELAY_MILLIS = 1000L;
+    private static final int CLEAR_RECEIVER_RETRY_LIMIT = 30;
+    private static final long CLEAR_RECEIVER_RETRY_DELAY_MILLIS = 1000L;
 
     private static String lastText = "";
     private static long lastSentAt = 0L;
     private boolean hooksInstalled = false;
+    private boolean clearReceiverRegistered = false;
 
     @Override
     public void onModuleLoaded(@NonNull ModuleLoadedParam param) {
         logDebug("module loaded: process=" + param.getProcessName()
             + ", systemServer=" + param.isSystemServer()
             + ", api=" + getApiVersion());
-        if (param.isSystemServer()) {
-            installClipboardHooks(getClass().getClassLoader(), "onModuleLoaded");
-        }
     }
 
     @Override
     public void onSystemServerStarting(@NonNull SystemServerStartingParam param) {
-        installClipboardHooks(param.getClassLoader(), "onSystemServerStarting");
+        installClipboardHooksWithRetry(param.getClassLoader(), "onSystemServerStarting", 0);
     }
 
-    private void installClipboardHooks(ClassLoader classLoader, String source) {
+    private void installClipboardHooksWithRetry(ClassLoader classLoader, String source, int attempt) {
+        if (hooksInstalled) return;
+        if (installClipboardHooks(classLoader, source + ", attempt=" + attempt)) return;
+        if (attempt >= INSTALL_RETRY_LIMIT) return;
+        new Handler(Looper.getMainLooper()).postDelayed(
+            () -> installClipboardHooksWithRetry(classLoader, source, attempt + 1),
+            INSTALL_RETRY_DELAY_MILLIS
+        );
+    }
+
+    private boolean installClipboardHooks(ClassLoader classLoader, String source) {
         if (hooksInstalled) {
             logDebug("ClipboardService hooks already installed, source=" + source);
-            return;
+            return true;
         }
         logDebug("installing ClipboardService hooks, source=" + source);
         try {
@@ -67,9 +86,15 @@ public class HookEntry extends XposedModule {
                 hookedCount++;
             }
             hooksInstalled = hookedCount > 0;
+            if (hooksInstalled) registerClearReceiverWithRetry(0);
             logDebug("ClipboardService hooks installed: " + hookedCount);
+            return hooksInstalled;
+        } catch (ClassNotFoundException throwable) {
+            logDebug("ClipboardService not ready, source=" + source + ", classLoader=" + classLoader);
+            return false;
         } catch (Throwable throwable) {
             logError("Failed to hook ClipboardService", throwable);
+            return false;
         }
     }
 
@@ -104,6 +129,68 @@ public class HookEntry extends XposedModule {
             current = current.getSuperclass();
         }
         return null;
+    }
+
+    private static Context findSystemContext() {
+        try {
+            Class<?> activityThreadClass = Class.forName("android.app.ActivityThread");
+            Method currentActivityThread = activityThreadClass.getDeclaredMethod("currentActivityThread");
+            currentActivityThread.setAccessible(true);
+            Object activityThread = currentActivityThread.invoke(null);
+            if (activityThread == null) return null;
+            Method getSystemContext = activityThreadClass.getDeclaredMethod("getSystemContext");
+            getSystemContext.setAccessible(true);
+            Object context = getSystemContext.invoke(activityThread);
+            if (context instanceof Context) return (Context) context;
+        } catch (Throwable ignored) {
+        }
+        return null;
+    }
+
+    private void registerClearReceiverWithRetry(int attempt) {
+        if (clearReceiverRegistered) return;
+        if (registerClearReceiver(findSystemContext(), attempt)) return;
+        if (attempt >= CLEAR_RECEIVER_RETRY_LIMIT) return;
+        new Handler(Looper.getMainLooper()).postDelayed(
+            () -> registerClearReceiverWithRetry(attempt + 1),
+            CLEAR_RECEIVER_RETRY_DELAY_MILLIS
+        );
+    }
+
+    private boolean registerClearReceiver(Context context, int attempt) {
+        if (clearReceiverRegistered) return true;
+        if (context == null) {
+            logDebug("clipboard clear receiver context not ready, attempt=" + attempt);
+            return false;
+        }
+        try {
+            IntentFilter filter = new IntentFilter(Config.ACTION_CLEAR_CLIPBOARD);
+            context.registerReceiver(new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    if (!Config.ACTION_CLEAR_CLIPBOARD.equals(intent.getAction())) return;
+                    try {
+                        ClipboardManager clipboard = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                            clipboard.clearPrimaryClip();
+                        } else {
+                            clipboard.setPrimaryClip(ClipData.newPlainText("", ""));
+                        }
+                        setResultCode(Activity.RESULT_OK);
+                        logDebug("clipboard cleared in system_server by LSPosed");
+                    } catch (Throwable throwable) {
+                        setResultCode(Activity.RESULT_CANCELED);
+                        logWarn("clear clipboard in system_server failed", throwable);
+                    }
+                }
+            }, filter, Config.PERMISSION_CLEAR_CLIPBOARD, null, Context.RECEIVER_EXPORTED);
+            clearReceiverRegistered = true;
+            logDebug("clipboard clear receiver registered");
+            return true;
+        } catch (Throwable throwable) {
+            logWarn("register clipboard clear receiver failed, attempt=" + attempt, throwable);
+            return false;
+        }
     }
 
     private void sendTextIfNeeded(Context context, ClipData clipData, Object[] args) {

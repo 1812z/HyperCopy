@@ -11,11 +11,11 @@ import java.util.UUID
 object ClipboardFocusRequester {
     private const val TAG = "HyperCopy"
     private const val REQUEST_DEBOUNCE_MILLIS = 800L
-    private const val EXTRA_START_TOKEN = "io.github.hypercopy.extra.FLOATING_START_TOKEN"
-    private const val EXTRA_SOURCE_PACKAGE = "io.github.hypercopy.extra.CLIPBOARD_SOURCE_PACKAGE"
 
     private var lastRequestAt = 0L
     private var pendingToken: String? = null
+    private var pendingClearToken: String? = null
+    private var pendingClearCallback: ((Boolean) -> Unit)? = null
 
     fun request(context: Context) {
         val now = System.currentTimeMillis()
@@ -36,7 +36,39 @@ object ClipboardFocusRequester {
         return true
     }
 
-    private fun startByShizuku(context: Context, token: String, sourcePackage: String): Boolean {
+    fun requestClear(context: Context, onComplete: (Boolean) -> Unit): String? {
+        if (!ShizukuPermission.isGranted()) return null
+        val token = UUID.randomUUID().toString()
+        pendingClearToken = token
+        pendingClearCallback = onComplete
+        return if (startByShizuku(context, token, "", ACTION_CLEAR_CLIPBOARD)) {
+            token
+        } else {
+            cancelClearToken(token)
+            null
+        }
+    }
+
+    fun consumeClearToken(token: String?, cleared: Boolean): Boolean {
+        val expected = pendingClearToken ?: return false
+        if (token != expected) return false
+        pendingClearToken = null
+        pendingClearCallback?.invoke(cleared)
+        pendingClearCallback = null
+        return true
+    }
+
+    fun cancelClearToken(token: String?) {
+        if (token == null || token != pendingClearToken) return
+        pendingClearToken = null
+        pendingClearCallback = null
+    }
+
+    fun isPendingClearToken(token: String?): Boolean {
+        return token != null && token == pendingClearToken
+    }
+
+    private fun startByShizuku(context: Context, token: String, sourcePackage: String, action: String = ACTION_READ_CLIPBOARD): Boolean {
         val component = ComponentName(context.packageName, ClipboardFloatingActivity::class.java.name).flattenToString()
         val commandParts = mutableListOf(
             "am",
@@ -48,6 +80,9 @@ object ClipboardFocusRequester {
             "--es",
             EXTRA_START_TOKEN,
             token,
+            "--es",
+            EXTRA_ACTION,
+            action,
         )
         if (sourcePackage.isNotBlank()) {
             commandParts += listOf("--es", EXTRA_SOURCE_PACKAGE, sourcePackage)
@@ -76,6 +111,7 @@ object ClipboardFocusRequester {
         return Intent(context, ClipboardFloatingActivity::class.java)
             .putExtra(EXTRA_START_TOKEN, token)
             .putExtra(EXTRA_SOURCE_PACKAGE, sourcePackage)
+            .putExtra(EXTRA_ACTION, ACTION_READ_CLIPBOARD)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     }
 
@@ -94,4 +130,10 @@ object ClipboardFocusRequester {
             ""
         }
     }
+
+    const val EXTRA_START_TOKEN = "io.github.hypercopy.extra.FLOATING_START_TOKEN"
+    const val EXTRA_SOURCE_PACKAGE = "io.github.hypercopy.extra.CLIPBOARD_SOURCE_PACKAGE"
+    const val EXTRA_ACTION = "io.github.hypercopy.extra.FLOATING_ACTION"
+    const val ACTION_READ_CLIPBOARD = "read_clipboard"
+    const val ACTION_CLEAR_CLIPBOARD = "clear_clipboard"
 }
