@@ -9,6 +9,7 @@ import java.util.concurrent.CopyOnWriteArraySet
 class App : Application(), XposedServiceHelper.OnServiceListener {
     override fun onCreate() {
         super.onCreate()
+        HyperLog.init(this)
         XposedServiceHelper.registerListener(this)
         ClipboardMonitorController.startForCurrentMode(this)
     }

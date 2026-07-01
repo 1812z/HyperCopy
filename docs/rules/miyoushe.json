@@ -1,0 +1,11 @@
+{
+  "name": "miyoushe",
+  "category": "link",
+  "actionMode": "direct_open",
+  "matchRegex": ".*miyoushe\\.com.*",
+  "target": {
+    "type": "url",
+    "template": "mihoyobbs://webview?link=${url:input}",
+    "packageName": "com.mihoyo.hyperion"
+  }
+}

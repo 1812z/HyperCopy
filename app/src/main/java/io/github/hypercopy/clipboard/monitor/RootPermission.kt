@@ -1,6 +1,6 @@
 package io.github.hypercopy.clipboard.monitor
 
-import android.util.Log
+import io.github.hypercopy.HyperLog
 import java.util.concurrent.TimeUnit
 
 object RootPermission {
@@ -15,15 +15,15 @@ object RootPermission {
             val finished = process.waitFor(TIMEOUT_SECONDS, TimeUnit.SECONDS)
             if (!finished) {
                 process.destroyForcibly()
-                Log.d(TAG, "root permission check timeout")
+                HyperLog.d(TAG, "root permission check timeout")
                 return false
             }
             val output = process.inputStream.bufferedReader().use { it.readText() }
             val success = process.exitValue() == 0
-            if (!success) Log.d(TAG, "root permission check failed: $output")
+            if (!success) HyperLog.d(TAG, "root permission check failed: $output")
             success
         }.getOrElse { throwable ->
-            Log.d(TAG, "root permission check exception", throwable)
+            HyperLog.d(TAG, "root permission check exception", throwable)
             false
         }
     }

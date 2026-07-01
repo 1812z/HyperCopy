@@ -1,0 +1,11 @@
+{
+  "name": "taobao",
+  "category": "link",
+  "actionMode": "direct_open",
+  "matchRegex": ".*tb\\.cn.*",
+  "target": {
+    "type": "url",
+    "template": "tbopen://m.taobao.com/tbopen/index.html?h5Url=${url:input}",
+    "packageName": "com.taobao.taobao"
+  }
+}

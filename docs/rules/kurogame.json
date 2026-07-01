@@ -1,0 +1,14 @@
+{
+  "name": "kurogame",
+  "category": "link",
+  "actionMode": "parse_and_open",
+  "matchRegex": ".*kurobbs\\.com.*",
+  "extractionRegexes": [
+    "\\?postId=(.*)"
+  ],
+  "target": {
+    "type": "url",
+    "template": "kjq://home/post/postDetail?postId=${r1}",
+    "packageName": "com.kurogame.kjq"
+  }
+}

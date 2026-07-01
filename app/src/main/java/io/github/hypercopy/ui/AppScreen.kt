@@ -1,17 +1,11 @@
 package io.github.hypercopy.ui
 
 import android.Manifest
+import android.content.Intent
 import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedContentTransitionScope
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
@@ -58,12 +52,6 @@ private enum class Tab(val icon: androidx.compose.ui.graphics.vector.ImageVector
     Settings(MiuixIcons.Settings, R.string.tab_settings),
 }
 
-private enum class SettingsDestination {
-    Main,
-    Theme,
-    AppList,
-}
-
 @Composable
 fun AppScreen(
     colorMode: AppColorMode = AppColorMode.System,
@@ -79,7 +67,6 @@ fun AppScreen(
     val coroutineScope = rememberCoroutineScope()
 
     var selectedTab by remember { mutableStateOf(Tab.Home) }
-    var settingsDestination by remember { mutableStateOf(SettingsDestination.Main) }
     var xposedService by remember { mutableStateOf(App.xposedService) }
     var logLevel by remember { mutableIntStateOf(settingsRepository.readLogLevel()) }
     var autoCheckUpdate by remember { mutableStateOf(settingsRepository.readAutoCheckUpdate()) }
@@ -91,8 +78,6 @@ fun AppScreen(
     var jumpNotificationMode by remember {
         mutableStateOf(jumpNotificationModeFromValue(settingsRepository.readJumpNotificationMode()))
     }
-    var appListWorkMode by remember { mutableStateOf(settingsRepository.readAppListWorkMode()) }
-    var ignoreJumpApp by remember { mutableStateOf(settingsRepository.readIgnoreJumpApp()) }
 
     DisposableEffect(Unit) {
         val listener: (XposedService?) -> Unit = { service -> xposedService = service }
@@ -102,11 +87,6 @@ fun AppScreen(
 
     LaunchedEffect(pagerState.currentPage) {
         selectedTab = tabs[pagerState.currentPage]
-        if (selectedTab != Tab.Settings) settingsDestination = SettingsDestination.Main
-    }
-
-    BackHandler(enabled = selectedTab == Tab.Settings && settingsDestination != SettingsDestination.Main) {
-        settingsDestination = SettingsDestination.Main
     }
 
     val backgroundColor = appBackground(colorMode)
@@ -115,7 +95,6 @@ fun AppScreen(
         bottomBar = {
             BottomNavigation(tabs, selectedTab) { index, tab ->
                 selectedTab = tab
-                settingsDestination = SettingsDestination.Main
                 coroutineScope.launch { pagerState.animateScrollToPage(index) }
             }
         },
@@ -140,86 +119,46 @@ fun AppScreen(
                     )
                     Tab.Copy -> CloudRulesPage(bottomContentPadding = 16.dp)
                     Tab.Rules -> RulesPage(bottomContentPadding = 16.dp)
-                    Tab.Settings -> AnimatedContent(
-                        targetState = settingsDestination,
-                        transitionSpec = {
-                            val direction = if (targetState == SettingsDestination.Main) {
-                                AnimatedContentTransitionScope.SlideDirection.Right
-                            } else {
-                                AnimatedContentTransitionScope.SlideDirection.Left
-                            }
-                            (slideIntoContainer(direction, tween(260)) + fadeIn(tween(160))) togetherWith
-                                (slideOutOfContainer(direction, tween(260)) + fadeOut(tween(160)))
+                    Tab.Settings -> SettingsPage(
+                        logLevel = logLevel,
+                        autoCheckUpdate = autoCheckUpdate,
+                        desktopIconHidden = desktopIconHidden,
+                        appLanguage = appLanguage,
+                        jumpNotificationMode = jumpNotificationMode,
+                        onLogLevelChange = {
+                            logLevel = it
+                            settingsRepository.persistLogLevel(it)
                         },
-                        label = "SettingsDestination",
-                    ) { destination ->
-                        when (destination) {
-                            SettingsDestination.Main -> SettingsPage(
-                                logLevel = logLevel,
-                                autoCheckUpdate = autoCheckUpdate,
-                                desktopIconHidden = desktopIconHidden,
-                                appLanguage = appLanguage,
-                                jumpNotificationMode = jumpNotificationMode,
-                                onLogLevelChange = {
-                                    logLevel = it
-                                    settingsRepository.persistLogLevel(it)
-                                },
-                                onAutoCheckUpdateChange = {
-                                    autoCheckUpdate = it
-                                    settingsRepository.persistAutoCheckUpdate(it)
-                                },
-                                onDesktopIconHiddenChange = {
-                                    desktopIconHidden = it
-                                    settingsRepository.persistDesktopIconHidden(it)
-                                },
-                                onAppLanguageChange = {
-                                    appLanguage = it
-                                    settingsRepository.persistAppLanguage(it.value)
-                                },
-                                onJumpNotificationModeChange = {
-                                    jumpNotificationMode = it
-                                    settingsRepository.persistJumpNotificationMode(it.value)
-                                    if (it != JumpNotificationMode.None && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                                    }
-                                },
-                                onCheckUpdate = {
-                                    Toast.makeText(
-                                        context,
-                                        context.getString(R.string.toast_update_check_unconfigured),
-                                        Toast.LENGTH_SHORT,
-                                    ).show()
-                                },
-                                onOpenTheme = { settingsDestination = SettingsDestination.Theme },
-                                onOpenAppList = { settingsDestination = SettingsDestination.AppList },
-                                bottomContentPadding = 16.dp,
-                            )
-
-                            SettingsDestination.Theme -> ThemeSettingsPage(
-                                colorMode = colorMode,
-                                onColorModeChange = {
-                                    onColorModeChange(it)
-                                    settingsRepository.persistColorMode(it.value)
-                                },
-                                bottomContentPadding = 16.dp,
-                            )
-
-                            SettingsDestination.AppList -> AppListPage(
-                                workMode = appListWorkMode,
-                                ignoreJumpApp = ignoreJumpApp,
-                                onWorkModeChange = {
-                                    appListWorkMode = it
-                                    settingsRepository.persistAppListWorkMode(it)
-                                },
-                                onIgnoreJumpAppChange = {
-                                    ignoreJumpApp = it
-                                    settingsRepository.persistIgnoreJumpApp(it)
-                                },
-                                onBack = { settingsDestination = SettingsDestination.Main },
-                                bottomContentPadding = 16.dp,
-                            )
-                        }
-                    }
+                        onAutoCheckUpdateChange = {
+                            autoCheckUpdate = it
+                            settingsRepository.persistAutoCheckUpdate(it)
+                        },
+                        onDesktopIconHiddenChange = {
+                            desktopIconHidden = it
+                            settingsRepository.persistDesktopIconHidden(it)
+                        },
+                        onAppLanguageChange = {
+                            appLanguage = it
+                            settingsRepository.persistAppLanguage(it.value)
+                        },
+                        onJumpNotificationModeChange = {
+                            jumpNotificationMode = it
+                            settingsRepository.persistJumpNotificationMode(it.value)
+                            if (it != JumpNotificationMode.None && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            }
+                        },
+                        onCheckUpdate = {
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.toast_update_check_unconfigured),
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                        },
+                        onOpenTheme = { context.startActivity(Intent(context, ThemeSettingsActivity::class.java)) },
+                        onOpenAppList = { context.startActivity(Intent(context, AppListActivity::class.java)) },
+                        bottomContentPadding = 16.dp,
+                    )
                 }
             }
         }

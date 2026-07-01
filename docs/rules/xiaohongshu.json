@@ -1,0 +1,11 @@
+{
+  "name": "xiaohongshu",
+  "category": "link",
+  "actionMode": "direct_open",
+  "matchRegex": ".*xhslink\\.com.*|.*xiaohongshu\\.com.*",
+  "target": {
+    "type": "url",
+    "template": "",
+    "packageName": "com.xingin.xhs"
+  }
+}

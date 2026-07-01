@@ -1,6 +1,6 @@
 package io.github.hypercopy.clipboard.monitor
 
-import android.util.Log
+import io.github.hypercopy.HyperLog
 
 object ShizukuProcess {
     private const val TAG = "HyperCopy"
@@ -16,7 +16,7 @@ object ShizukuProcess {
             method.isAccessible = true
             method.invoke(null, command, null, null) as Process
         }.getOrElse { throwable ->
-            Log.d(TAG, "Shizuku newProcess reflection failed", throwable)
+            HyperLog.d(TAG, "Shizuku newProcess reflection failed", throwable)
             null
         }
     }

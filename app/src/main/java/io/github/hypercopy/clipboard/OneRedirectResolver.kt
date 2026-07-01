@@ -1,6 +1,6 @@
 package io.github.hypercopy.clipboard
 
-import android.util.Log
+import io.github.hypercopy.HyperLog
 import java.net.HttpURLConnection
 import java.net.URI
 import java.net.URL
@@ -16,7 +16,7 @@ object OneRedirectResolver {
             if (headResult != normalized) headResult else request(normalized, "GET")
         }
             .getOrElse { error ->
-                Log.d(TAG, "one redirect resolve failed: ${error.message}")
+                HyperLog.d(TAG, "one redirect resolve failed: ${error.message}")
                 normalized
             }
     }

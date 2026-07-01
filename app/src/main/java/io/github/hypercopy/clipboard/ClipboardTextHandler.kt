@@ -1,8 +1,8 @@
 package io.github.hypercopy.clipboard
 
 import android.content.Context
-import android.util.Log
 import io.github.hypercopy.Config
+import io.github.hypercopy.HyperLog
 import io.github.hypercopy.data.RuleActionMode
 import io.github.hypercopy.data.RuleConfig
 import io.github.hypercopy.data.RuleRepository
@@ -31,17 +31,28 @@ object ClipboardTextHandler {
         lastHandledAt = now
 
         val appContext = context.applicationContext
-        val ignoreJumpApp = SettingsRepository(appContext).readIgnoreJumpApp()
+        val settingsRepository = SettingsRepository(appContext)
+        val appListWorkMode = settingsRepository.readAppListWorkMode()
+        val appListPackages = settingsRepository.readAppListPackages()
+        if (shouldSkipByAppList(source, appListWorkMode, appListPackages)) return
+
         val rules = RuleRepository(appContext).readRules()
+        val ignoreJumpApp = settingsRepository.readIgnoreJumpApp()
+        if (shouldIgnoreBeforeMatch(source, rules, ignoreJumpApp)) return
+
         val match = matchRule(input, rules)
         if (match != null) {
-            if (shouldIgnoreJump(source, match.rule.target.packageName, ignoreJumpApp)) return
+            val targetPackageName = jumpPackageName(match.rule.target.packageName, match.intent)
+            if (shouldIgnoreJump(source, targetPackageName, ignoreJumpApp)) {
+                HyperLog.d(TAG, "ignore jump in target app before notification: source=$source target=$targetPackageName")
+                return
+            }
             submitJump(
                 appContext,
                 PendingJump.IntentJump(
                     title = match.rule.name,
                     intent = match.intent,
-                    packageName = match.rule.target.packageName,
+                    packageName = targetPackageName,
                 ),
                 match.rule.clearClipboardAfterJump,
             )
@@ -51,13 +62,18 @@ object ClipboardTextHandler {
         val rule = findRule(input, rules) ?: return
         when (rule.actionMode) {
             RuleActionMode.DirectOpen -> {
-                if (shouldIgnoreJump(source, rule.target.packageName, ignoreJumpApp)) return
+                val intent = rule.directIntent(input, appContext.packageManager)
+                val targetPackageName = jumpPackageName(rule.target.packageName, intent)
+                if (shouldIgnoreJump(source, targetPackageName, ignoreJumpApp)) {
+                    HyperLog.d(TAG, "ignore jump in target app before notification: source=$source target=$targetPackageName")
+                    return
+                }
                 submitJump(
                     appContext,
                     PendingJump.IntentJump(
                         title = rule.name,
-                        intent = rule.directIntent(input, appContext.packageManager),
-                        packageName = rule.target.packageName,
+                        intent = intent,
+                        packageName = targetPackageName,
                     ),
                     rule.clearClipboardAfterJump,
                 )
@@ -75,13 +91,13 @@ object ClipboardTextHandler {
         if (rule.parseAfterRedirect) {
             thread(name = "HyperCopyRedirectResolve") {
                 val redirectedUrl = OneRedirectResolver.resolve(resolveUrl)
-                Log.d(TAG, "redirect parse url: $redirectedUrl")
+                HyperLog.d(TAG, "redirect parse url: $redirectedUrl")
                 val intent = rule.parseIntent(
                     redirectedUrl,
                     requireMatch = false,
                     extraParameters = mapOf("input" to input, "redirectUrl" to redirectedUrl),
                 ) ?: run {
-                    Log.d(TAG, "redirect parse no parameters: $redirectedUrl")
+                    HyperLog.d(TAG, "redirect parse no parameters: $redirectedUrl")
                     return@thread
                 }
                 submitJump(
@@ -108,11 +124,30 @@ object ClipboardTextHandler {
     }
 
     private fun submitJump(context: Context, jump: PendingJump, clearClipboardAfterJump: Boolean) {
+        HyperLog.d(TAG, "submit jump notification: target=${jump.packageName}")
         PendingJumpCoordinator.submit(context, jump, clearClipboardAfterJump)
     }
 
     private fun shouldIgnoreJump(source: String, targetPackageName: String, ignoreJumpApp: Boolean): Boolean {
         return ignoreJumpApp && source.isNotBlank() && source == targetPackageName
+    }
+
+    private fun jumpPackageName(configPackageName: String, intent: android.content.Intent): String {
+        return configPackageName.ifBlank { intent.`package` ?: intent.component?.packageName.orEmpty() }
+    }
+
+    private fun shouldIgnoreBeforeMatch(source: String, rules: List<RuleConfig>, ignoreJumpApp: Boolean): Boolean {
+        if (!ignoreJumpApp || source.isBlank()) return false
+        return rules.any { it.target.packageName == source }
+    }
+
+    private fun shouldSkipByAppList(source: String, workMode: String, packages: Set<String>): Boolean {
+        if (source.isBlank()) return false
+        return when (workMode) {
+            Config.APP_LIST_WORK_MODE_BLACKLIST -> source in packages
+            Config.APP_LIST_WORK_MODE_WHITELIST -> source !in packages
+            else -> false
+        }
     }
 
 }

@@ -1,0 +1,15 @@
+{
+  "name": "115",
+  "category": "link",
+  "actionMode": "parse_and_open",
+  "matchRegex": ".*115\\.com.*|.*115cdn\\.com.*",
+  "extractionRegexes": [
+    "^(.*?)(#|$)",
+    "\\?password=([^#]*)(#|$)"
+  ],
+  "target": {
+    "type": "url",
+    "template": "oof.disk://openurl/${r1}",
+    "packageName": "com.115.client"
+  }
+}

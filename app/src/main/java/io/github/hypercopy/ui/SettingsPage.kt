@@ -28,7 +28,9 @@ import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.AppRecording
+import top.yukonga.miuix.kmp.icon.extended.Community
 import top.yukonga.miuix.kmp.icon.extended.Download
+import top.yukonga.miuix.kmp.icon.extended.File
 import top.yukonga.miuix.kmp.icon.extended.Link
 import top.yukonga.miuix.kmp.icon.extended.ListView
 import top.yukonga.miuix.kmp.icon.extended.Theme
@@ -100,6 +102,7 @@ fun SettingsPage(
                     summary = stringResource(R.string.jump_notification_mode_summary),
                     items = jumpNotificationModeOptions.map { it.label },
                     selectedIndex = jumpNotificationModeOptions.indexOfFirst { it.value == jumpNotificationMode }.coerceAtLeast(0),
+                    startAction = { SettingsIcon(imageVector = MiuixIcons.Community) },
                     insideMargin = SettingsItemMargin,
                     onSelectedIndexChange = { onJumpNotificationModeChange(jumpNotificationModeOptions[it].value) },
                 )
@@ -108,8 +111,15 @@ fun SettingsPage(
                     summary = stringResource(R.string.log_level_summary),
                     items = logLevelOptions.map { it.label },
                     selectedIndex = logLevelOptions.indexOfFirst { it.value == logLevel }.coerceAtLeast(0),
+                    startAction = { SettingsIcon(imageVector = MiuixIcons.File) },
                     insideMargin = SettingsItemMargin,
                     onSelectedIndexChange = { onLogLevelChange(logLevelOptions[it].value) },
+                )
+                SettingsActionWithArrow(
+                    icon = MiuixIcons.ListView,
+                    title = stringResource(R.string.app_list),
+                    summary = stringResource(R.string.app_list_summary),
+                    onClick = onOpenAppList,
                 )
                 SettingsAction(
                     icon = MiuixIcons.Download,
@@ -130,12 +140,6 @@ fun SettingsPage(
                     summary = stringResource(R.string.hide_desktop_icon_summary),
                     checked = desktopIconHidden,
                     onCheckedChange = { onDesktopIconHiddenChange(!desktopIconHidden) },
-                )
-                SettingsActionWithArrow(
-                    icon = MiuixIcons.ListView,
-                    title = stringResource(R.string.app_list),
-                    summary = stringResource(R.string.app_list_summary),
-                    onClick = onOpenAppList,
                 )
             }
         }

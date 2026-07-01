@@ -1,0 +1,14 @@
+{
+  "name": "aliyunpan",
+  "category": "link",
+  "actionMode": "parse_and_open",
+  "matchRegex": ".*alipan\\.com.*",
+  "extractionRegexes": [
+    "\\/[st]\\/(.*)"
+  ],
+  "target": {
+    "type": "url",
+    "template": "smartdrive://share/browse?shareId=${r1}",
+    "packageName": "com.alicloud.databox"
+  }
+}

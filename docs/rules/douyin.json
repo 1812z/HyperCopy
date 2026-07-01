@@ -1,0 +1,11 @@
+{
+  "name": "douyin",
+  "category": "link",
+  "actionMode": "direct_open",
+  "matchRegex": ".*douyin\\.com.*",
+  "target": {
+    "type": "url",
+    "template": "",
+    "packageName": "com.ss.android.ugc.aweme"
+  }
+}

@@ -1,7 +1,7 @@
 package io.github.hypercopy.clipboard.monitor
 
 import android.content.pm.PackageManager
-import android.util.Log
+import io.github.hypercopy.HyperLog
 import rikka.shizuku.Shizuku
 
 object ShizukuPermission {
@@ -34,7 +34,7 @@ object ShizukuPermission {
         }
         Shizuku.addRequestPermissionResultListener(listener)
         runCatching { Shizuku.requestPermission(REQUEST_CODE) }.onFailure { throwable ->
-            Log.d(TAG, "request Shizuku permission failed", throwable)
+            HyperLog.d(TAG, "request Shizuku permission failed", throwable)
             Shizuku.removeRequestPermissionResultListener(listener)
             onResult(false)
         }

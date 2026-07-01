@@ -12,6 +12,7 @@ object Config {
     const val KEY_JUMP_NOTIFICATION_MODE = "jump_notification_mode"
     const val KEY_APP_LIST_WORK_MODE = "app_list_work_mode"
     const val KEY_IGNORE_JUMP_APP = "ignore_jump_app"
+    const val KEY_APP_LIST_PACKAGES = "app_list_packages"
 
     const val ACTION_HANDLE_CLIPBOARD_TEXT = "io.github.hypercopy.action.HANDLE_CLIPBOARD_TEXT"
     const val ACTION_CONFIRM_JUMP = "io.github.hypercopy.action.CONFIRM_JUMP"

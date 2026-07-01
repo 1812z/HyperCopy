@@ -12,12 +12,12 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import android.app.Notification
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import io.github.hypercopy.Config
+import io.github.hypercopy.HyperLog
 import io.github.hypercopy.R
 import io.github.hypercopy.data.SettingsRepository
 import java.util.concurrent.atomic.AtomicLong
@@ -41,7 +41,7 @@ object PendingJumpCoordinator {
             return
         }
         if (!canPostNotification(appContext)) {
-            Log.d(TAG, "jump notification permission missing, launch directly")
+            HyperLog.d(TAG, "jump notification permission missing, launch directly")
             launch(appContext, jump, clearClipboardAfterJump)
             return
         }
@@ -83,7 +83,7 @@ object PendingJumpCoordinator {
         if (entry.id != id) return
         pending = null
         entry.cancel(context)
-        Log.d(TAG, "jump notification expired")
+        HyperLog.d(TAG, "jump notification expired")
     }
 
     private fun launch(context: Context, jump: PendingJump, clearClipboardAfterJump: Boolean) {

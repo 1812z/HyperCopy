@@ -3,7 +3,7 @@ package io.github.hypercopy.clipboard
 import android.content.ComponentName
 import android.content.Intent
 import android.net.Uri
-import android.util.Log
+import io.github.hypercopy.HyperLog
 import java.util.concurrent.TimeUnit
 
 object RootActivityLauncher {
@@ -13,20 +13,20 @@ object RootActivityLauncher {
     fun launch(intent: Intent): Boolean {
         val command = IntentAmStartCommand.build(intent)
         return runCatching {
-            Log.d(TAG, "root start activity: $command")
+            HyperLog.d(TAG, "root start activity: $command")
             val process = ProcessBuilder("su", "-c", command).redirectErrorStream(true).start()
             val finished = process.waitFor(TIMEOUT_SECONDS, TimeUnit.SECONDS)
             if (!finished) {
                 process.destroyForcibly()
-                Log.d(TAG, "root start activity timeout")
+                HyperLog.d(TAG, "root start activity timeout")
                 return false
             }
             val output = process.inputStream.bufferedReader().use { it.readText() }
             val success = process.exitValue() == 0 || output.indicatesActivityStarted()
-            if (!success) Log.d(TAG, "root start activity failed: $output")
+            if (!success) HyperLog.d(TAG, "root start activity failed: $output")
             success
         }.getOrElse { throwable ->
-            Log.d(TAG, "root start activity exception", throwable)
+            HyperLog.d(TAG, "root start activity exception", throwable)
             false
         }
     }

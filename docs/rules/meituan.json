@@ -1,0 +1,11 @@
+{
+  "name": "meituan",
+  "category": "link",
+  "actionMode": "direct_open",
+  "matchRegex": ".*dpurl\\.cn.*",
+  "target": {
+    "type": "url",
+    "template": "imeituan://www.meituan.com/web?notitlebar=1&url=${url:input}",
+    "packageName": "com.sankuai.meituan"
+  }
+}

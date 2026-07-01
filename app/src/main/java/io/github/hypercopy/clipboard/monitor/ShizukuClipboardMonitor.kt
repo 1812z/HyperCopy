@@ -3,9 +3,9 @@ package io.github.hypercopy.clipboard.monitor
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
-import android.util.Log
 import android.widget.Toast
 import androidx.core.content.ContextCompat
+import io.github.hypercopy.HyperLog
 import io.github.hypercopy.R
 
 object ShizukuClipboardMonitor {
@@ -23,7 +23,7 @@ object ShizukuClipboardMonitor {
                     startDetector(appContext) { command -> ShizukuProcess.start(command) }
                 } else {
                     Toast.makeText(appContext, R.string.toast_shizuku_permission_denied, Toast.LENGTH_SHORT).show()
-                    Log.d(TAG, "Shizuku permission denied")
+                    HyperLog.d(TAG, "Shizuku permission denied")
                 }
             }
             return
@@ -33,7 +33,7 @@ object ShizukuClipboardMonitor {
             startDetector(appContext) { command -> Runtime.getRuntime().exec(command) }
         } else {
             Toast.makeText(appContext, R.string.toast_shizuku_unavailable, Toast.LENGTH_SHORT).show()
-            Log.d(TAG, "Shizuku unavailable and READ_LOGS not granted")
+            HyperLog.d(TAG, "Shizuku unavailable and READ_LOGS not granted")
         }
     }
 
@@ -42,7 +42,7 @@ object ShizukuClipboardMonitor {
         detector = null
         probe?.stop()
         probe = null
-        Log.d(TAG, "stop Shizuku clipboard monitor")
+        HyperLog.d(TAG, "stop Shizuku clipboard monitor")
     }
 
     private fun startProbe(context: Context) {

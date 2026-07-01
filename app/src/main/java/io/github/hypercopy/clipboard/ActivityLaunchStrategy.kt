@@ -2,9 +2,9 @@ package io.github.hypercopy.clipboard
 
 import android.content.Context
 import android.content.Intent
-import android.util.Log
 import android.widget.Toast
 import io.github.hypercopy.Config
+import io.github.hypercopy.HyperLog
 import io.github.hypercopy.R
 import io.github.hypercopy.data.SettingsRepository
 
@@ -19,7 +19,7 @@ object ActivityLaunchStrategy {
         } else {
             RootActivityLauncher.launch(resolvedIntent) || launchNormally(context, resolvedIntent)
         }
-        if (!launched && usesPrivilegedLauncher) Log.d(TAG, "Privileged start returned failure; suppress toast to avoid false negatives")
+        if (!launched && usesPrivilegedLauncher) HyperLog.d(TAG, "Privileged start returned failure; suppress toast to avoid false negatives")
         if (!launched && !usesPrivilegedLauncher) Toast.makeText(context, R.string.toast_open_target_failed, Toast.LENGTH_SHORT).show()
         return launched
     }
@@ -29,7 +29,7 @@ object ActivityLaunchStrategy {
             context.startActivity(intent)
             true
         }.getOrElse { throwable ->
-            Log.w(TAG, "Failed to start activity", throwable)
+            HyperLog.w(TAG, "Failed to start activity", throwable)
             false
         }
     }

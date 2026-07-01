@@ -58,7 +58,7 @@ public class HookEntry extends XposedModule {
                     try {
                         ClipData clipData = findClipData(chain.getArgs().toArray());
                         Context context = findContext(chain.getThisObject());
-                        sendTextIfNeeded(context, clipData);
+                        sendTextIfNeeded(context, clipData, chain.getArgs().toArray());
                     } catch (Throwable throwable) {
                         logWarn("clipboard hook callback failed", throwable);
                     }
@@ -106,7 +106,7 @@ public class HookEntry extends XposedModule {
         return null;
     }
 
-    private void sendTextIfNeeded(Context context, ClipData clipData) {
+    private void sendTextIfNeeded(Context context, ClipData clipData, Object[] args) {
         if (context == null || clipData == null || clipData.getItemCount() == 0) return;
         CharSequence text = extractPlainText(context, clipData);
         if (text == null) return;
@@ -118,14 +118,42 @@ public class HookEntry extends XposedModule {
         if (value.equals(lastText) && now - lastSentAt < DUPLICATE_WINDOW_MILLIS) return;
         lastText = value;
         lastSentAt = now;
+        String sourcePackage = findSourcePackage(context, args);
 
         Intent intent = new Intent(Config.ACTION_HANDLE_CLIPBOARD_TEXT)
             .setComponent(new ComponentName(Config.APPLICATION_ID, RECEIVER_CLASS))
             .putExtra(Config.EXTRA_CLIPBOARD_TEXT, value)
-            .putExtra(Config.EXTRA_CLIPBOARD_SOURCE, "lsposed")
+            .putExtra(Config.EXTRA_CLIPBOARD_SOURCE, sourcePackage)
             .addFlags(Intent.FLAG_RECEIVER_FOREGROUND | Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
-        logDebug("send clipboard text to app, length=" + value.length());
+        logDebug("send clipboard text to app, length=" + value.length() + ", source=" + sourcePackage);
         context.sendBroadcast(intent);
+    }
+
+    private static String findSourcePackage(Context context, Object[] args) {
+        if (args == null) return "";
+        for (Object arg : args) {
+            if (!(arg instanceof String)) continue;
+            String value = ((String) arg).trim();
+            if (isInstalledPackage(context, value)) return value;
+        }
+        for (Object arg : args) {
+            if (!(arg instanceof Integer)) continue;
+            int uid = (Integer) arg;
+            if (uid < 10_000) continue;
+            String[] packages = context.getPackageManager().getPackagesForUid(uid);
+            if (packages != null && packages.length > 0) return packages[0];
+        }
+        return "";
+    }
+
+    private static boolean isInstalledPackage(Context context, String value) {
+        if (value.isEmpty() || !value.contains(".") || value.contains(" ")) return false;
+        try {
+            context.getPackageManager().getApplicationInfo(value, 0);
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
     }
 
     private static CharSequence extractPlainText(Context context, ClipData clipData) {

@@ -1,0 +1,11 @@
+{
+  "name": "telegram",
+  "category": "link",
+  "actionMode": "direct_open",
+  "matchRegex": ".*t\\.me.*",
+  "target": {
+    "type": "url",
+    "template": "",
+    "packageName": "org.telegram.messenger"
+  }
+}

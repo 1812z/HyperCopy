@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.dp
 import io.github.hypercopy.AppIconCache
 
 @Composable
-internal fun PackageIcon(packageName: String, modifier: Modifier = Modifier) {
+fun PackageIcon(packageName: String, modifier: Modifier = Modifier) {
     val context = LocalContext.current.applicationContext
     var icon by remember(packageName) { mutableStateOf(AppIconCache.get(packageName)) }
 

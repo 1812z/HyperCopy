@@ -4,10 +4,10 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import io.github.hypercopy.HyperLog
 import java.util.concurrent.atomic.AtomicBoolean
 
 object HeadlessWebViewResolver {
@@ -99,7 +99,7 @@ object HeadlessWebViewResolver {
             }
             webView = view
             handler.postDelayed(timeoutRunnable, TIMEOUT_MILLIS)
-            Log.d(TAG, "headless webview load: $url")
+            HyperLog.d(TAG, "headless webview load: $url")
             view.loadUrl(url)
         }
 
@@ -118,7 +118,7 @@ object HeadlessWebViewResolver {
             if (finished) return
             finished = true
             handler.removeCallbacks(timeoutRunnable)
-            Log.d(TAG, "headless webview resolved: $targetUrl")
+            HyperLog.d(TAG, "headless webview resolved: $targetUrl")
             val intent = targetUrl.toViewIntent(targetPackageName)
             onResolved?.invoke(intent)
             if (launchWhenResolved && ActivityLaunchStrategy.launch(context, intent)) {

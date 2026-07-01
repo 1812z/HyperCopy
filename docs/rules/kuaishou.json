@@ -1,0 +1,11 @@
+{
+  "name": "kuaishou",
+  "category": "link",
+  "actionMode": "direct_open",
+  "matchRegex": ".*kuaishou\\.com.*",
+  "target": {
+    "type": "url",
+    "template": "kwai://webview?url=${url:input}",
+    "packageName": "com.smile.gifmaker"
+  }
+}

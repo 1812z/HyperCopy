@@ -2,13 +2,13 @@ package io.github.hypercopy.clipboard.monitor
 
 import android.content.ClipboardManager
 import android.content.Context
-import android.util.Log
+import io.github.hypercopy.HyperLog
 
 class ClipboardChangeProbe(context: Context) {
     private val appContext = context.applicationContext
     private val clipboardManager = appContext.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     private val listener = ClipboardManager.OnPrimaryClipChangedListener {
-        Log.d(TAG, "clipboard change probe notified")
+        HyperLog.d(TAG, "clipboard change probe notified")
         runCatching { clipboardManager.primaryClip }
     }
 

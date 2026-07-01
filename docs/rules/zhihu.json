@@ -1,0 +1,11 @@
+{
+  "name": "zhihu",
+  "category": "link",
+  "actionMode": "direct_open",
+  "matchRegex": ".*zhihu\\.com.*",
+  "target": {
+    "type": "url",
+    "template": "",
+    "packageName": "com.zhihu.android"
+  }
+}

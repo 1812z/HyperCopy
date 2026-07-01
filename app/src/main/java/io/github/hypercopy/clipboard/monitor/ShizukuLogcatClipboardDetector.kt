@@ -1,6 +1,6 @@
 package io.github.hypercopy.clipboard.monitor
 
-import android.util.Log
+import io.github.hypercopy.HyperLog
 import java.io.BufferedReader
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -31,11 +31,11 @@ class ShizukuLogcatClipboardDetector(
     private fun readLoop() {
         runCatching {
             val since = SimpleDateFormat("MM-dd HH:mm:ss.SSS", Locale.US).format(Date())
-            Log.d(TAG, "start Shizuku logcat clipboard detector")
+            HyperLog.d(TAG, "start Shizuku logcat clipboard detector")
             process = processStarter(arrayOf("logcat", "-T", since, "ClipboardService:E", "*:S")) ?: return
             process?.inputStream?.bufferedReader()?.use(::readLines)
         }.onFailure { throwable ->
-            if (running.get()) Log.d(TAG, "Shizuku logcat detector failed", throwable)
+            if (running.get()) HyperLog.d(TAG, "Shizuku logcat detector failed", throwable)
         }
         running.set(false)
     }
@@ -44,7 +44,7 @@ class ShizukuLogcatClipboardDetector(
         while (running.get()) {
             val line = reader.readLine() ?: break
             if (line.contains(packageName) && line.contains("Clipboard", ignoreCase = true)) {
-                Log.d(TAG, "Shizuku detected clipboard log: $line")
+                HyperLog.d(TAG, "Shizuku detected clipboard log: $line")
                 onClipboardChanged()
             }
         }

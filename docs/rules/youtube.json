@@ -1,0 +1,11 @@
+{
+  "name": "youtube",
+  "category": "link",
+  "actionMode": "direct_open",
+  "matchRegex": ".*youtube\\.com.*|.*youtu\\.be.*",
+  "target": {
+    "type": "url",
+    "template": "",
+    "packageName": "com.google.android.youtube"
+  }
+}

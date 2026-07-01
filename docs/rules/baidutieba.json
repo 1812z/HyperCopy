@@ -1,0 +1,14 @@
+{
+  "name": "baidutieba",
+  "category": "link",
+  "actionMode": "parse_and_open",
+  "matchRegex": ".*tieba\\.baidu\\.com.*",
+  "extractionRegexes": [
+    "\\/p\\/(.*?)(\\?|$)"
+  ],
+  "target": {
+    "type": "url",
+    "template": "com.baidu.tieba://unidispatch/pb?tid=${r1}",
+    "packageName": "com.baidu.tieba"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "pinduoduo",
+  "category": "link",
+  "actionMode": "direct_open",
+  "matchRegex": ".*yangkeduo\\.com.*|.*pinduoduo\\.com.*",
+  "target": {
+    "type": "url",
+    "template": "",
+    "packageName": "com.xunmeng.pinduoduo"
+  }
+}

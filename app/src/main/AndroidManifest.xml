@@ -55,6 +55,14 @@
             android:exported="false" />
 
         <activity
+            android:name=".ui.ThemeSettingsActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.AppListActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".clipboard.ClipboardFloatingActivity"
             android:excludeFromRecents="true"
             android:exported="true"

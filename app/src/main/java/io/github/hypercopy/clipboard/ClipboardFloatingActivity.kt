@@ -47,7 +47,7 @@ class ClipboardFloatingActivity : Activity() {
         finishWithoutAnimation()
         if (!text.isNullOrBlank()) {
             Handler(Looper.getMainLooper()).postDelayed({
-                ClipboardTextHandler.handle(applicationContext, text, "shizuku")
+                ClipboardTextHandler.handle(applicationContext, text, intent.getStringExtra(EXTRA_SOURCE_PACKAGE).orEmpty())
             }, HANDLE_AFTER_FINISH_DELAY_MILLIS)
         }
     }
@@ -72,6 +72,7 @@ class ClipboardFloatingActivity : Activity() {
 
     private companion object {
         const val EXTRA_START_TOKEN = "io.github.hypercopy.extra.FLOATING_START_TOKEN"
+        const val EXTRA_SOURCE_PACKAGE = "io.github.hypercopy.extra.CLIPBOARD_SOURCE_PACKAGE"
         const val HANDLE_AFTER_FINISH_DELAY_MILLIS = 120L
     }
 }

@@ -80,6 +80,14 @@ class SettingsRepository(private val context: Context) {
         preferences().edit(commit = true) { putBoolean(Config.KEY_IGNORE_JUMP_APP, value) }
     }
 
+    fun readAppListPackages(): Set<String> {
+        return preferences().getStringSet(Config.KEY_APP_LIST_PACKAGES, emptySet()).orEmpty()
+    }
+
+    fun persistAppListPackages(value: Set<String>) {
+        preferences().edit(commit = true) { putStringSet(Config.KEY_APP_LIST_PACKAGES, value) }
+    }
+
     fun readDesktopIconHidden(): Boolean {
         return context.packageManager.getComponentEnabledSetting(desktopIconComponent()) ==
             PackageManager.COMPONENT_ENABLED_STATE_DISABLED
