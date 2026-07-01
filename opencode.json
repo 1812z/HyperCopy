@@ -6,5 +6,24 @@
       "url": "http://127.0.0.1:9999/mcp",
       "enabled": true
     }
+  },
+  "provider": {
+    "Cherry-hinoob": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Cherry-hinoob",
+      "options": {
+        "apiKey": "{env:OPENCODE_API_KEY_HINOOB}",
+        "baseURL": "https://cliapi.hinoob.net/v1"
+      },
+      "models": {
+        "gpt-5.5": {
+          "name": "gpt-5.5",
+          "reasoning": true,
+          "options": {
+            "reasoningEffort": "medium"
+          }
+        }
+      }
+    }
   }
 }

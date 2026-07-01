@@ -1,11 +1,20 @@
 {
   "name": "xiaohongshu",
   "category": "link",
-  "actionMode": "direct_open",
-  "matchRegex": ".*xhslink\\.com.*|.*xiaohongshu\\.com.*",
+  "actionMode": "webview_resolve_and_open",
+  "matchRegex": "xhslink\\.com|xiaohongshu\\.com",
+  "triggerRegexes": [
+    "xhslink\\.com",
+    "xiaohongshu\\.com"
+  ],
+  "extractionRegexes": [
+    "\\/(?:discovery\\/)?item\\/([a-f0-9]+)"
+  ],
+  "parseAfterRedirect": true,
+  "clearClipboardAfterJump": true,
   "target": {
     "type": "url",
-    "template": "",
+    "template": "xhsdiscover://item/${r1}",
     "packageName": "com.xingin.xhs"
   }
 }

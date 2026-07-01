@@ -126,6 +126,9 @@ private fun LearningWebView(url: String, onPageUrlChange: (String) -> Unit, onAp
             WebView(context).apply {
                 settings.javaScriptEnabled = true
                 settings.domStorageEnabled = true
+                settings.useWideViewPort = true
+                settings.loadWithOverviewMode = true
+                settings.userAgentString = DESKTOP_USER_AGENT
                 webViewClient = object : WebViewClient() {
                     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                         val nextUrl = request.url.toString()
@@ -209,4 +212,5 @@ private fun AppColorMode.toColorSchemeMode(): ColorSchemeMode = when (this) {
     AppColorMode.Dark -> ColorSchemeMode.Dark
 }
 
-private const val DEFAULT_URL = "https://www.bilibili.com"
+private const val DEFAULT_URL = "https://www.bing.com"
+private const val DESKTOP_USER_AGENT = "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36"

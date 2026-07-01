@@ -65,9 +65,11 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun HomePage(
+    modifier: Modifier = Modifier,
     xposedService: XposedService?,
     clipboardMonitorMode: ClipboardMonitorMode,
     onClipboardMonitorModeChange: (ClipboardMonitorMode) -> Unit,
+    topContentPadding: Dp = 12.dp,
     bottomContentPadding: Dp = 16.dp,
 ) {
     val context = LocalContext.current
@@ -116,17 +118,10 @@ fun HomePage(
     val active = if (isShizukuMode) shizukuGranted else xposedService != null && rootGranted
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 12.dp, top = 12.dp, end = 12.dp, bottom = bottomContentPadding),
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = 12.dp, top = topContentPadding, end = 12.dp, bottom = bottomContentPadding),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        item {
-            Text(
-                text = stringResource(R.string.tab_home),
-                style = MiuixTheme.textStyles.title1,
-                modifier = Modifier.padding(top = 8.dp),
-            )
-        }
         item {
             StatusCard(
                 active = active,

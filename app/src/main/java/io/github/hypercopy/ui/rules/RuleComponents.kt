@@ -111,11 +111,12 @@ internal fun EmptyRulesCard(category: RulePageCategory) {
 internal fun RuleSelectionBar(
     selectedCount: Int,
     allSelected: Boolean,
+    modifier: Modifier = Modifier,
     onCloseClick: () -> Unit,
     onSelectAllClick: () -> Unit,
     onDeleteClick: () -> Unit,
 ) {
-    Card {
+    Card(modifier = modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -126,7 +127,6 @@ internal fun RuleSelectionBar(
                 minWidth = 36.dp,
                 minHeight = 36.dp,
                 cornerRadius = 18.dp,
-                backgroundColor = MiuixTheme.colorScheme.primary.copy(alpha = 0.08f),
             ) {
                 Icon(
                     imageVector = MiuixIcons.Close,
@@ -145,7 +145,6 @@ internal fun RuleSelectionBar(
                 minWidth = 36.dp,
                 minHeight = 36.dp,
                 cornerRadius = 18.dp,
-                backgroundColor = MiuixTheme.colorScheme.primary.copy(alpha = 0.08f),
             ) {
                 Icon(
                     imageVector = MiuixIcons.SelectAll,
@@ -159,7 +158,6 @@ internal fun RuleSelectionBar(
                 minWidth = 36.dp,
                 minHeight = 36.dp,
                 cornerRadius = 18.dp,
-                backgroundColor = MiuixTheme.colorScheme.primary.copy(alpha = 0.08f),
             ) {
                 Icon(
                     imageVector = MiuixIcons.Delete,

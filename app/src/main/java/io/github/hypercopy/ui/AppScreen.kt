@@ -9,8 +9,11 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
@@ -24,6 +27,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -35,13 +39,19 @@ import io.github.hypercopy.ui.rules.CloudRulesPage
 import io.github.hypercopy.ui.rules.RulesPage
 import io.github.libxposed.service.XposedService
 import kotlinx.coroutines.launch
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.NavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBarItem
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.TopAppBar
+import top.yukonga.miuix.kmp.basic.rememberTopAppBarState
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.AppRecording
 import top.yukonga.miuix.kmp.icon.extended.Backup
 import top.yukonga.miuix.kmp.icon.extended.Carrier
+import top.yukonga.miuix.kmp.icon.extended.Import
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -92,6 +102,7 @@ fun AppScreen(
     val backgroundColor = appBackground(colorMode)
 
     Scaffold(
+        contentWindowInsets = WindowInsets.navigationBars,
         bottomBar = {
             BottomNavigation(tabs, selectedTab) { index, tab ->
                 selectedTab = tab
@@ -107,58 +118,129 @@ fun AppScreen(
         ) {
             HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
                 when (tabs[page]) {
-                    Tab.Home -> HomePage(
-                        xposedService = xposedService,
-                        clipboardMonitorMode = clipboardMonitorMode,
-                        onClipboardMonitorModeChange = {
-                            clipboardMonitorMode = it
-                            settingsRepository.persistClipboardMonitorMode(it.value)
-                            ClipboardMonitorController.onModeChanged(context.applicationContext, it.value)
-                        },
-                        bottomContentPadding = 16.dp,
-                    )
-                    Tab.Copy -> CloudRulesPage(bottomContentPadding = 16.dp)
-                    Tab.Rules -> RulesPage(bottomContentPadding = 16.dp)
-                    Tab.Settings -> SettingsPage(
-                        logLevel = logLevel,
-                        autoCheckUpdate = autoCheckUpdate,
-                        desktopIconHidden = desktopIconHidden,
-                        appLanguage = appLanguage,
-                        jumpNotificationMode = jumpNotificationMode,
-                        onLogLevelChange = {
-                            logLevel = it
-                            settingsRepository.persistLogLevel(it)
-                        },
-                        onAutoCheckUpdateChange = {
-                            autoCheckUpdate = it
-                            settingsRepository.persistAutoCheckUpdate(it)
-                        },
-                        onDesktopIconHiddenChange = {
-                            desktopIconHidden = it
-                            settingsRepository.persistDesktopIconHidden(it)
-                        },
-                        onAppLanguageChange = {
-                            appLanguage = it
-                            settingsRepository.persistAppLanguage(it.value)
-                        },
-                        onJumpNotificationModeChange = {
-                            jumpNotificationMode = it
-                            settingsRepository.persistJumpNotificationMode(it.value)
-                            if (it != JumpNotificationMode.None && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                            }
-                        },
-                        onCheckUpdate = {
-                            Toast.makeText(
-                                context,
-                                context.getString(R.string.toast_update_check_unconfigured),
-                                Toast.LENGTH_SHORT,
-                            ).show()
-                        },
-                        onOpenTheme = { context.startActivity(Intent(context, ThemeSettingsActivity::class.java)) },
-                        onOpenAppList = { context.startActivity(Intent(context, AppListActivity::class.java)) },
-                        bottomContentPadding = 16.dp,
-                    )
+                    Tab.Home -> {
+                        val scrollBehavior = MiuixScrollBehavior(rememberTopAppBarState())
+                        Scaffold(
+                            topBar = {
+                                TopAppBar(
+                                    title = stringResource(R.string.tab_home),
+                                    largeTitle = stringResource(R.string.tab_home),
+                                    scrollBehavior = scrollBehavior,
+                                )
+                            },
+                            contentWindowInsets = WindowInsets.statusBars,
+                        ) { pagePadding ->
+                            HomePage(
+                                modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+                                xposedService = xposedService,
+                                clipboardMonitorMode = clipboardMonitorMode,
+                                onClipboardMonitorModeChange = {
+                                    clipboardMonitorMode = it
+                                    settingsRepository.persistClipboardMonitorMode(it.value)
+                                    ClipboardMonitorController.onModeChanged(context.applicationContext, it.value)
+                                },
+                                topContentPadding = pagePadding.calculateTopPadding() + 12.dp,
+                                bottomContentPadding = pagePadding.calculateBottomPadding() + 16.dp,
+                            )
+                        }
+                    }
+
+                    Tab.Copy -> {
+                        Scaffold(contentWindowInsets = WindowInsets.statusBars) { pagePadding ->
+                            CloudRulesPage(
+                                topContentPadding = pagePadding.calculateTopPadding() + 12.dp,
+                                bottomContentPadding = 16.dp,
+                            )
+                        }
+                    }
+
+                    Tab.Rules -> {
+                        val scrollBehavior = MiuixScrollBehavior(rememberTopAppBarState())
+                        var showImportDialog by remember { mutableStateOf(false) }
+                        Scaffold(
+                            topBar = {
+                                TopAppBar(
+                                    title = stringResource(R.string.tab_rules),
+                                    largeTitle = stringResource(R.string.tab_rules),
+                                    scrollBehavior = scrollBehavior,
+                                    actions = {
+                                        IconButton(onClick = { showImportDialog = true }) {
+                                            Icon(
+                                                imageVector = MiuixIcons.Import,
+                                                contentDescription = stringResource(R.string.action_import_rule),
+                                            )
+                                        }
+                                    },
+                                )
+                            },
+                            contentWindowInsets = WindowInsets.statusBars,
+                        ) { pagePadding ->
+                            RulesPage(
+                                modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+                                showImportDialog = showImportDialog,
+                                onDismissImportDialog = { showImportDialog = false },
+                                topContentPadding = pagePadding.calculateTopPadding() + 12.dp,
+                                bottomContentPadding = pagePadding.calculateBottomPadding() + 16.dp,
+                            )
+                        }
+                    }
+
+                    Tab.Settings -> {
+                        val scrollBehavior = MiuixScrollBehavior(rememberTopAppBarState())
+                        Scaffold(
+                            topBar = {
+                                TopAppBar(
+                                    title = stringResource(R.string.tab_settings),
+                                    largeTitle = stringResource(R.string.tab_settings),
+                                    scrollBehavior = scrollBehavior,
+                                )
+                            },
+                            contentWindowInsets = WindowInsets.statusBars,
+                        ) { pagePadding ->
+                            SettingsPage(
+                                modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+                                logLevel = logLevel,
+                                autoCheckUpdate = autoCheckUpdate,
+                                desktopIconHidden = desktopIconHidden,
+                                appLanguage = appLanguage,
+                                jumpNotificationMode = jumpNotificationMode,
+                                onLogLevelChange = {
+                                    logLevel = it
+                                    settingsRepository.persistLogLevel(it)
+                                },
+                                onAutoCheckUpdateChange = {
+                                    autoCheckUpdate = it
+                                    settingsRepository.persistAutoCheckUpdate(it)
+                                },
+                                onDesktopIconHiddenChange = {
+                                    desktopIconHidden = it
+                                    settingsRepository.persistDesktopIconHidden(it)
+                                },
+                                onAppLanguageChange = {
+                                    appLanguage = it
+                                    settingsRepository.persistAppLanguage(it.value)
+                                },
+                                onJumpNotificationModeChange = {
+                                    jumpNotificationMode = it
+                                    settingsRepository.persistJumpNotificationMode(it.value)
+                                    if (it != JumpNotificationMode.None && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                    }
+                                },
+                                onCheckUpdate = {
+                                    Toast.makeText(
+                                        context,
+                                        context.getString(R.string.toast_update_check_unconfigured),
+                                        Toast.LENGTH_SHORT,
+                                    ).show()
+                                },
+                                onOpenTheme = { context.startActivity(Intent(context, ThemeSettingsActivity::class.java)) },
+                                onOpenAppList = { context.startActivity(Intent(context, AppListActivity::class.java)) },
+                                topContentPadding = pagePadding.calculateTopPadding() + 12.dp,
+                                bottomContentPadding = pagePadding.calculateBottomPadding() + 16.dp,
+                            )
+                        }
+                    }
                 }
             }
         }

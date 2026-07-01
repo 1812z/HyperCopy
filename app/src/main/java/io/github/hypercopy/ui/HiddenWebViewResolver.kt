@@ -40,6 +40,8 @@ fun HiddenWebViewResolver(
             WebView(context).apply {
                 settings.javaScriptEnabled = true
                 settings.domStorageEnabled = true
+                settings.useWideViewPort = true
+                settings.loadWithOverviewMode = true
                 webViewClient = object : WebViewClient() {
                     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                         val nextUrl = request.url.toString()
@@ -51,6 +53,7 @@ fun HiddenWebViewResolver(
                         return true
                     }
 
+                    @Deprecated("Deprecated in Java")
                     override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
                         if (isWebUrl(url)) return false
                         if (!finished) {

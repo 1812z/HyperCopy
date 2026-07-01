@@ -69,7 +69,13 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.concurrent.thread
 
 @Composable
-fun RulesPage(bottomContentPadding: Dp = 16.dp) {
+fun RulesPage(
+    modifier: Modifier = Modifier,
+    showImportDialog: Boolean = false,
+    onDismissImportDialog: () -> Unit = {},
+    topContentPadding: Dp = 12.dp,
+    bottomContentPadding: Dp = 16.dp,
+) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val repository = remember { RuleRepository(context.applicationContext) }
@@ -81,7 +87,6 @@ fun RulesPage(bottomContentPadding: Dp = 16.dp) {
     var resolvingRule by remember { mutableStateOf<RuleConfig?>(null) }
     var selectedRuleIds by remember { mutableStateOf(emptySet<String>()) }
     var showDeleteDialog by remember { mutableStateOf(false) }
-    var showImportDialog by remember { mutableStateOf(false) }
     var importText by remember { mutableStateOf("") }
 
     DisposableEffect(lifecycleOwner, repository) {
@@ -106,33 +111,10 @@ fun RulesPage(bottomContentPadding: Dp = 16.dp) {
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 12.dp, top = 12.dp, end = 12.dp, bottom = bottomContentPadding + 84.dp),
+            modifier = modifier.fillMaxSize(),
+            contentPadding = PaddingValues(start = 12.dp, top = topContentPadding, end = 12.dp, bottom = bottomContentPadding + 84.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.tab_rules),
-                        style = MiuixTheme.textStyles.title1,
-                        modifier = Modifier.weight(1f),
-                    )
-                    Card(onClick = { showImportDialog = true }) {
-                        Box(modifier = Modifier.padding(10.dp), contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = MiuixIcons.Import,
-                                contentDescription = stringResource(R.string.action_import_rule),
-                            )
-                        }
-                    }
-                }
-            }
             item {
                 RuleCategoryTabs(
                     selectedCategory = selectedCategory,
@@ -189,25 +171,6 @@ fun RulesPage(bottomContentPadding: Dp = 16.dp) {
             if (categoryRules.isEmpty()) {
                 item { EmptyRulesCard(selectedCategory) }
             } else {
-                if (selectionMode) {
-                    item {
-                        RuleSelectionBar(
-                            selectedCount = selectedRuleIds.size,
-                            allSelected = selectedRuleIds.size == categoryRules.size,
-                            onCloseClick = { selectedRuleIds = emptySet() },
-                            onSelectAllClick = {
-                                selectedRuleIds = if (selectedRuleIds.size == categoryRules.size) {
-                                    emptySet()
-                                } else {
-                                    categoryRuleIds
-                                }
-                            },
-                            onDeleteClick = {
-                                showDeleteDialog = true
-                            },
-                        )
-                    }
-                }
                 items(categoryRules, key = { it.id }) { rule ->
                     RuleCard(
                         rule = rule,
@@ -237,6 +200,27 @@ fun RulesPage(bottomContentPadding: Dp = 16.dp) {
                     )
                 }
             }
+        }
+
+        if (selectionMode) {
+            RuleSelectionBar(
+                selectedCount = selectedRuleIds.size,
+                allSelected = selectedRuleIds.size == categoryRules.size,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(start = 12.dp, top = topContentPadding, end = 12.dp),
+                onCloseClick = { selectedRuleIds = emptySet() },
+                onSelectAllClick = {
+                    selectedRuleIds = if (selectedRuleIds.size == categoryRules.size) {
+                        emptySet()
+                    } else {
+                        categoryRuleIds
+                    }
+                },
+                onDeleteClick = {
+                    showDeleteDialog = true
+                },
+            )
         }
 
         AddRuleMenu(
@@ -331,7 +315,7 @@ fun RulesPage(bottomContentPadding: Dp = 16.dp) {
 
     if (showImportDialog) {
         Dialog(
-            onDismissRequest = { showImportDialog = false },
+            onDismissRequest = onDismissImportDialog,
             properties = DialogProperties(usePlatformDefaultWidth = false),
         ) {
             val dialogWindow = (LocalView.current.parent as? DialogWindowProvider)?.window
@@ -370,7 +354,7 @@ fun RulesPage(bottomContentPadding: Dp = 16.dp) {
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
                             TextButton(
                                 text = stringResource(R.string.action_cancel),
-                                onClick = { showImportDialog = false },
+                                onClick = onDismissImportDialog,
                                 modifier = Modifier.weight(1f),
                             )
                             TextButton(
@@ -383,7 +367,7 @@ fun RulesPage(bottomContentPadding: Dp = 16.dp) {
                                         repository.persistRules(repository.readRules().filterNot { it.id in importedIds } + importedRules)
                                         rules = repository.readRules()
                                         importText = ""
-                                        showImportDialog = false
+                                        onDismissImportDialog()
                                         Toast.makeText(context, context.getString(R.string.rule_toast_imported, importedRules.size), Toast.LENGTH_SHORT).show()
                                     }.onFailure {
                                         Toast.makeText(context, context.getString(R.string.rule_toast_import_failed, it.message.orEmpty()), Toast.LENGTH_SHORT).show()

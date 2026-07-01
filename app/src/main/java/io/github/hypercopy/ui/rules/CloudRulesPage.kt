@@ -61,7 +61,10 @@ import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-fun CloudRulesPage(bottomContentPadding: Dp = 16.dp) {
+fun CloudRulesPage(
+    topContentPadding: Dp = 12.dp,
+    bottomContentPadding: Dp = 16.dp,
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val settingsRepository = remember { SettingsRepository(context.applicationContext) }
@@ -184,6 +187,7 @@ fun CloudRulesPage(bottomContentPadding: Dp = 16.dp) {
     Column(modifier = Modifier.fillMaxSize()) {
         CloudRulesHeader(
             title = stringResource(R.string.tab_cloud_rules),
+            topContentPadding = topContentPadding,
             searchQuery = searchQuery,
             onSearchQueryChange = { searchQuery = it },
             onRefresh = { loadRules(selectedCategory, forceRefresh = true, showSuccessToast = true) },
@@ -258,6 +262,7 @@ private fun CloudRule.stableId(): String = "cloud_${folder}_${fileNameWithoutExt
 @Composable
 private fun CloudRulesHeader(
     title: String,
+    topContentPadding: Dp,
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
     onRefresh: () -> Unit,
@@ -276,7 +281,7 @@ private fun CloudRulesHeader(
     )
 
     Column(
-        modifier = Modifier.fillMaxWidth().padding(start = 12.dp, top = 12.dp, end = 12.dp),
+        modifier = Modifier.fillMaxWidth().padding(start = 12.dp, top = topContentPadding, end = 12.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {

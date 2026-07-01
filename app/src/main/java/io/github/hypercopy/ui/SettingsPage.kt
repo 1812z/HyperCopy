@@ -41,6 +41,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun SettingsPage(
+    modifier: Modifier = Modifier,
     logLevel: Int,
     autoCheckUpdate: Boolean,
     desktopIconHidden: Boolean,
@@ -54,6 +55,7 @@ fun SettingsPage(
     onCheckUpdate: () -> Unit,
     onOpenTheme: () -> Unit,
     onOpenAppList: () -> Unit,
+    topContentPadding: Dp = 12.dp,
     bottomContentPadding: Dp = 16.dp,
 ) {
     val uriHandler = LocalUriHandler.current
@@ -62,18 +64,10 @@ fun SettingsPage(
     val jumpNotificationModeOptions = jumpNotificationModeOptions()
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 16.dp, top = 12.dp, end = 16.dp, bottom = bottomContentPadding),
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = 16.dp, top = topContentPadding, end = 16.dp, bottom = bottomContentPadding),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        item {
-            Text(
-                text = stringResource(R.string.tab_settings),
-                style = MiuixTheme.textStyles.title1,
-                modifier = Modifier.padding(top = 8.dp),
-            )
-        }
-
         item { SmallTitle(text = stringResource(R.string.appearance)) }
         item {
             Card {
