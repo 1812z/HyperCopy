@@ -111,6 +111,7 @@ private fun RuleEditorScreen(
     var clearClipboardAfterJump by remember { mutableStateOf(editingRule?.clearClipboardAfterJump ?: false) }
     val isLinkDirectOpen = category == RuleCategory.Link && actionMode == RuleActionMode.DirectOpen
     val isCategoryDirectAppOpen = category != RuleCategory.Link && openMode == CategoryOpenMode.DirectApp
+    val isCategoryUrlOpen = category != RuleCategory.Link && openMode == CategoryOpenMode.Url
     val usesExtraction = when {
         category == RuleCategory.Link -> actionMode == RuleActionMode.ParseAndOpen
             || isLinkDirectOpen
@@ -206,6 +207,8 @@ private fun RuleEditorScreen(
                         CategoryOpenModeSelector(selected = openMode, onSelected = { openMode = it })
                         if (openMode == CategoryOpenMode.DirectApp) {
                             TextField(value = packageName, onValueChange = { packageName = it }, label = stringResource(R.string.editor_label_package_name_required), singleLine = true, modifier = Modifier.fillMaxWidth())
+                        } else {
+                            TextField(value = packageName, onValueChange = { packageName = it }, label = stringResource(R.string.editor_label_package_name_optional), singleLine = true, modifier = Modifier.fillMaxWidth())
                         }
                     }
                     TextButton(
@@ -233,7 +236,7 @@ private fun RuleEditorScreen(
                                 target = RuleTarget(
                                     type = if (targetTemplate.startsWith("intent://", true)) RuleTargetType.Intent else RuleTargetType.Url,
                                     template = if (usesTemplate) targetTemplate else "",
-                                    packageName = if (category == RuleCategory.Link || isCategoryDirectAppOpen) packageName else "",
+                                    packageName = if (category == RuleCategory.Link || isCategoryUrlOpen || isCategoryDirectAppOpen) packageName else "",
                                 ),
                             )
                             repository.saveRule(rule)
@@ -399,7 +402,11 @@ private fun defaultEditorValues(context: Context, category: RuleCategory, source
 
 private fun openModeFromRule(rule: RuleConfig?, category: RuleCategory): CategoryOpenMode {
     if (category == RuleCategory.Link) return CategoryOpenMode.DirectApp
-    return if (rule?.target?.packageName.isNullOrBlank()) CategoryOpenMode.Url else CategoryOpenMode.DirectApp
+    return if (rule?.target?.template.isNullOrBlank() && !rule?.target?.packageName.isNullOrBlank()) {
+        CategoryOpenMode.DirectApp
+    } else {
+        CategoryOpenMode.Url
+    }
 }
 
 private fun RuleCategory.labelRes(): Int = when (this) {
