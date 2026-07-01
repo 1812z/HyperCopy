@@ -1,6 +1,8 @@
 package io.github.hypercopy.data
 
 import android.content.Context
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 
 class RuleRepository(private val context: Context) {
     fun readRules(): List<RuleConfig> {
@@ -32,11 +34,15 @@ class RuleRepository(private val context: Context) {
 
     fun persistRules(rules: List<RuleConfig>) {
         rulesFile().writeText(rulesToJson(rules))
+        ruleChanges.tryEmit(Unit)
     }
 
     private fun rulesFile() = context.filesDir.resolve(RULES_FILE_NAME)
 
-    private companion object {
+    companion object {
+        private val ruleChanges = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+        val changes = ruleChanges.asSharedFlow()
+
         const val RULES_FILE_NAME = "rules.json"
     }
 }

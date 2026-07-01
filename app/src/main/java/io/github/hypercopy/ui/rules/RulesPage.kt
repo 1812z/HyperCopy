@@ -97,6 +97,12 @@ fun RulesPage(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
+    LaunchedEffect(repository) {
+        RuleRepository.changes.collect {
+            rules = repository.readRules()
+        }
+    }
+
     val categoryRules = rules.filter { it.category in selectedCategory.ruleCategories() }
     val categoryRuleIds = categoryRules.map { it.id }.toSet()
     val selectionMode = selectedRuleIds.isNotEmpty()

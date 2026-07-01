@@ -88,10 +88,14 @@ fun HomePage(
     fun refreshPermissionStatus(requestCurrentModePermission: Boolean) {
         batteryUnrestricted = isBatteryUnrestricted(context)
         if (isShizukuMode) {
-            if (requestCurrentModePermission) {
-                ShizukuPermission.requestIfNeeded { granted -> shizukuGranted = granted }
-            } else {
-                shizukuGranted = ShizukuPermission.isGranted()
+            ShizukuPermission.waitForAvailable { available ->
+                if (!available) {
+                    shizukuGranted = false
+                } else if (requestCurrentModePermission) {
+                    ShizukuPermission.requestIfNeeded { granted -> shizukuGranted = granted }
+                } else {
+                    shizukuGranted = ShizukuPermission.isGranted()
+                }
             }
         } else {
             coroutineScope.launch {

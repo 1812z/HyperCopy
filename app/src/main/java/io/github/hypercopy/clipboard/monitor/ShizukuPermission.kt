@@ -1,18 +1,46 @@
 package io.github.hypercopy.clipboard.monitor
 
 import android.content.pm.PackageManager
+import android.os.Handler
+import android.os.Looper
 import io.github.hypercopy.HyperLog
 import rikka.shizuku.Shizuku
+import java.util.concurrent.atomic.AtomicBoolean
 
 object ShizukuPermission {
     private const val TAG = "HyperCopy"
     private const val REQUEST_CODE = 3001
+    private const val BINDER_WAIT_TIMEOUT_MS = 3_000L
 
     fun isAvailable(): Boolean = runCatching { Shizuku.pingBinder() }.getOrDefault(false)
 
     fun isGranted(): Boolean {
         if (!isAvailable()) return false
         return runCatching { Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED }.getOrDefault(false)
+    }
+
+    fun waitForAvailable(onResult: (Boolean) -> Unit) {
+        if (isAvailable()) {
+            onResult(true)
+            return
+        }
+
+        val completed = AtomicBoolean(false)
+        val mainHandler = Handler(Looper.getMainLooper())
+        lateinit var listener: Shizuku.OnBinderReceivedListener
+        fun finish(available: Boolean) {
+            if (!completed.compareAndSet(false, true)) return
+            Shizuku.removeBinderReceivedListener(listener)
+            if (Looper.myLooper() == Looper.getMainLooper()) {
+                onResult(available)
+            } else {
+                mainHandler.post { onResult(available) }
+            }
+        }
+
+        listener = Shizuku.OnBinderReceivedListener { finish(true) }
+        Shizuku.addBinderReceivedListener(listener)
+        mainHandler.postDelayed({ finish(isAvailable()) }, BINDER_WAIT_TIMEOUT_MS)
     }
 
     fun requestIfNeeded(onResult: (Boolean) -> Unit) {
@@ -25,18 +53,27 @@ object ShizukuPermission {
             return
         }
 
+        val mainHandler = Handler(Looper.getMainLooper())
+        fun dispatchResult(granted: Boolean) {
+            if (Looper.myLooper() == Looper.getMainLooper()) {
+                onResult(granted)
+            } else {
+                mainHandler.post { onResult(granted) }
+            }
+        }
+
         val listener = object : Shizuku.OnRequestPermissionResultListener {
             override fun onRequestPermissionResult(requestCode: Int, grantResult: Int) {
                 if (requestCode != REQUEST_CODE) return
                 Shizuku.removeRequestPermissionResultListener(this)
-                onResult(grantResult == PackageManager.PERMISSION_GRANTED)
+                dispatchResult(grantResult == PackageManager.PERMISSION_GRANTED)
             }
         }
         Shizuku.addRequestPermissionResultListener(listener)
         runCatching { Shizuku.requestPermission(REQUEST_CODE) }.onFailure { throwable ->
             HyperLog.d(TAG, "request Shizuku permission failed", throwable)
             Shizuku.removeRequestPermissionResultListener(listener)
-            onResult(false)
+            dispatchResult(false)
         }
     }
 }

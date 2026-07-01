@@ -13,22 +13,37 @@ object ShizukuClipboardMonitor {
 
     private var detector: ShizukuLogcatClipboardDetector? = null
     private var probe: ClipboardChangeProbe? = null
+    private var startGeneration = 0
 
     fun start(context: Context) {
         val appContext = context.applicationContext
+        val generation = ++startGeneration
         startProbe(appContext)
-        if (ShizukuPermission.isAvailable()) {
-            ShizukuPermission.requestIfNeeded { granted ->
-                if (granted) {
-                    startDetector(appContext) { command -> ShizukuProcess.start(command) }
-                } else {
-                    Toast.makeText(appContext, R.string.toast_shizuku_permission_denied, Toast.LENGTH_SHORT).show()
-                    HyperLog.d(TAG, "Shizuku permission denied")
-                }
+        ShizukuPermission.waitForAvailable { available ->
+            if (generation != startGeneration) return@waitForAvailable
+            if (available) {
+                startWithShizuku(appContext, generation)
+            } else {
+                startWithReadLogsFallback(appContext)
             }
-            return
         }
+    }
 
+    private fun startWithShizuku(appContext: Context, generation: Int) {
+        if (detector != null) return
+        ShizukuPermission.requestIfNeeded { granted ->
+            if (generation != startGeneration) return@requestIfNeeded
+            if (granted) {
+                startDetector(appContext) { command -> ShizukuProcess.start(command) }
+            } else {
+                Toast.makeText(appContext, R.string.toast_shizuku_permission_denied, Toast.LENGTH_SHORT).show()
+                HyperLog.d(TAG, "Shizuku permission denied")
+            }
+        }
+    }
+
+    private fun startWithReadLogsFallback(appContext: Context) {
+        if (detector != null) return
         if (hasReadLogsPermission(appContext)) {
             startDetector(appContext) { command -> Runtime.getRuntime().exec(command) }
         } else {
@@ -38,6 +53,7 @@ object ShizukuClipboardMonitor {
     }
 
     fun stop() {
+        startGeneration++
         detector?.stop()
         detector = null
         probe?.stop()
