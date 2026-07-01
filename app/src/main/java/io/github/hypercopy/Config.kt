@@ -10,6 +10,8 @@ object Config {
     const val KEY_COLOR_MODE = "color_mode"
     const val KEY_CLIPBOARD_MONITOR_MODE = "clipboard_monitor_mode"
     const val KEY_JUMP_NOTIFICATION_MODE = "jump_notification_mode"
+    const val KEY_APP_LIST_WORK_MODE = "app_list_work_mode"
+    const val KEY_IGNORE_JUMP_APP = "ignore_jump_app"
 
     const val ACTION_HANDLE_CLIPBOARD_TEXT = "io.github.hypercopy.action.HANDLE_CLIPBOARD_TEXT"
     const val ACTION_CONFIRM_JUMP = "io.github.hypercopy.action.CONFIRM_JUMP"
@@ -34,12 +36,17 @@ object Config {
     const val JUMP_NOTIFICATION_MODE_LIVE = "live"
     const val JUMP_NOTIFICATION_MODE_MIUI_ISLAND = "miui_island"
 
+    const val APP_LIST_WORK_MODE_WHITELIST = "whitelist"
+    const val APP_LIST_WORK_MODE_BLACKLIST = "blacklist"
+
     const val DEFAULT_LOG_LEVEL = LOG_LEVEL_BASIC
     const val DEFAULT_AUTO_CHECK_UPDATE = true
     const val DEFAULT_APP_LANGUAGE = APP_LANGUAGE_ZH
     const val DEFAULT_COLOR_MODE = COLOR_MODE_SYSTEM
     const val DEFAULT_CLIPBOARD_MONITOR_MODE = CLIPBOARD_MONITOR_MODE_LSPOSED
     const val DEFAULT_JUMP_NOTIFICATION_MODE = JUMP_NOTIFICATION_MODE_NONE
+    const val DEFAULT_APP_LIST_WORK_MODE = APP_LIST_WORK_MODE_BLACKLIST
+    const val DEFAULT_IGNORE_JUMP_APP = true
 
     const val CLIPBOARD_TEXT_MAX_LENGTH = 16_384
 }

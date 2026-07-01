@@ -22,7 +22,7 @@ object RootActivityLauncher {
                 return false
             }
             val output = process.inputStream.bufferedReader().use { it.readText() }
-            val success = process.exitValue() == 0
+            val success = process.exitValue() == 0 || output.indicatesActivityStarted()
             if (!success) Log.d(TAG, "root start activity failed: $output")
             success
         }.getOrElse { throwable ->
@@ -45,4 +45,8 @@ fun String.toViewIntent(packageName: String = ""): Intent {
         if (packageName.isNotBlank()) setPackage(packageName)
         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     }
+}
+
+internal fun String.indicatesActivityStarted(): Boolean {
+    return contains("Starting:", ignoreCase = true) || contains("Warning: Activity not started", ignoreCase = true)
 }

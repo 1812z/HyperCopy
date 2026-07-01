@@ -6,10 +6,12 @@ import io.github.hypercopy.Config
 import io.github.hypercopy.data.RuleActionMode
 import io.github.hypercopy.data.RuleConfig
 import io.github.hypercopy.data.RuleRepository
+import io.github.hypercopy.data.SettingsRepository
 import io.github.hypercopy.data.directIntent
 import io.github.hypercopy.data.findRule
 import io.github.hypercopy.data.matchRule
 import io.github.hypercopy.data.parseIntent
+import io.github.hypercopy.data.resolveInputUrl
 import kotlin.concurrent.thread
 
 object ClipboardTextHandler {
@@ -29,9 +31,11 @@ object ClipboardTextHandler {
         lastHandledAt = now
 
         val appContext = context.applicationContext
+        val ignoreJumpApp = SettingsRepository(appContext).readIgnoreJumpApp()
         val rules = RuleRepository(appContext).readRules()
         val match = matchRule(input, rules)
         if (match != null) {
+            if (shouldIgnoreJump(source, match.rule.target.packageName, ignoreJumpApp)) return
             submitJump(
                 appContext,
                 PendingJump.IntentJump(
@@ -46,24 +50,31 @@ object ClipboardTextHandler {
 
         val rule = findRule(input, rules) ?: return
         when (rule.actionMode) {
-            RuleActionMode.DirectOpen -> submitJump(
-                appContext,
-                PendingJump.IntentJump(
-                    title = rule.name,
-                    intent = rule.directIntent(input, appContext.packageManager),
-                    packageName = rule.target.packageName,
-                ),
-                rule.clearClipboardAfterJump,
-            )
-            RuleActionMode.WebViewResolveAndOpen -> startWebViewResolve(appContext, rule, input)
+            RuleActionMode.DirectOpen -> {
+                if (shouldIgnoreJump(source, rule.target.packageName, ignoreJumpApp)) return
+                submitJump(
+                    appContext,
+                    PendingJump.IntentJump(
+                        title = rule.name,
+                        intent = rule.directIntent(input, appContext.packageManager),
+                        packageName = rule.target.packageName,
+                    ),
+                    rule.clearClipboardAfterJump,
+                )
+            }
+            RuleActionMode.WebViewResolveAndOpen -> {
+                if (shouldIgnoreJump(source, rule.target.packageName, ignoreJumpApp)) return
+                startWebViewResolve(appContext, rule, input)
+            }
             RuleActionMode.ParseAndOpen -> return
         }
     }
 
     private fun startWebViewResolve(context: Context, rule: RuleConfig, input: String) {
+        val resolveUrl = rule.resolveInputUrl(input)
         if (rule.parseAfterRedirect) {
             thread(name = "HyperCopyRedirectResolve") {
-                val redirectedUrl = OneRedirectResolver.resolve(normalizeUrl(input))
+                val redirectedUrl = OneRedirectResolver.resolve(resolveUrl)
                 Log.d(TAG, "redirect parse url: $redirectedUrl")
                 val intent = rule.parseIntent(
                     redirectedUrl,
@@ -89,7 +100,7 @@ object ClipboardTextHandler {
             context,
             PendingJump.WebViewJump(
                 title = rule.name,
-                url = normalizeUrl(input),
+                url = resolveUrl,
                 packageName = rule.target.packageName,
             ),
             rule.clearClipboardAfterJump,
@@ -100,9 +111,8 @@ object ClipboardTextHandler {
         PendingJumpCoordinator.submit(context, jump, clearClipboardAfterJump)
     }
 
-    private fun normalizeUrl(text: String): String {
-        val value = text.trim()
-        val uri = runCatching { android.net.Uri.parse(value) }.getOrNull()
-        return if (uri?.scheme.isNullOrBlank()) "https://$value" else value
+    private fun shouldIgnoreJump(source: String, targetPackageName: String, ignoreJumpApp: Boolean): Boolean {
+        return ignoreJumpApp && source.isNotBlank() && source == targetPackageName
     }
+
 }

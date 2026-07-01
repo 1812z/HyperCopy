@@ -23,7 +23,7 @@ object ShizukuActivityLauncher {
                 return false
             }
             val output = process.inputStream.bufferedReader().use { it.readText() }
-            val success = process.exitValue() == 0
+            val success = process.exitValue() == 0 || output.indicatesActivityStarted()
             if (!success) Log.d(TAG, "Shizuku start activity failed: $output")
             success
         }.getOrElse { throwable ->

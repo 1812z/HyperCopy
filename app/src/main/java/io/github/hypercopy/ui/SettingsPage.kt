@@ -30,8 +30,10 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.AppRecording
 import top.yukonga.miuix.kmp.icon.extended.Download
 import top.yukonga.miuix.kmp.icon.extended.Link
+import top.yukonga.miuix.kmp.icon.extended.ListView
 import top.yukonga.miuix.kmp.icon.extended.Theme
 import top.yukonga.miuix.kmp.icon.extended.Update
+import top.yukonga.miuix.kmp.icon.basic.ArrowRight
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -41,22 +43,20 @@ fun SettingsPage(
     autoCheckUpdate: Boolean,
     desktopIconHidden: Boolean,
     appLanguage: AppLanguage,
-    clipboardMonitorMode: ClipboardMonitorMode,
     jumpNotificationMode: JumpNotificationMode,
     onLogLevelChange: (Int) -> Unit,
     onAutoCheckUpdateChange: (Boolean) -> Unit,
     onDesktopIconHiddenChange: (Boolean) -> Unit,
     onAppLanguageChange: (AppLanguage) -> Unit,
-    onClipboardMonitorModeChange: (ClipboardMonitorMode) -> Unit,
     onJumpNotificationModeChange: (JumpNotificationMode) -> Unit,
     onCheckUpdate: () -> Unit,
     onOpenTheme: () -> Unit,
+    onOpenAppList: () -> Unit,
     bottomContentPadding: Dp = 16.dp,
 ) {
     val uriHandler = LocalUriHandler.current
     val logLevelOptions = logLevelOptions()
     val languageOptions = languageOptions()
-    val clipboardMonitorModeOptions = clipboardMonitorModeOptions()
     val jumpNotificationModeOptions = jumpNotificationModeOptions()
 
     LazyColumn(
@@ -96,14 +96,6 @@ fun SettingsPage(
         item {
             Card {
                 OverlayDropdownPreference(
-                    title = stringResource(R.string.clipboard_monitor_mode),
-                    summary = stringResource(R.string.clipboard_monitor_mode_summary),
-                    items = clipboardMonitorModeOptions.map { it.label },
-                    selectedIndex = clipboardMonitorModeOptions.indexOfFirst { it.value == clipboardMonitorMode }.coerceAtLeast(0),
-                    insideMargin = SettingsItemMargin,
-                    onSelectedIndexChange = { onClipboardMonitorModeChange(clipboardMonitorModeOptions[it].value) },
-                )
-                OverlayDropdownPreference(
                     title = stringResource(R.string.jump_notification_mode),
                     summary = stringResource(R.string.jump_notification_mode_summary),
                     items = jumpNotificationModeOptions.map { it.label },
@@ -139,6 +131,12 @@ fun SettingsPage(
                     checked = desktopIconHidden,
                     onCheckedChange = { onDesktopIconHiddenChange(!desktopIconHidden) },
                 )
+                SettingsActionWithArrow(
+                    icon = MiuixIcons.ListView,
+                    title = stringResource(R.string.app_list),
+                    summary = stringResource(R.string.app_list_summary),
+                    onClick = onOpenAppList,
+                )
             }
         }
 
@@ -159,6 +157,25 @@ fun SettingsPage(
 @Composable
 fun SettingsAction(icon: ImageVector, title: String, summary: String, onClick: () -> Unit) {
     SettingsRow(icon = icon, title = title, summary = summary, role = Role.Button, onClick = onClick)
+}
+
+@Composable
+fun SettingsActionWithArrow(icon: ImageVector, title: String, summary: String, onClick: () -> Unit) {
+    SettingsRow(
+        icon = icon,
+        title = title,
+        summary = summary,
+        role = Role.Button,
+        onClick = onClick,
+        trailing = {
+            Icon(
+                imageVector = MiuixIcons.Basic.ArrowRight,
+                contentDescription = null,
+                tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                modifier = Modifier.size(18.dp),
+            )
+        },
+    )
 }
 
 @Composable
@@ -232,8 +249,6 @@ private data class LogLevelOption(val label: String, val value: Int)
 
 private data class LanguageOption(val label: String, val value: AppLanguage)
 
-private data class ClipboardMonitorModeOption(val label: String, val value: ClipboardMonitorMode)
-
 private data class JumpNotificationModeOption(val label: String, val value: JumpNotificationMode)
 
 @Composable
@@ -246,12 +261,6 @@ private fun logLevelOptions() = listOf(
 @Composable
 private fun languageOptions() = listOf(
     LanguageOption(stringResource(R.string.language_chinese), AppLanguage.Chinese),
-)
-
-@Composable
-private fun clipboardMonitorModeOptions() = listOf(
-    ClipboardMonitorModeOption(stringResource(R.string.clipboard_monitor_mode_lsposed), ClipboardMonitorMode.LSPosed),
-    ClipboardMonitorModeOption(stringResource(R.string.clipboard_monitor_mode_shizuku), ClipboardMonitorMode.Shizuku),
 )
 
 @Composable

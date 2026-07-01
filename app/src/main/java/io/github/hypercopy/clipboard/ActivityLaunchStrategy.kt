@@ -13,12 +13,14 @@ object ActivityLaunchStrategy {
 
     fun launch(context: Context, intent: Intent): Boolean {
         val resolvedIntent = intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK).withResolvedActivity(context.packageManager)
-        val launched = if (SettingsRepository(context.applicationContext).readClipboardMonitorMode() == Config.CLIPBOARD_MONITOR_MODE_SHIZUKU) {
-            ShizukuActivityLauncher.launch(resolvedIntent)
+        val usesPrivilegedLauncher = SettingsRepository(context.applicationContext).readClipboardMonitorMode() == Config.CLIPBOARD_MONITOR_MODE_SHIZUKU
+        val launched = if (usesPrivilegedLauncher) {
+            ShizukuActivityLauncher.launch(resolvedIntent) || launchNormally(context, resolvedIntent)
         } else {
             RootActivityLauncher.launch(resolvedIntent) || launchNormally(context, resolvedIntent)
         }
-        if (!launched) Toast.makeText(context, R.string.toast_open_target_failed, Toast.LENGTH_SHORT).show()
+        if (!launched && usesPrivilegedLauncher) Log.d(TAG, "Privileged start returned failure; suppress toast to avoid false negatives")
+        if (!launched && !usesPrivilegedLauncher) Toast.makeText(context, R.string.toast_open_target_failed, Toast.LENGTH_SHORT).show()
         return launched
     }
 

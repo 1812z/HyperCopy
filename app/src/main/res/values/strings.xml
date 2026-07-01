@@ -13,6 +13,7 @@
     <string name="status_not_active">未激活</string>
     <string name="status_module_connected">模块服务已连接</string>
     <string name="status_module_disconnected">模块服务未连接</string>
+    <string name="status_battery_abnormal">省电设置异常</string>
 
     <!-- 首页信息 -->
     <string name="info_system_version">系统版本</string>
@@ -25,6 +26,11 @@
     <string name="home_work_mode">工作模式</string>
     <string name="home_rule_count">规则</string>
     <string name="home_enabled_rule_count">已启用 %1$d 条</string>
+    <string name="permission_root_status">Root 权限状态</string>
+    <string name="permission_shizuku_status">Shizuku 权限状态</string>
+    <string name="permission_granted">已授权</string>
+    <string name="permission_missing">权限不足</string>
+    <string name="battery_status">省电设置</string>
 
     <!-- 外观设置 -->
     <string name="appearance">外观</string>
@@ -42,7 +48,7 @@
     <!-- 软件设置 -->
     <string name="software_settings">软件设置</string>
     <string name="clipboard_monitor_mode">监听方案</string>
-    <string name="clipboard_monitor_mode_summary">选择 LSPosed 或 Shizuku 监听剪贴板变化</string>
+    <string name="clipboard_monitor_mode_summary">选择监听剪贴板变化的方案</string>
     <string name="clipboard_monitor_mode_lsposed">LSPosed</string>
     <string name="clipboard_monitor_mode_shizuku">Shizuku</string>
     <string name="jump_notification_mode">跳转通知</string>
@@ -61,6 +67,17 @@
     <string name="auto_check_update_summary">启动时检查 GitHub Release 是否有新版本</string>
     <string name="hide_desktop_icon">隐藏桌面图标</string>
     <string name="hide_desktop_icon_summary">开启后启动器中不显示应用图标，仍可从 LSPosed 模块设置打开</string>
+
+    <!-- 应用名单 -->
+    <string name="app_list">应用名单</string>
+    <string name="app_list_summary">管理白名单和黑名单应用</string>
+    <string name="app_list_search_hint">搜索应用名称或包名</string>
+    <string name="app_list_menu_options">应用名单选项</string>
+    <string name="app_list_work_mode">工作模式</string>
+    <string name="app_list_whitelist">白名单</string>
+    <string name="app_list_blacklist">黑名单</string>
+    <string name="app_list_ignore_jump">忽略跳转应用</string>
+    <string name="app_list_ignore_jump_summary">在被跳转的应用内不要跳转自己</string>
 
     <!-- 关于 -->
     <string name="about">关于</string>
@@ -87,6 +104,8 @@
     <string name="action_export_rule">导出规则</string>
     <string name="action_download_rule">下载规则</string>
     <string name="action_update_rule">更新规则</string>
+    <string name="action_request_permission">请求权限</string>
+    <string name="action_battery_settings">打开省电设置</string>
 
     <!-- 规则分类 -->
     <string name="category_link">链接</string>
@@ -156,11 +175,14 @@
     <string name="editor_clear_clipboard_after_jump_summary">确认跳转后自动清空当前剪贴板，避免进入目标软件后再次询问跳转</string>
     <string name="editor_action_add_regex">添加正则</string>
     <string name="editor_placeholder_help_title">占位符说明</string>
+    <string name="editor_placeholder_help_copy_hint">点一下说明可复制对应占位符。</string>
     <string name="editor_placeholder_help_input"><![CDATA[${input}：完整复制内容。]]></string>
+    <string name="editor_placeholder_help_url_input"><![CDATA[${url:input}：从完整复制内容中提取第一个 URL，适合带前后缀文案的链接。]]></string>
     <string name="editor_placeholder_help_redirect"><![CDATA[${redirectUrl}：跳转后解析模式下的一次重定向后 URL。]]></string>
     <string name="editor_placeholder_help_regex"><![CDATA[${r1}、${r2}：第 1、2 条提取正则的第一个捕获组。]]></string>
     <string name="editor_placeholder_help_regex_group"><![CDATA[${r1_2}：第 1 条提取正则的第 2 个捕获组。]]></string>
     <string name="editor_placeholder_help_raw"><![CDATA[${raw:r1}：原样插入参数，不做 URL 编码，适合 intent:// 模板。]]></string>
+    <string name="editor_placeholder_copied">已复制：%1$s</string>
     <string name="editor_default_address_name">地址规则</string>
     <string name="editor_rule_name_new">新规则</string>
     <string name="editor_rule_name_from_scheme">%1$s 跳转</string>
@@ -194,8 +216,14 @@
     <string name="cloud_no_match">没有匹配的规则</string>
     <string name="cloud_no_match_hint">换个关键词试试，或点击右上角刷新。</string>
     <string name="cloud_generic_rule">通用规则</string>
+    <string name="cloud_menu_options">云规则选项</string>
+    <string name="cloud_menu_show_installed_only">仅显示已安装应用</string>
+    <string name="cloud_menu_download_installed">一键下载已安装应用</string>
     <string name="cloud_toast_added">已添加：%1$s</string>
+    <string name="cloud_toast_batch_added">已添加 %1$d 条规则</string>
     <string name="cloud_toast_download_failed">下载失败：%1$s</string>
+    <string name="cloud_toast_no_installed_rules_to_download">没有可下载的已安装应用规则</string>
+    <string name="cloud_toast_refresh_success">刷新成功</string>
 
     <!-- Toast -->
     <string name="toast_open_target_failed">打开目标应用失败</string>

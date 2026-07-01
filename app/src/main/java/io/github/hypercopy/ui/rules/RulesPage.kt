@@ -1,7 +1,6 @@
 package io.github.hypercopy.ui.rules
 
 import android.content.Intent
-import android.net.Uri
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
@@ -51,6 +50,7 @@ import io.github.hypercopy.data.directIntent
 import io.github.hypercopy.data.findRule
 import io.github.hypercopy.data.matchRule
 import io.github.hypercopy.data.parseIntent
+import io.github.hypercopy.data.resolveInputUrl
 import io.github.hypercopy.data.rulesFromJson
 import io.github.hypercopy.data.toIntent
 import io.github.hypercopy.ui.HiddenWebViewResolver
@@ -433,18 +433,13 @@ private fun executeRuleTest(
         }
 
         RuleActionMode.WebViewResolveAndOpen -> {
+            val resolveUrl = rule.resolveInputUrl(value)
             if (rule.parseAfterRedirect) {
-                onStartRedirectParse(normalizeTestUrl(value), rule)
+                onStartRedirectParse(resolveUrl, rule)
                 return context.getString(R.string.rule_result_match_redirect_parse, rule.name)
             }
-            onStartWebViewResolve(normalizeTestUrl(value), rule)
+            onStartWebViewResolve(resolveUrl, rule)
             context.getString(R.string.rule_result_match_webview, rule.name)
         }
     }
-}
-
-private fun normalizeTestUrl(text: String): String {
-    val value = text.trim()
-    val uri = runCatching { Uri.parse(value) }.getOrNull()
-    return if (uri?.scheme.isNullOrBlank()) "https://$value" else value
 }

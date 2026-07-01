@@ -1,0 +1,15 @@
+{
+  "name": "123pan",
+  "category": "link",
+  "actionMode": "direct_open",
+  "matchRegex": "123pan\\.com|123pan\\.cn|www\\.123\\d{3}\\.com",
+  "extractionRegexes": [
+    "/s/([^#&?.]*)",
+    "(?:\\?|&)pwd=([^#&\\?]*)(?:#|&|\\?|$)"
+  ],
+  "target": {
+    "type": "url",
+    "template": "pan://umeng.com/share/list?sharePwd=${r2}&_sdk_=umeng&action=share_list&shareKey=${r1}",
+    "packageName": "com.mfcloudcalculate.networkdisk"
+  }
+}

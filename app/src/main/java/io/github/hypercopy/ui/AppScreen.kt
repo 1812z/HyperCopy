@@ -61,6 +61,7 @@ private enum class Tab(val icon: androidx.compose.ui.graphics.vector.ImageVector
 private enum class SettingsDestination {
     Main,
     Theme,
+    AppList,
 }
 
 @Composable
@@ -90,6 +91,8 @@ fun AppScreen(
     var jumpNotificationMode by remember {
         mutableStateOf(jumpNotificationModeFromValue(settingsRepository.readJumpNotificationMode()))
     }
+    var appListWorkMode by remember { mutableStateOf(settingsRepository.readAppListWorkMode()) }
+    var ignoreJumpApp by remember { mutableStateOf(settingsRepository.readIgnoreJumpApp()) }
 
     DisposableEffect(Unit) {
         val listener: (XposedService?) -> Unit = { service -> xposedService = service }
@@ -125,16 +128,25 @@ fun AppScreen(
         ) {
             HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
                 when (tabs[page]) {
-                    Tab.Home -> HomePage(xposedService = xposedService, bottomContentPadding = 16.dp)
+                    Tab.Home -> HomePage(
+                        xposedService = xposedService,
+                        clipboardMonitorMode = clipboardMonitorMode,
+                        onClipboardMonitorModeChange = {
+                            clipboardMonitorMode = it
+                            settingsRepository.persistClipboardMonitorMode(it.value)
+                            ClipboardMonitorController.onModeChanged(context.applicationContext, it.value)
+                        },
+                        bottomContentPadding = 16.dp,
+                    )
                     Tab.Copy -> CloudRulesPage(bottomContentPadding = 16.dp)
                     Tab.Rules -> RulesPage(bottomContentPadding = 16.dp)
                     Tab.Settings -> AnimatedContent(
                         targetState = settingsDestination,
                         transitionSpec = {
-                            val direction = if (targetState == SettingsDestination.Theme) {
-                                AnimatedContentTransitionScope.SlideDirection.Left
-                            } else {
+                            val direction = if (targetState == SettingsDestination.Main) {
                                 AnimatedContentTransitionScope.SlideDirection.Right
+                            } else {
+                                AnimatedContentTransitionScope.SlideDirection.Left
                             }
                             (slideIntoContainer(direction, tween(260)) + fadeIn(tween(160))) togetherWith
                                 (slideOutOfContainer(direction, tween(260)) + fadeOut(tween(160)))
@@ -147,7 +159,6 @@ fun AppScreen(
                                 autoCheckUpdate = autoCheckUpdate,
                                 desktopIconHidden = desktopIconHidden,
                                 appLanguage = appLanguage,
-                                clipboardMonitorMode = clipboardMonitorMode,
                                 jumpNotificationMode = jumpNotificationMode,
                                 onLogLevelChange = {
                                     logLevel = it
@@ -165,11 +176,6 @@ fun AppScreen(
                                     appLanguage = it
                                     settingsRepository.persistAppLanguage(it.value)
                                 },
-                                onClipboardMonitorModeChange = {
-                                    clipboardMonitorMode = it
-                                    settingsRepository.persistClipboardMonitorMode(it.value)
-                                    ClipboardMonitorController.onModeChanged(context.applicationContext, it.value)
-                                },
                                 onJumpNotificationModeChange = {
                                     jumpNotificationMode = it
                                     settingsRepository.persistJumpNotificationMode(it.value)
@@ -185,6 +191,7 @@ fun AppScreen(
                                     ).show()
                                 },
                                 onOpenTheme = { settingsDestination = SettingsDestination.Theme },
+                                onOpenAppList = { settingsDestination = SettingsDestination.AppList },
                                 bottomContentPadding = 16.dp,
                             )
 
@@ -194,6 +201,21 @@ fun AppScreen(
                                     onColorModeChange(it)
                                     settingsRepository.persistColorMode(it.value)
                                 },
+                                bottomContentPadding = 16.dp,
+                            )
+
+                            SettingsDestination.AppList -> AppListPage(
+                                workMode = appListWorkMode,
+                                ignoreJumpApp = ignoreJumpApp,
+                                onWorkModeChange = {
+                                    appListWorkMode = it
+                                    settingsRepository.persistAppListWorkMode(it)
+                                },
+                                onIgnoreJumpAppChange = {
+                                    ignoreJumpApp = it
+                                    settingsRepository.persistIgnoreJumpApp(it)
+                                },
+                                onBack = { settingsDestination = SettingsDestination.Main },
                                 bottomContentPadding = 16.dp,
                             )
                         }

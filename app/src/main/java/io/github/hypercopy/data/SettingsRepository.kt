@@ -61,6 +61,25 @@ class SettingsRepository(private val context: Context) {
         preferences().edit(commit = true) { putString(Config.KEY_JUMP_NOTIFICATION_MODE, value) }
     }
 
+    fun readAppListWorkMode(): String {
+        return preferences().getString(
+            Config.KEY_APP_LIST_WORK_MODE,
+            Config.DEFAULT_APP_LIST_WORK_MODE,
+        ) ?: Config.DEFAULT_APP_LIST_WORK_MODE
+    }
+
+    fun persistAppListWorkMode(value: String) {
+        preferences().edit(commit = true) { putString(Config.KEY_APP_LIST_WORK_MODE, value) }
+    }
+
+    fun readIgnoreJumpApp(): Boolean {
+        return preferences().getBoolean(Config.KEY_IGNORE_JUMP_APP, Config.DEFAULT_IGNORE_JUMP_APP)
+    }
+
+    fun persistIgnoreJumpApp(value: Boolean) {
+        preferences().edit(commit = true) { putBoolean(Config.KEY_IGNORE_JUMP_APP, value) }
+    }
+
     fun readDesktopIconHidden(): Boolean {
         return context.packageManager.getComponentEnabledSetting(desktopIconComponent()) ==
             PackageManager.COMPONENT_ENABLED_STATE_DISABLED

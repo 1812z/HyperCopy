@@ -1,5 +1,6 @@
 package io.github.hypercopy.ui.rules
 
+import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,12 +34,17 @@ import io.github.hypercopy.data.CloudRule
 import io.github.hypercopy.data.CloudRuleException
 import io.github.hypercopy.data.CloudRulesRepository
 import io.github.hypercopy.data.RuleRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
+import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.ListPopupColumn
+import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -46,8 +52,10 @@ import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.Check
 import top.yukonga.miuix.kmp.icon.extended.Download
+import top.yukonga.miuix.kmp.icon.extended.ListView
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.icon.extended.Search
+import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -63,18 +71,36 @@ fun CloudRulesPage(bottomContentPadding: Dp = 16.dp) {
     var loading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var downloadedIds by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var installedPackageNames by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var showInstalledOnly by remember { mutableStateOf(false) }
+    val rulesCache = remember { mutableStateMapOf<RulePageCategory, List<CloudRule>>() }
     val downloadingIds = remember { mutableStateMapOf<String, Boolean>() }
 
     fun refreshDownloadedIds() {
         downloadedIds = localRepository.readRules().map { it.id }.toSet()
     }
 
-    fun loadRules(category: RulePageCategory) {
+    fun loadRules(category: RulePageCategory, forceRefresh: Boolean = false, showSuccessToast: Boolean = false) {
+        if (!forceRefresh) {
+            rulesCache[category]?.let {
+                cloudRules = it
+                error = null
+                refreshDownloadedIds()
+                return
+            }
+        }
         scope.launch {
             loading = true
             error = null
+            if (!forceRefresh) cloudRules = emptyList()
             runCatching { cloudRepository.listRules(category.folderName()) }
-                .onSuccess { cloudRules = it }
+                .onSuccess {
+                    rulesCache[category] = it
+                    cloudRules = it
+                    if (showSuccessToast) {
+                        Toast.makeText(context, R.string.cloud_toast_refresh_success, Toast.LENGTH_SHORT).show()
+                    }
+                }
                 .onFailure { error = (it as? CloudRuleException)?.message ?: context.getString(R.string.cloud_error_load) }
             loading = false
             refreshDownloadedIds()
@@ -82,19 +108,30 @@ fun CloudRulesPage(bottomContentPadding: Dp = 16.dp) {
     }
 
     LaunchedEffect(selectedCategory) { loadRules(selectedCategory) }
+    LaunchedEffect(Unit) {
+        installedPackageNames = withContext(Dispatchers.IO) {
+            val packageManager = context.packageManager
+            packageManager.getInstalledApplications(PackageManager.ApplicationInfoFlags.of(0))
+                .map { it.packageName }
+                .toSet()
+        }
+    }
 
-    val filteredRules by remember(cloudRules, searchQuery) {
+    val filteredRules by remember(cloudRules, searchQuery, showInstalledOnly, installedPackageNames) {
         derivedStateOf {
             val query = searchQuery.trim()
-            if (query.isEmpty()) {
-                cloudRules
-            } else {
-                cloudRules.filter { rule ->
+            cloudRules.filter { rule ->
+                val matchesInstalled = !showInstalledOnly || rule.packageName in installedPackageNames
+                val matchesQuery = query.isEmpty() ||
                     rule.name.contains(query, ignoreCase = true) ||
-                        rule.packageName.contains(query, ignoreCase = true)
-                }
+                    rule.packageName.contains(query, ignoreCase = true)
+                matchesInstalled && matchesQuery
             }
         }
+    }
+
+    val installedRules by remember(cloudRules, installedPackageNames) {
+        derivedStateOf { cloudRules.filter { it.packageName in installedPackageNames } }
     }
 
     fun handleDownload(rule: CloudRule) {
@@ -113,8 +150,30 @@ fun CloudRulesPage(bottomContentPadding: Dp = 16.dp) {
                         context.getString(R.string.cloud_toast_download_failed, (it as? CloudRuleException)?.message ?: it.message),
                         Toast.LENGTH_SHORT,
                     ).show()
-                }
+            }
             downloadingIds[rule.fileName] = false
+        }
+    }
+
+    fun downloadInstalledRules() {
+        val rules = installedRules.filter { it.stableId() !in downloadedIds && downloadingIds[it.fileName] != true }
+        if (rules.isEmpty()) {
+            Toast.makeText(context, R.string.cloud_toast_no_installed_rules_to_download, Toast.LENGTH_SHORT).show()
+            return
+        }
+        scope.launch {
+            var successCount = 0
+            rules.forEach { rule ->
+                downloadingIds[rule.fileName] = true
+                runCatching { cloudRepository.downloadRule(rule) }
+                    .onSuccess { config ->
+                        localRepository.saveRule(config)
+                        successCount++
+                    }
+                downloadingIds[rule.fileName] = false
+            }
+            refreshDownloadedIds()
+            Toast.makeText(context, context.getString(R.string.cloud_toast_batch_added, successCount), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -123,7 +182,10 @@ fun CloudRulesPage(bottomContentPadding: Dp = 16.dp) {
             title = stringResource(R.string.tab_cloud_rules),
             searchQuery = searchQuery,
             onSearchQueryChange = { searchQuery = it },
-            onRefresh = { loadRules(selectedCategory) },
+            onRefresh = { loadRules(selectedCategory, forceRefresh = true, showSuccessToast = true) },
+            showInstalledOnly = showInstalledOnly,
+            onShowInstalledOnlyChange = { showInstalledOnly = it },
+            onDownloadInstalledRules = { downloadInstalledRules() },
         )
         RuleCategoryTabs(
             selectedCategory = selectedCategory,
@@ -188,7 +250,16 @@ private fun CloudRulesHeader(
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
     onRefresh: () -> Unit,
+    showInstalledOnly: Boolean,
+    onShowInstalledOnlyChange: (Boolean) -> Unit,
+    onDownloadInstalledRules: () -> Unit,
 ) {
+    var showPopup by remember { mutableStateOf(false) }
+    val items = listOf(
+        stringResource(R.string.cloud_menu_show_installed_only),
+        stringResource(R.string.cloud_menu_download_installed),
+    )
+
     Column(
         modifier = Modifier.fillMaxWidth().padding(start = 12.dp, top = 12.dp, end = 12.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -204,7 +275,6 @@ private fun CloudRulesHeader(
                 minWidth = 36.dp,
                 minHeight = 36.dp,
                 cornerRadius = 18.dp,
-                backgroundColor = MiuixTheme.colorScheme.primary.copy(alpha = 0.08f),
             ) {
                 Icon(
                     imageVector = MiuixIcons.Refresh,
@@ -212,6 +282,45 @@ private fun CloudRulesHeader(
                     tint = MiuixTheme.colorScheme.onSurface,
                     modifier = Modifier.size(18.dp),
                 )
+            }
+            Box {
+                IconButton(
+                    onClick = { showPopup = true },
+                    minWidth = 36.dp,
+                    minHeight = 36.dp,
+                    cornerRadius = 18.dp,
+                ) {
+                    Icon(
+                        imageVector = MiuixIcons.ListView,
+                        contentDescription = stringResource(R.string.cloud_menu_options),
+                        tint = MiuixTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+                OverlayListPopup(
+                    show = showPopup,
+                    alignment = PopupPositionProvider.Align.End,
+                    onDismissRequest = { showPopup = false },
+                ) {
+                    ListPopupColumn {
+                        items.forEachIndexed { index, text ->
+                            DropdownImpl(
+                                text = text,
+                                optionSize = items.size,
+                                isSelected = index == 0 && showInstalledOnly,
+                                index = index,
+                                onSelectedIndexChange = {
+                                    showPopup = false
+                                    if (index == 0) {
+                                        onShowInstalledOnlyChange(!showInstalledOnly)
+                                    } else {
+                                        onDownloadInstalledRules()
+                                    }
+                                },
+                            )
+                        }
+                    }
+                }
             }
         }
         TextField(

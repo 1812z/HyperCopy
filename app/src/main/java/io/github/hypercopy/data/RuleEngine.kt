@@ -70,7 +70,11 @@ fun RuleConfig.triggerPatterns(): List<String> = triggerRegexes.ifEmpty { listOf
 fun RuleConfig.extractionPatterns(): List<String> = extractionRegexes.ifEmpty { listOf(parameterRegex) }.filter { it.isNotBlank() }
 
 fun RuleTarget.toIntent(parameters: Map<String, String>): Intent {
-    val resolved = parameters.entries.fold(template) { value, entry ->
+    val urlResolved = URL_PLACEHOLDER_REGEX.replace(template) { match ->
+        val key = match.groupValues[1]
+        parameters[key]?.let { extractFirstInputUrl(it) ?: it }.orEmpty()
+    }
+    val resolved = parameters.entries.fold(urlResolved) { value, entry ->
         val replacement = if (entry.key == "input" || entry.key == "redirectUrl") entry.value else Uri.encode(entry.value)
         value
             .replace("${'$'}{raw:${entry.key}}", entry.value)
@@ -85,3 +89,5 @@ fun RuleTarget.toIntent(parameters: Map<String, String>): Intent {
         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     }
 }
+
+private val URL_PLACEHOLDER_REGEX = Regex("""\$\{url:([^}]+)\}""")

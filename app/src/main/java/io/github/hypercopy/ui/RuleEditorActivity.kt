@@ -7,6 +7,7 @@ import android.content.Context
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
+import androidx.compose.foundation.clickable
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
@@ -307,17 +308,38 @@ private fun RegexListEditor(
 
 @Composable
 private fun PlaceholderHelpCard() {
+    val context = LocalContext.current
+    val clipboard = remember { context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager }
+    val placeholders = listOf(
+        PlaceholderHelp("${'$'}{input}", stringResource(R.string.editor_placeholder_help_input)),
+        PlaceholderHelp("${'$'}{url:input}", stringResource(R.string.editor_placeholder_help_url_input)),
+        PlaceholderHelp("${'$'}{redirectUrl}", stringResource(R.string.editor_placeholder_help_redirect)),
+        PlaceholderHelp("${'$'}{r1}", stringResource(R.string.editor_placeholder_help_regex)),
+        PlaceholderHelp("${'$'}{r1_2}", stringResource(R.string.editor_placeholder_help_regex_group)),
+        PlaceholderHelp("${'$'}{raw:r1}", stringResource(R.string.editor_placeholder_help_raw)),
+    )
     Card {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(text = stringResource(R.string.editor_placeholder_help_title), style = MiuixTheme.textStyles.headline1)
-            Text(text = stringResource(R.string.editor_placeholder_help_input), style = MiuixTheme.textStyles.body2)
-            Text(text = stringResource(R.string.editor_placeholder_help_redirect), style = MiuixTheme.textStyles.body2)
-            Text(text = stringResource(R.string.editor_placeholder_help_regex), style = MiuixTheme.textStyles.body2)
-            Text(text = stringResource(R.string.editor_placeholder_help_regex_group), style = MiuixTheme.textStyles.body2)
-            Text(text = stringResource(R.string.editor_placeholder_help_raw), style = MiuixTheme.textStyles.body2)
+            Text(text = stringResource(R.string.editor_placeholder_help_copy_hint), style = MiuixTheme.textStyles.body2)
+            placeholders.forEach { item ->
+                Text(
+                    text = item.description,
+                    style = MiuixTheme.textStyles.body2,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            clipboard.setPrimaryClip(ClipData.newPlainText(item.placeholder, item.placeholder))
+                            Toast.makeText(context, context.getString(R.string.editor_placeholder_copied, item.placeholder), Toast.LENGTH_SHORT).show()
+                        }
+                        .padding(vertical = 4.dp),
+                )
+            }
         }
     }
 }
+
+private data class PlaceholderHelp(val placeholder: String, val description: String)
 
 private data class EditorDefaults(
     val name: String,
