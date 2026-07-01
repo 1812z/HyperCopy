@@ -76,7 +76,7 @@ internal fun RuleActionMode.labelRes(): Int = when (this) {
 @StringRes
 internal fun ruleActionLabelRes(rule: io.github.hypercopy.data.RuleConfig): Int {
     if (rule.category != RuleCategory.Link) {
-        return if (rule.target.packageName.isBlank()) R.string.rule_action_open_url else R.string.rule_action_direct_open_app
+        return if (rule.target.template.isBlank()) R.string.rule_action_direct_open_app else R.string.rule_action_open_url
     }
     return rule.actionMode.labelRes()
 }
