@@ -30,7 +30,8 @@ import java.util.concurrent.TimeUnit
 
 object PendingJumpCoordinator {
     private const val TAG = "HyperCopy"
-    private const val CHANNEL_ID = "hypercopy_jump_live"
+    private const val LIVE_CHANNEL_ID = "hypercopy_jump_live"
+    private const val MIUI_ISLAND_CHANNEL_ID = "hypercopy_jump_miui_island"
     private const val NOTIFICATION_ID = 2001
     private const val EXPIRE_MILLIS = 5_000L
     private const val CLIPBOARD_CLEAR_TIMEOUT_MILLIS = 500L
@@ -60,7 +61,7 @@ object PendingJumpCoordinator {
         entry.expireRunnable = Runnable { expire(appContext, id) }
         pending?.cancel(appContext)
         pending = entry
-        createChannel(appContext)
+        createChannel(appContext, notificationMode)
         notificationHandler.post { postNotification(appContext, entry, notificationMode) }
         if (jump is PendingJump.WebViewJump) {
             entry.preload = HeadlessWebViewResolver.preload(
@@ -122,7 +123,7 @@ object PendingJumpCoordinator {
         if (pending?.id != entry.id) return
         val title = appLabel(context, entry.jump.packageName).ifBlank { context.getString(R.string.notification_jump_title) }
         val content = entry.jump.title.ifBlank { context.getString(R.string.notification_jump_text) }
-        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+        val builder = NotificationCompat.Builder(context, channelId(notificationMode))
             .setSmallIcon(android.R.drawable.ic_menu_upload)
             .setContentTitle(title)
             .setContentText(content)
@@ -134,7 +135,9 @@ object PendingJumpCoordinator {
             .setShowWhen(false)
             .setOnlyAlertOnce(true)
             .setTimeoutAfter(EXPIRE_MILLIS)
-            .requestPromotedOngoing()
+        if (notificationMode == Config.JUMP_NOTIFICATION_MODE_LIVE) {
+            builder.requestPromotedOngoing()
+        }
         actions.forEach { action ->
             builder.addAction(android.R.drawable.ic_menu_view, action.title, action.pendingIntent)
         }
@@ -276,16 +279,25 @@ object PendingJumpCoordinator {
         HyperLog.d(TAG, "clipboard replaced with empty text by app")
     }
 
-    private fun createChannel(context: Context) {
+    private fun createChannel(context: Context, notificationMode: String) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        val isMiuiIsland = notificationMode == Config.JUMP_NOTIFICATION_MODE_MIUI_ISLAND
         val channel = NotificationChannel(
-            CHANNEL_ID,
-            context.getString(R.string.notification_channel_jump_name),
+            channelId(notificationMode),
+            context.getString(
+                if (isMiuiIsland) R.string.notification_channel_jump_miui_island_name else R.string.notification_channel_jump_live_name,
+            ),
             NotificationManager.IMPORTANCE_HIGH,
         ).apply {
-            description = context.getString(R.string.notification_channel_jump_description)
+            description = context.getString(
+                if (isMiuiIsland) R.string.notification_channel_jump_miui_island_description else R.string.notification_channel_jump_live_description,
+            )
         }
         context.getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+    }
+
+    private fun channelId(notificationMode: String): String {
+        return if (notificationMode == Config.JUMP_NOTIFICATION_MODE_MIUI_ISLAND) MIUI_ISLAND_CHANNEL_ID else LIVE_CHANNEL_ID
     }
 
     private fun NotificationCompat.Builder.requestPromotedOngoing(): NotificationCompat.Builder {
