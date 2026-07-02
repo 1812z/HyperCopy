@@ -36,6 +36,7 @@ import top.yukonga.miuix.kmp.icon.extended.ListView
 import top.yukonga.miuix.kmp.icon.extended.Theme
 import top.yukonga.miuix.kmp.icon.extended.Update
 import top.yukonga.miuix.kmp.icon.basic.ArrowRight
+import top.yukonga.miuix.kmp.icon.extended.Copy
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -131,7 +132,7 @@ fun SettingsPage(
                     onCheckedChange = { onAutoCheckUpdateChange(!autoCheckUpdate) },
                 )
                 SwitchAction(
-                    icon = MiuixIcons.AppRecording,
+                    icon = MiuixIcons.Copy,
                     title = stringResource(R.string.detect_cloned_app),
                     summary = stringResource(R.string.detect_cloned_app_summary),
                     checked = detectClonedApp,
