@@ -23,6 +23,7 @@ data class RuleConfig(
 
 enum class RuleCategory(val value: String) {
     Link("link"),
+    Text("text"),
     Address("address"),
     Express("express"),
 }
@@ -97,6 +98,7 @@ private fun JSONObject.optStringArray(name: String): List<String> {
 }
 
 fun ruleCategoryFromValue(value: String): RuleCategory = when (value) {
+    RuleCategory.Text.value -> RuleCategory.Text
     RuleCategory.Address.value -> RuleCategory.Address
     RuleCategory.Express.value -> RuleCategory.Express
     else -> RuleCategory.Link

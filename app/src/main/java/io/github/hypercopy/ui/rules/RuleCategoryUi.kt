@@ -15,18 +15,18 @@ internal enum class RulePageCategory {
 internal fun rulePageTabTitle(category: RulePageCategory): Int = when (category) {
     RulePageCategory.System -> R.string.category_system
     RulePageCategory.Link -> R.string.category_link
-    RulePageCategory.Text -> R.string.page_category_text
+    RulePageCategory.Text -> R.string.category_text
 }
 
 internal val localRuleCategoryTabTitles: List<Int> = listOf(
     R.string.category_system,
     R.string.category_link,
-    R.string.page_category_text,
+    R.string.category_text,
 )
 
 internal val cloudRuleCategoryTabTitles: List<Int> = listOf(
     R.string.category_link,
-    R.string.page_category_text,
+    R.string.category_text,
 )
 
 internal fun RulePageCategory.tabIndex(): Int = when (this) {
@@ -54,14 +54,14 @@ internal fun RulePageCategory.cloudTabIndex(): Int = when (this) {
 internal fun RulePageCategory.ruleCategories(): Set<RuleCategory> = when (this) {
     RulePageCategory.System -> emptySet()
     RulePageCategory.Link -> setOf(RuleCategory.Link)
-    RulePageCategory.Text -> setOf(RuleCategory.Address, RuleCategory.Express)
+    RulePageCategory.Text -> setOf(RuleCategory.Text, RuleCategory.Address, RuleCategory.Express)
 }
 
 @StringRes
 internal fun RulePageCategory.titleRes(): Int = when (this) {
     RulePageCategory.System -> R.string.category_system
     RulePageCategory.Link -> R.string.category_link
-    RulePageCategory.Text -> R.string.page_category_text
+    RulePageCategory.Text -> R.string.category_text
 }
 
 internal fun RulePageCategory.folderName(): String = when (this) {
@@ -87,6 +87,7 @@ internal fun RulePageCategory.emptyDescriptionRes(): Int = when (this) {
 @StringRes
 internal fun RuleCategory.titleRes(): Int = when (this) {
     RuleCategory.Link -> R.string.category_link
+    RuleCategory.Text -> R.string.category_text
     RuleCategory.Address -> R.string.category_address
     RuleCategory.Express -> R.string.category_express
 }

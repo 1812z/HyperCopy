@@ -131,8 +131,8 @@ class CloudRulesRepository(private val source: String = Config.CLOUD_SOURCE_GITH
     private fun resolveCategory(folder: String, parsed: RuleCategory): RuleCategory = when (folder) {
         FOLDER_LINK -> RuleCategory.Link
         FOLDER_TEXT -> when (parsed) {
-            RuleCategory.Address, RuleCategory.Express -> parsed
-            else -> RuleCategory.Address
+            RuleCategory.Text, RuleCategory.Address, RuleCategory.Express -> parsed
+            else -> RuleCategory.Text
         }
         else -> parsed
     }
@@ -217,7 +217,7 @@ data class CloudRule(
         if (fileName.endsWith(".json", ignoreCase = true)) fileName.removeSuffix(".json").removeSuffix(".JSON") else fileName
 
     val category: RuleCategory
-        get() = if (folder == "text") RuleCategory.Address else RuleCategory.Link
+        get() = if (folder == "text") RuleCategory.Text else RuleCategory.Link
 }
 
 enum class CloudRuleError {

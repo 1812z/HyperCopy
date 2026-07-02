@@ -390,6 +390,15 @@ private fun defaultEditorValues(context: Context, category: RuleCategory, source
         actionMode = RuleActionMode.DirectOpen,
     )
 
+    RuleCategory.Text -> EditorDefaults(
+        name = "",
+        matchRegex = "",
+        parameterRegex = "(.+)",
+        targetTemplate = "${'$'}{input}",
+        packageName = "",
+        actionMode = RuleActionMode.DirectOpen,
+    )
+
     RuleCategory.Express -> EditorDefaults(
         name = "",
         matchRegex = "",
@@ -411,6 +420,7 @@ private fun openModeFromRule(rule: RuleConfig?, category: RuleCategory): Categor
 
 private fun RuleCategory.labelRes(): Int = when (this) {
     RuleCategory.Link -> R.string.category_link
+    RuleCategory.Text -> R.string.category_text
     RuleCategory.Address -> R.string.category_address
     RuleCategory.Express -> R.string.category_express
 }

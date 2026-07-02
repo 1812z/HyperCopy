@@ -115,9 +115,9 @@
     <!-- 规则分类 -->
     <string name="category_link">链接</string>
     <string name="category_system">系统</string>
+    <string name="category_text">文本</string>
     <string name="category_address">地址</string>
     <string name="category_express">快递</string>
-    <string name="page_category_text">口令/文本</string>
 
     <!-- 规则页 -->
     <string name="rule_test_link_hint">输入复制后的 URL 或文本</string>
