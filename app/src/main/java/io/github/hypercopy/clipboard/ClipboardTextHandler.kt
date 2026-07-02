@@ -43,7 +43,7 @@ object ClipboardTextHandler {
         if (settingsRepository.readSystemLinkHandling()) {
             val systemJump = SystemLinkHandler.createJump(appContext, input)
             if (systemJump != null && !shouldIgnoreJump(source, systemJump.packageName, ignoreJumpApp)) {
-                submitJump(appContext, systemJump, clearClipboardAfterJump = false)
+                submitJump(appContext, systemJump, settingsRepository.readSystemLinkClearClipboardAfterJump())
                 return
             }
         }

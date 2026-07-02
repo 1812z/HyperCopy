@@ -34,12 +34,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
-import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Search
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -80,20 +76,11 @@ fun AppListPage(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item {
-                TextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    modifier = Modifier.fillMaxWidth(),
+                HyperSearchBar(
+                    query = searchQuery,
+                    onQueryChange = { searchQuery = it },
                     label = stringResource(R.string.app_list_search_hint),
-                    useLabelAsPlaceholder = true,
-                    singleLine = true,
-                    leadingIcon = {
-                        Icon(
-                            imageVector = MiuixIcons.Search,
-                            contentDescription = null,
-                            tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        )
-                    },
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
 

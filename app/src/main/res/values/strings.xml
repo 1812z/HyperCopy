@@ -130,6 +130,9 @@
     <string name="rule_menu_browser">模拟浏览器</string>
     <string name="rule_system_link_title">系统链接处理</string>
     <string name="rule_system_link_summary">开启后，复制普通网页链接时优先交给安卓“打开受支持的链接”处理；没有专属 App 处理时再继续匹配规则。</string>
+    <string name="rule_system_clear_clipboard_title">跳转后清空剪贴板</string>
+    <string name="rule_system_clear_clipboard_summary">系统链接确认跳转后自动清空当前剪贴板</string>
+    <string name="rule_search_hint">搜索名称或包名</string>
     <string name="rule_system_empty_description">未读取到系统链接应用，或当前 user 没有可管理的受支持链接。</string>
     <string name="rule_system_test_running">正在通过 user %1$d 打开系统链接</string>
     <string name="rule_system_test_started">已通过 user %1$s 交给系统打开链接</string>

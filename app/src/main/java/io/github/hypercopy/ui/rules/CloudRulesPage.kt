@@ -37,6 +37,7 @@ import io.github.hypercopy.data.CloudRuleException
 import io.github.hypercopy.data.CloudRulesRepository
 import io.github.hypercopy.data.RuleRepository
 import io.github.hypercopy.data.SettingsRepository
+import io.github.hypercopy.ui.HyperSearchBar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -48,11 +49,9 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.Check
 import top.yukonga.miuix.kmp.icon.extended.Download
-import top.yukonga.miuix.kmp.icon.extended.Search
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -265,20 +264,11 @@ private fun CloudRulesHeader(
     Column(
         modifier = Modifier.fillMaxWidth().padding(start = 12.dp, top = topContentPadding, end = 12.dp),
     ) {
-        TextField(
-            value = searchQuery,
-            onValueChange = onSearchQueryChange,
-            modifier = Modifier.fillMaxWidth(),
+        HyperSearchBar(
+            query = searchQuery,
+            onQueryChange = onSearchQueryChange,
             label = stringResource(R.string.cloud_search_hint),
-            useLabelAsPlaceholder = true,
-            singleLine = true,
-            leadingIcon = {
-                Icon(
-                    imageVector = MiuixIcons.Search,
-                    contentDescription = null,
-                    tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                )
-            },
+            modifier = Modifier.fillMaxWidth(),
         )
     }
 }

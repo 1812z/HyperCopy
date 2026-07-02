@@ -96,6 +96,17 @@ class SettingsRepository(private val context: Context) {
         preferences().edit(commit = true) { putBoolean(Config.KEY_SYSTEM_LINK_HANDLING, value) }
     }
 
+    fun readSystemLinkClearClipboardAfterJump(): Boolean {
+        return preferences().getBoolean(
+            Config.KEY_SYSTEM_LINK_CLEAR_CLIPBOARD_AFTER_JUMP,
+            Config.DEFAULT_SYSTEM_LINK_CLEAR_CLIPBOARD_AFTER_JUMP,
+        )
+    }
+
+    fun persistSystemLinkClearClipboardAfterJump(value: Boolean) {
+        preferences().edit(commit = true) { putBoolean(Config.KEY_SYSTEM_LINK_CLEAR_CLIPBOARD_AFTER_JUMP, value) }
+    }
+
     fun readSystemLinkUserId(): Int {
         return preferences().getInt(Config.KEY_SYSTEM_LINK_USER_ID, Config.DEFAULT_SYSTEM_LINK_USER_ID)
     }

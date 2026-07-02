@@ -14,6 +14,7 @@ object Config {
     const val KEY_IGNORE_JUMP_APP = "ignore_jump_app"
     const val KEY_DETECT_CLONED_APP = "detect_cloned_app"
     const val KEY_SYSTEM_LINK_HANDLING = "system_link_handling"
+    const val KEY_SYSTEM_LINK_CLEAR_CLIPBOARD_AFTER_JUMP = "system_link_clear_clipboard_after_jump"
     const val KEY_SYSTEM_LINK_USER_ID = "system_link_user_id"
     const val KEY_APP_LIST_PACKAGES = "app_list_packages"
 
@@ -56,6 +57,7 @@ object Config {
     const val DEFAULT_IGNORE_JUMP_APP = true
     const val DEFAULT_DETECT_CLONED_APP = true
     const val DEFAULT_SYSTEM_LINK_HANDLING = true
+    const val DEFAULT_SYSTEM_LINK_CLEAR_CLIPBOARD_AFTER_JUMP = true
     const val DEFAULT_SYSTEM_LINK_USER_ID = 0
 
     const val KEY_CLOUD_SOURCE = "cloud_source"

@@ -101,22 +101,37 @@ internal fun TestRuleCard(
 @Composable
 internal fun SystemLinkHandlingCard(
     checked: Boolean,
+    clearClipboardAfterJump: Boolean,
     onCheckedChange: (Boolean) -> Unit,
+    onClearClipboardAfterJumpChange: (Boolean) -> Unit,
 ) {
     Card {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(text = stringResource(R.string.rule_system_link_title), style = MiuixTheme.textStyles.headline1)
-                Text(
-                    text = stringResource(R.string.rule_system_link_summary),
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(text = stringResource(R.string.rule_system_link_title), style = MiuixTheme.textStyles.headline1)
+                    Text(
+                        text = stringResource(R.string.rule_system_link_summary),
+                        style = MiuixTheme.textStyles.body2,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    )
+                }
+                Switch(checked = checked, onCheckedChange = { onCheckedChange(!checked) })
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(text = stringResource(R.string.rule_system_clear_clipboard_title), style = MiuixTheme.textStyles.headline1)
+                    Text(
+                        text = stringResource(R.string.rule_system_clear_clipboard_summary),
+                        style = MiuixTheme.textStyles.body2,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    )
+                }
+                Switch(
+                    checked = clearClipboardAfterJump,
+                    onCheckedChange = { onClearClipboardAfterJumpChange(!clearClipboardAfterJump) },
                 )
             }
-            Switch(checked = checked, onCheckedChange = { onCheckedChange(!checked) })
         }
     }
 }
