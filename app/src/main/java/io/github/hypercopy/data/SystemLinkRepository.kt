@@ -112,7 +112,7 @@ class SystemLinkRepository(private val context: Context) {
 
         output.lineSequence().forEach { rawLine ->
             val line = rawLine.trim()
-            val detectedPackageName = PACKAGE_LINE_REGEX.matchEntire(rawLine)?.groupValues?.getOrNull(1)
+            val detectedPackageName = rawLine.extractPackageHeader()
             if (detectedPackageName != null) {
                 flush()
                 packageName = detectedPackageName
@@ -178,7 +178,9 @@ class SystemLinkRepository(private val context: Context) {
                 if (!host.contains('.') || host.equals("Domains", true)) return@forEach
                 if (state.isBlank()) return@forEach
                 val existing = domains[host]
-                val domain = SystemLinkDomain(host = host, enabled = state.isSystemLinkEnabled(), state = state)
+                if (existing?.state?.isVerifiedSystemLinkState() == true && inSelectionList) return@forEach
+                val displayState = if (state.isVerifiedSystemLinkState()) "verified" else state
+                val domain = SystemLinkDomain(host = host, enabled = displayState.isSystemLinkEnabled(), state = displayState)
                 domains[host] = when {
                     inSelectionList -> domain
                     existing == null -> domain
@@ -203,6 +205,19 @@ class SystemLinkRepository(private val context: Context) {
         return value.contains("verified") || value.contains("approved") || value.contains("selected") || value.contains("enabled")
     }
 
+    private fun String.isVerifiedSystemLinkState(): Boolean = equals("verified", ignoreCase = true)
+
+    private fun String.extractPackageHeader(): String? {
+        val indent = takeWhile { it.isWhitespace() }.length
+        if (indent > APP_HEADER_MAX_INDENT) return null
+        val line = trim().removePrefix("Package:").trim().trimEnd(':').trim()
+        val packageName = line.substringBefore(' ').trim()
+        val suffix = line.removePrefix(packageName).trim()
+        if (!PACKAGE_NAME_REGEX.matches(packageName)) return null
+        if (suffix.isNotEmpty() && !UUID_REGEX.matches(suffix)) return null
+        return packageName
+    }
+
     private fun appLabel(packageName: String): String {
         return runCatching {
             val info = context.packageManager.getApplicationInfo(packageName, 0)
@@ -213,7 +228,9 @@ class SystemLinkRepository(private val context: Context) {
     private fun shellQuote(value: String): String = IntentAmStartCommand.shellQuote(value)
 
     private companion object {
-        val PACKAGE_LINE_REGEX = Regex("""^\s{0,4}(?:Package:\s*)?([A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+)+):?\s*$""")
+        const val APP_HEADER_MAX_INDENT = 4
+        val PACKAGE_NAME_REGEX = Regex("""[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+)+""")
+        val UUID_REGEX = Regex("""[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}""")
         const val PACKAGE_INSTALL_CACHE_MILLIS = 30_000L
         val packageInstallCache = ConcurrentHashMap<String, PackageInstallCacheEntry>()
     }

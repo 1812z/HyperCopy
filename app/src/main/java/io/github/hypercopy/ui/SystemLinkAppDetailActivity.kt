@@ -254,6 +254,7 @@ private fun DomainCard(
     domain: SystemLinkDomain,
     onEnabledChange: (Boolean) -> Unit,
 ) {
+    val isVerified = domain.state.equals("verified", ignoreCase = true)
     Card {
         Row(
             modifier = Modifier
@@ -270,8 +271,11 @@ private fun DomainCard(
                 )
             }
             Switch(
-                checked = domain.enabled,
-                onCheckedChange = { onEnabledChange(!domain.enabled) },
+                checked = if (isVerified) true else domain.enabled,
+                enabled = !isVerified,
+                onCheckedChange = {
+                    if (!isVerified) onEnabledChange(!domain.enabled)
+                },
             )
         }
     }

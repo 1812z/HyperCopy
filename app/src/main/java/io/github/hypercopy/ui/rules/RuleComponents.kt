@@ -208,6 +208,7 @@ internal fun SystemLinkDomainCard(
                 )
             }
             app.domains.forEach { domain ->
+                val isVerified = domain.state.equals("verified", ignoreCase = true)
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text(text = domain.host, style = MiuixTheme.textStyles.body2)
@@ -218,8 +219,11 @@ internal fun SystemLinkDomainCard(
                         )
                     }
                     Switch(
-                        checked = domain.enabled,
-                        onCheckedChange = { onDomainEnabledChange(domain.host, !domain.enabled) },
+                        checked = if (isVerified) true else domain.enabled,
+                        enabled = !isVerified,
+                        onCheckedChange = {
+                            if (!isVerified) onDomainEnabledChange(domain.host, !domain.enabled)
+                        },
                     )
                 }
             }
