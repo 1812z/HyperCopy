@@ -58,10 +58,9 @@ import io.github.hypercopy.ui.RuleBrowserActivity
 import io.github.hypercopy.ui.RuleEditorActivity
 import io.github.hypercopy.ui.SystemLinkAppDetailActivity
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
+import top.yukonga.miuix.kmp.window.WindowDialog
 import kotlin.concurrent.thread
 
 @Composable
@@ -391,7 +390,7 @@ fun RulesPage(
             )
         }
 
-        OverlayDialog(
+        WindowDialog(
             title = stringResource(R.string.rule_dialog_delete_title),
             summary = stringResource(R.string.rule_dialog_delete_summary, selectedRuleIds.size),
             show = showDeleteDialog,
@@ -418,7 +417,7 @@ fun RulesPage(
         }
     }
 
-    OverlayDialog(
+    WindowDialog(
         title = stringResource(R.string.rule_dialog_import_title),
         summary = stringResource(R.string.rule_dialog_import_summary),
         show = showImportDialog,
@@ -429,7 +428,7 @@ fun RulesPage(
                 value = importText,
                 onValueChange = { importText = it },
                 label = stringResource(R.string.rule_dialog_import_hint),
-                maxLines = 6,
+                maxLines = 15,
                 modifier = Modifier.fillMaxWidth(),
             )
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
