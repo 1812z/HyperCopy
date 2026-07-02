@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
@@ -83,7 +82,8 @@ fun RulesPage(
     var selectedCategory by remember { mutableStateOf(RulePageCategory.System) }
     var testInput by remember { mutableStateOf("") }
     var searchText by remember { mutableStateOf("") }
-    var resultText by remember { mutableStateOf(context.getString(R.string.rule_result_waiting)) }
+    val ruleResultWaiting = stringResource(R.string.rule_result_waiting)
+    var resultText by remember(ruleResultWaiting) { mutableStateOf(ruleResultWaiting) }
     var systemLinkApps by remember { mutableStateOf<List<SystemLinkApp>>(emptyList()) }
     var systemLinkLoading by remember { mutableStateOf(false) }
     var resolvingUrl by remember { mutableStateOf<String?>(null) }
@@ -160,7 +160,7 @@ fun RulesPage(
                     includeSystem = true,
                     onSelected = {
                         selectedCategory = it
-                        resultText = context.getString(R.string.rule_result_waiting)
+                        resultText = ruleResultWaiting
                         selectedRuleIds = emptySet()
                         if (it == RulePageCategory.System) loadSystemLinks()
                     },
