@@ -10,6 +10,7 @@ class JumpConfirmReceiver : BroadcastReceiver() {
         if (intent.action != Config.ACTION_CONFIRM_JUMP) return
         val id = intent.getLongExtra(Config.EXTRA_PENDING_JUMP_ID, 0L)
         if (id == 0L) return
-        PendingJumpCoordinator.confirm(context.applicationContext, id)
+        val userId = intent.getIntExtra(Config.EXTRA_PENDING_JUMP_USER_ID, -1)
+        PendingJumpCoordinator.confirm(context.applicationContext, id, userId.takeIf { it >= 0 })
     }
 }

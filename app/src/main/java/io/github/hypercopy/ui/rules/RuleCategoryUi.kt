@@ -6,55 +6,80 @@ import io.github.hypercopy.data.RuleActionMode
 import io.github.hypercopy.data.RuleCategory
 
 internal enum class RulePageCategory {
+    System,
     Link,
     Text,
 }
 
 @StringRes
 internal fun rulePageTabTitle(category: RulePageCategory): Int = when (category) {
+    RulePageCategory.System -> R.string.category_system
     RulePageCategory.Link -> R.string.category_link
     RulePageCategory.Text -> R.string.page_category_text
 }
 
-internal val ruleCategoryTabTitles: List<Int> = listOf(
+internal val localRuleCategoryTabTitles: List<Int> = listOf(
+    R.string.category_system,
+    R.string.category_link,
+    R.string.page_category_text,
+)
+
+internal val cloudRuleCategoryTabTitles: List<Int> = listOf(
     R.string.category_link,
     R.string.page_category_text,
 )
 
 internal fun RulePageCategory.tabIndex(): Int = when (this) {
-    RulePageCategory.Link -> 0
-    RulePageCategory.Text -> 1
+    RulePageCategory.System -> 0
+    RulePageCategory.Link -> 1
+    RulePageCategory.Text -> 2
 }
 
-internal fun rulePageCategoryFromTab(index: Int): RulePageCategory = when (index) {
+internal fun localRulePageCategoryFromTab(index: Int): RulePageCategory = when (index) {
+    1 -> RulePageCategory.Link
+    2 -> RulePageCategory.Text
+    else -> RulePageCategory.System
+}
+
+internal fun cloudRulePageCategoryFromTab(index: Int): RulePageCategory = when (index) {
     1 -> RulePageCategory.Text
     else -> RulePageCategory.Link
 }
 
+internal fun RulePageCategory.cloudTabIndex(): Int = when (this) {
+    RulePageCategory.Text -> 1
+    else -> 0
+}
+
 internal fun RulePageCategory.ruleCategories(): Set<RuleCategory> = when (this) {
+    RulePageCategory.System -> emptySet()
     RulePageCategory.Link -> setOf(RuleCategory.Link)
     RulePageCategory.Text -> setOf(RuleCategory.Address, RuleCategory.Express)
 }
 
 @StringRes
 internal fun RulePageCategory.titleRes(): Int = when (this) {
+    RulePageCategory.System -> R.string.category_system
     RulePageCategory.Link -> R.string.category_link
     RulePageCategory.Text -> R.string.page_category_text
 }
 
 internal fun RulePageCategory.folderName(): String = when (this) {
+    RulePageCategory.System -> "system"
     RulePageCategory.Link -> "link"
     RulePageCategory.Text -> "text"
 }
 
 @StringRes
 internal fun RulePageCategory.testHintRes(): Int = when (this) {
+    RulePageCategory.System -> R.string.rule_test_link_hint
     RulePageCategory.Link -> R.string.rule_test_link_hint
     RulePageCategory.Text -> R.string.rule_test_text_hint
 }
 
 @StringRes
 internal fun RulePageCategory.emptyDescriptionRes(): Int = when (this) {
+    RulePageCategory.System -> R.string.rule_system_empty_description
     RulePageCategory.Link -> R.string.rule_empty_link_description
     RulePageCategory.Text -> R.string.rule_empty_text_description
 }

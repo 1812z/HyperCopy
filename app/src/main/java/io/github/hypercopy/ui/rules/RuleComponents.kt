@@ -1,6 +1,7 @@
 package io.github.hypercopy.ui.rules
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,10 +19,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.state.ToggleableState
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.hypercopy.R
 import io.github.hypercopy.data.RuleCategory
 import io.github.hypercopy.data.RuleConfig
+import io.github.hypercopy.data.SystemLinkApp
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Checkbox
@@ -50,11 +53,13 @@ internal fun RuleCategoryTabs(
     selectedCategory: RulePageCategory,
     onSelected: (RulePageCategory) -> Unit,
     modifier: Modifier = Modifier,
+    includeSystem: Boolean = false,
 ) {
+    val titles = if (includeSystem) localRuleCategoryTabTitles else cloudRuleCategoryTabTitles
     TabRowWithContour(
-        tabs = ruleCategoryTabTitles.map { stringResource(it) },
-        selectedTabIndex = selectedCategory.tabIndex(),
-        onTabSelected = { onSelected(rulePageCategoryFromTab(it)) },
+        tabs = titles.map { stringResource(it) },
+        selectedTabIndex = if (includeSystem) selectedCategory.tabIndex() else selectedCategory.cloudTabIndex(),
+        onTabSelected = { onSelected(if (includeSystem) localRulePageCategoryFromTab(it) else cloudRulePageCategoryFromTab(it)) },
         modifier = modifier.fillMaxWidth(),
     )
 }
@@ -112,6 +117,112 @@ internal fun SystemLinkHandlingCard(
                 )
             }
             Switch(checked = checked, onCheckedChange = { onCheckedChange(!checked) })
+        }
+    }
+}
+
+@Composable
+internal fun SystemLinkAppListCard(
+    app: SystemLinkApp,
+    onClick: () -> Unit,
+    onAppEnabledChange: (Boolean) -> Unit,
+) {
+    Card {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            PackageIcon(packageName = app.packageName, modifier = Modifier.padding(end = 12.dp))
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(text = app.label, style = MiuixTheme.textStyles.headline1)
+                Text(
+                    text = app.packageName,
+                    style = MiuixTheme.textStyles.body2,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Switch(
+                checked = app.linkHandlingAllowed,
+                onCheckedChange = { onAppEnabledChange(!app.linkHandlingAllowed) },
+            )
+            IconButton(
+                onClick = onClick,
+                minWidth = 32.dp,
+                minHeight = 32.dp,
+                cornerRadius = 16.dp,
+                backgroundColor = MiuixTheme.colorScheme.primary.copy(alpha = 0.08f),
+                modifier = Modifier.padding(start = 10.dp),
+            ) {
+                Icon(
+                    imageVector = MiuixIcons.ChevronForward,
+                    contentDescription = stringResource(R.string.action_open),
+                    tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    modifier = Modifier.size(16.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+internal fun SystemLinkDomainCard(
+    app: SystemLinkApp,
+    showHeader: Boolean = true,
+    onAppEnabledChange: (Boolean) -> Unit,
+    onDomainEnabledChange: (String, Boolean) -> Unit,
+) {
+    Card {
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            if (showHeader) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    PackageIcon(packageName = app.packageName, modifier = Modifier.padding(end = 12.dp))
+                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(text = app.label, style = MiuixTheme.textStyles.headline1)
+                        Text(
+                            text = app.packageName,
+                            style = MiuixTheme.textStyles.body2,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+            }
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(text = stringResource(R.string.rule_system_app_link_allowed), style = MiuixTheme.textStyles.body2)
+                    Text(
+                        text = stringResource(R.string.rule_system_app_link_allowed_summary),
+                        style = MiuixTheme.textStyles.body2,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    )
+                }
+                Switch(
+                    checked = app.linkHandlingAllowed,
+                    onCheckedChange = { onAppEnabledChange(!app.linkHandlingAllowed) },
+                )
+            }
+            app.domains.forEach { domain ->
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(text = domain.host, style = MiuixTheme.textStyles.body2)
+                        Text(
+                            text = domain.state,
+                            style = MiuixTheme.textStyles.body2,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        )
+                    }
+                    Switch(
+                        checked = domain.enabled,
+                        onCheckedChange = { onDomainEnabledChange(domain.host, !domain.enabled) },
+                    )
+                }
+            }
         }
     }
 }

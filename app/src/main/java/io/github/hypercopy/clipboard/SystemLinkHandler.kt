@@ -7,12 +7,14 @@ import android.net.Uri
 import io.github.hypercopy.HyperLog
 import io.github.hypercopy.R
 import io.github.hypercopy.data.extractFirstInputUrl
+import io.github.hypercopy.data.SettingsRepository
+import io.github.hypercopy.data.SystemLinkRepository
 
 object SystemLinkHandler {
     private const val TAG = "HyperCopy"
     private const val GENERIC_WEB_URL = "https://www.example.com/"
 
-    fun createJump(context: Context, input: String): PendingJump.IntentJump? {
+    fun createJump(context: Context, input: String): PendingJump.SystemLinkJump? {
         val url = extractFirstInputUrl(input) ?: return null
         val uri = runCatching { Uri.parse(url) }.getOrNull() ?: return null
         if (!uri.scheme.equals("http", true) && !uri.scheme.equals("https", true)) return null
@@ -27,9 +29,11 @@ object SystemLinkHandler {
 
         val resolvedPackage = intent.resolveActivity(packageManager)?.packageName.orEmpty()
         val packageName = resolvedPackage.takeIf { it in appSpecificPackages } ?: appSpecificPackages.first()
-        return PendingJump.IntentJump(
+        val userId = SettingsRepository(context.applicationContext).readSystemLinkUserId()
+        return PendingJump.SystemLinkJump(
             title = context.getString(R.string.rule_system_link_title),
-            intent = intent,
+            url = url,
+            userId = userId,
             packageName = packageName,
         )
     }

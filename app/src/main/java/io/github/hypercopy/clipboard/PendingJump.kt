@@ -17,4 +17,11 @@ sealed interface PendingJump {
         val url: String,
         override val packageName: String,
     ) : PendingJump
+
+    data class SystemLinkJump(
+        override val title: String,
+        val url: String,
+        val userId: Int,
+        override val packageName: String,
+    ) : PendingJump
 }

@@ -37,6 +37,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.hypercopy.App
+import io.github.hypercopy.Config
 import io.github.hypercopy.R
 import io.github.hypercopy.clipboard.monitor.ClipboardMonitorController
 import io.github.hypercopy.data.SettingsRepository
@@ -49,6 +50,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.DropdownEntry
+import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -63,6 +66,9 @@ import top.yukonga.miuix.kmp.icon.extended.AppRecording
 import top.yukonga.miuix.kmp.icon.extended.Backup
 import top.yukonga.miuix.kmp.icon.extended.Carrier
 import top.yukonga.miuix.kmp.icon.extended.Import
+import top.yukonga.miuix.kmp.icon.extended.ListView
+import top.yukonga.miuix.kmp.icon.extended.Refresh
+import top.yukonga.miuix.kmp.overlay.OverlayCascadingListPopup
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -95,6 +101,7 @@ fun AppScreen(
     var logLevel by remember { mutableIntStateOf(settingsRepository.readLogLevel()) }
     var autoCheckUpdate by remember { mutableStateOf(settingsRepository.readAutoCheckUpdate()) }
     var desktopIconHidden by remember { mutableStateOf(settingsRepository.readDesktopIconHidden()) }
+    var detectClonedApp by remember { mutableStateOf(settingsRepository.readDetectClonedApp()) }
     var appLanguage by remember { mutableStateOf(appLanguageFromValue(settingsRepository.readAppLanguage())) }
     var clipboardMonitorMode by remember {
         mutableStateOf(clipboardMonitorModeFromValue(settingsRepository.readClipboardMonitorMode()))
@@ -215,10 +222,108 @@ fun AppScreen(
                     }
 
                     Tab.Copy -> {
-                        Scaffold(contentWindowInsets = WindowInsets.statusBars) { pagePadding ->
+                        val scrollBehavior = MiuixScrollBehavior(rememberTopAppBarState())
+                        var showCloudMenu by remember { mutableStateOf(false) }
+                        var showCloudSourcePopup by remember { mutableStateOf(false) }
+                        var showInstalledOnly by remember { mutableStateOf(false) }
+                        var cloudSource by remember { mutableStateOf(settingsRepository.readCloudSource()) }
+                        var refreshTrigger by remember { mutableIntStateOf(0) }
+                        var downloadInstalledTrigger by remember { mutableIntStateOf(0) }
+
+                        Scaffold(
+                            topBar = {
+                                TopAppBar(
+                                    title = stringResource(R.string.tab_cloud_rules),
+                                    largeTitle = stringResource(R.string.tab_cloud_rules),
+                                    scrollBehavior = scrollBehavior,
+                                    actions = {
+                                        IconButton(onClick = { refreshTrigger++ }) {
+                                            Icon(
+                                                imageVector = MiuixIcons.Refresh,
+                                                contentDescription = stringResource(R.string.action_refresh),
+                                            )
+                                        }
+                                        Box {
+                                            IconButton(onClick = { showCloudMenu = true }) {
+                                                Icon(
+                                                    imageVector = MiuixIcons.ListView,
+                                                    contentDescription = stringResource(R.string.cloud_menu_options),
+                                                )
+                                            }
+                                            OverlayCascadingListPopup(
+                                                show = showCloudMenu,
+                                                entries = listOf(
+                                                    DropdownEntry(
+                                                        items = listOf(
+                                                            DropdownItem(
+                                                                text = stringResource(R.string.cloud_menu_show_installed_only),
+                                                                selected = showInstalledOnly,
+                                                                onClick = {
+                                                                    showCloudMenu = false
+                                                                    showInstalledOnly = !showInstalledOnly
+                                                                },
+                                                            ),
+                                                            DropdownItem(
+                                                                text = stringResource(R.string.cloud_menu_download_installed),
+                                                                onClick = {
+                                                                    showCloudMenu = false
+                                                                    downloadInstalledTrigger++
+                                                                },
+                                                            ),
+                                                            DropdownItem(
+                                                                text = stringResource(R.string.cloud_menu_switch_source),
+                                                                onClick = {
+                                                                    showCloudMenu = false
+                                                                    showCloudSourcePopup = true
+                                                                },
+                                                            ),
+                                                        ),
+                                                    ),
+                                                ),
+                                                onDismissRequest = { showCloudMenu = false },
+                                            )
+                                            OverlayCascadingListPopup(
+                                                show = showCloudSourcePopup,
+                                                entries = listOf(
+                                                    DropdownEntry(
+                                                        items = listOf(
+                                                            DropdownItem(
+                                                                text = stringResource(R.string.cloud_source_accelerated),
+                                                                selected = cloudSource == Config.CLOUD_SOURCE_ACCELERATED,
+                                                                onClick = {
+                                                                    showCloudSourcePopup = false
+                                                                    settingsRepository.persistCloudSource(Config.CLOUD_SOURCE_ACCELERATED)
+                                                                    cloudSource = Config.CLOUD_SOURCE_ACCELERATED
+                                                                },
+                                                            ),
+                                                            DropdownItem(
+                                                                text = stringResource(R.string.cloud_source_github),
+                                                                selected = cloudSource == Config.CLOUD_SOURCE_GITHUB,
+                                                                onClick = {
+                                                                    showCloudSourcePopup = false
+                                                                    settingsRepository.persistCloudSource(Config.CLOUD_SOURCE_GITHUB)
+                                                                    cloudSource = Config.CLOUD_SOURCE_GITHUB
+                                                                },
+                                                            ),
+                                                        ),
+                                                    ),
+                                                ),
+                                                onDismissRequest = { showCloudSourcePopup = false },
+                                            )
+                                        }
+                                    },
+                                )
+                            },
+                            contentWindowInsets = WindowInsets.statusBars,
+                        ) { pagePadding ->
                             CloudRulesPage(
+                                modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
                                 topContentPadding = pagePadding.calculateTopPadding() + 12.dp,
                                 bottomContentPadding = 16.dp,
+                                showInstalledOnly = showInstalledOnly,
+                                cloudSource = cloudSource,
+                                refreshTrigger = refreshTrigger,
+                                downloadInstalledTrigger = downloadInstalledTrigger,
                             )
                         }
                     }
@@ -226,6 +331,8 @@ fun AppScreen(
                     Tab.Rules -> {
                         val scrollBehavior = MiuixScrollBehavior(rememberTopAppBarState())
                         var showImportDialog by remember { mutableStateOf(false) }
+                        var showRulesMenu by remember { mutableStateOf(false) }
+                        var systemLinkUserId by remember { mutableStateOf(settingsRepository.readSystemLinkUserId()) }
                         Scaffold(
                             topBar = {
                                 TopAppBar(
@@ -233,6 +340,42 @@ fun AppScreen(
                                     largeTitle = stringResource(R.string.tab_rules),
                                     scrollBehavior = scrollBehavior,
                                     actions = {
+                                        Box {
+                                            IconButton(onClick = { showRulesMenu = true }) {
+                                                Icon(
+                                                    imageVector = MiuixIcons.ListView,
+                                                    contentDescription = stringResource(R.string.rule_system_user_menu),
+                                                )
+                                            }
+                                            OverlayCascadingListPopup(
+                                                show = showRulesMenu,
+                                                entries = listOf(
+                                                    DropdownEntry(
+                                                        items = listOf(
+                                                            DropdownItem(
+                                                                text = stringResource(R.string.rule_system_user_0),
+                                                                selected = systemLinkUserId == 0,
+                                                                onClick = {
+                                                                    showRulesMenu = false
+                                                                    systemLinkUserId = 0
+                                                                    settingsRepository.persistSystemLinkUserId(0)
+                                                                },
+                                                            ),
+                                                            DropdownItem(
+                                                                text = stringResource(R.string.rule_system_user_999),
+                                                                selected = systemLinkUserId == 999,
+                                                                onClick = {
+                                                                    showRulesMenu = false
+                                                                    systemLinkUserId = 999
+                                                                    settingsRepository.persistSystemLinkUserId(999)
+                                                                },
+                                                            ),
+                                                        ),
+                                                    ),
+                                                ),
+                                                onDismissRequest = { showRulesMenu = false },
+                                            )
+                                        }
                                         IconButton(onClick = { showImportDialog = true }) {
                                             Icon(
                                                 imageVector = MiuixIcons.Import,
@@ -250,6 +393,7 @@ fun AppScreen(
                                 onDismissImportDialog = { showImportDialog = false },
                                 topContentPadding = pagePadding.calculateTopPadding() + 12.dp,
                                 bottomContentPadding = pagePadding.calculateBottomPadding() + 16.dp,
+                                systemLinkUserId = systemLinkUserId,
                             )
                         }
                     }
@@ -271,6 +415,7 @@ fun AppScreen(
                                 logLevel = logLevel,
                                 autoCheckUpdate = autoCheckUpdate,
                                 desktopIconHidden = desktopIconHidden,
+                                detectClonedApp = detectClonedApp,
                                 appLanguage = appLanguage,
                                 jumpNotificationMode = jumpNotificationMode,
                                 onLogLevelChange = {
@@ -284,6 +429,10 @@ fun AppScreen(
                                 onDesktopIconHiddenChange = {
                                     desktopIconHidden = it
                                     settingsRepository.persistDesktopIconHidden(it)
+                                },
+                                onDetectClonedAppChange = {
+                                    detectClonedApp = it
+                                    settingsRepository.persistDetectClonedApp(it)
                                 },
                                 onAppLanguageChange = {
                                     appLanguage = it

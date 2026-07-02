@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
@@ -37,6 +38,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
 import io.github.hypercopy.R
+import io.github.hypercopy.HyperLog
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import io.github.hypercopy.clipboard.OneRedirectResolver
@@ -45,9 +47,12 @@ import io.github.hypercopy.data.RuleCategory
 import io.github.hypercopy.data.RuleConfig
 import io.github.hypercopy.data.RuleRepository
 import io.github.hypercopy.data.SettingsRepository
+import io.github.hypercopy.data.SystemLinkApp
+import io.github.hypercopy.data.SystemLinkRepository
 import io.github.hypercopy.data.RuleTarget
 import io.github.hypercopy.data.RuleTargetType
 import io.github.hypercopy.data.directIntent
+import io.github.hypercopy.data.extractFirstInputUrl
 import io.github.hypercopy.data.findRule
 import io.github.hypercopy.data.matchRule
 import io.github.hypercopy.data.parseIntent
@@ -57,12 +62,14 @@ import io.github.hypercopy.data.toIntent
 import io.github.hypercopy.ui.HiddenWebViewResolver
 import io.github.hypercopy.ui.RuleBrowserActivity
 import io.github.hypercopy.ui.RuleEditorActivity
+import io.github.hypercopy.ui.SystemLinkAppDetailActivity
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Import
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
@@ -76,16 +83,20 @@ fun RulesPage(
     onDismissImportDialog: () -> Unit = {},
     topContentPadding: Dp = 12.dp,
     bottomContentPadding: Dp = 16.dp,
+    systemLinkUserId: Int = 0,
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val repository = remember { RuleRepository(context.applicationContext) }
     val settingsRepository = remember { SettingsRepository(context.applicationContext) }
+    val systemLinkRepository = remember { SystemLinkRepository(context.applicationContext) }
     var rules by remember { mutableStateOf(repository.readRules()) }
     var systemLinkHandling by remember { mutableStateOf(settingsRepository.readSystemLinkHandling()) }
-    var selectedCategory by remember { mutableStateOf(RulePageCategory.Link) }
+    var selectedCategory by remember { mutableStateOf(RulePageCategory.System) }
     var testInput by remember { mutableStateOf("") }
     var resultText by remember { mutableStateOf(context.getString(R.string.rule_result_waiting)) }
+    var systemLinkApps by remember { mutableStateOf<List<SystemLinkApp>>(emptyList()) }
+    var systemLinkLoading by remember { mutableStateOf(false) }
     var resolvingUrl by remember { mutableStateOf<String?>(null) }
     var resolvingRule by remember { mutableStateOf<RuleConfig?>(null) }
     var selectedRuleIds by remember { mutableStateOf(emptySet<String>()) }
@@ -118,6 +129,28 @@ fun RulesPage(
         selectedRuleIds = selectedRuleIds.intersect(categoryRuleIds)
     }
 
+    fun loadSystemLinks() {
+        systemLinkLoading = true
+        thread(name = "HyperCopySystemLinks") {
+            val apps = runCatching { systemLinkRepository.readApps(systemLinkUserId) }
+                .getOrElse { throwable ->
+                    HyperLog.d("HyperCopy", "load system links failed", throwable)
+                    (context as? android.app.Activity)?.runOnUiThread {
+                        resultText = context.getString(R.string.rule_system_load_failed, throwable.message.orEmpty())
+                    }
+                    emptyList()
+                }
+            (context as? android.app.Activity)?.runOnUiThread {
+                systemLinkApps = apps
+                systemLinkLoading = false
+            }
+        }
+    }
+
+    LaunchedEffect(systemLinkUserId) {
+        if (selectedCategory == RulePageCategory.System) loadSystemLinks()
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             modifier = modifier.fillMaxSize(),
@@ -127,14 +160,16 @@ fun RulesPage(
             item {
                 RuleCategoryTabs(
                     selectedCategory = selectedCategory,
+                    includeSystem = true,
                     onSelected = {
                         selectedCategory = it
                         resultText = context.getString(R.string.rule_result_waiting)
                         selectedRuleIds = emptySet()
+                        if (it == RulePageCategory.System) loadSystemLinks()
                     },
                 )
             }
-            if (selectedCategory == RulePageCategory.Link) {
+            if (selectedCategory == RulePageCategory.System) {
                 item {
                     SystemLinkHandlingCard(
                         checked = systemLinkHandling,
@@ -152,43 +187,80 @@ fun RulesPage(
                     resultText = resultText,
                     onValueChange = { testInput = it },
                     onExecute = {
-                        resultText = executeRuleTest(
-                            context = context,
-                            input = testInput,
-                            rules = categoryRules,
-                            category = selectedCategory,
-                            onStartWebViewResolve = { url, rule ->
-                                resolvingUrl = url
-                                resolvingRule = rule
-                            },
-                            onStartRedirectParse = { url, rule ->
-                                resultText = context.getString(R.string.rule_result_match_redirect_parse, rule.name)
-                                thread(name = "HyperCopyRedirectTest") {
-                                    val redirectedUrl = OneRedirectResolver.resolve(url)
-                                    val intent = rule.parseIntent(
-                                        redirectedUrl,
-                                        requireMatch = false,
-                                        extraParameters = mapOf("input" to testInput.trim(), "redirectUrl" to redirectedUrl),
+                        if (selectedCategory == RulePageCategory.System) {
+                            resultText = context.getString(R.string.rule_system_test_running, systemLinkUserId)
+                            thread(name = "HyperCopySystemLinkTest") {
+                                val inputUrl = extractFirstInputUrl(testInput)
+                                val success = inputUrl?.let { systemLinkRepository.openLink(systemLinkUserId, it) } == true
+                                (context as? android.app.Activity)?.runOnUiThread {
+                                    resultText = context.getString(
+                                        if (success) R.string.rule_system_test_started else R.string.rule_result_launch_failed,
+                                        if (success) systemLinkUserId.toString() else "no url found",
                                     )
-                                    (context as? android.app.Activity)?.runOnUiThread {
-                                        if (intent == null) {
-                                            resultText = context.getString(R.string.rule_result_redirect_parse_no_param, redirectedUrl)
-                                        } else {
-                                            resultText = runCatching { context.startActivity(intent) }
-                                                .fold(
-                                                    onSuccess = { context.getString(R.string.rule_result_match_parse_open, rule.name, intent.data) },
-                                                    onFailure = { context.getString(R.string.rule_result_launch_failed, it.message) },
-                                                )
+                                }
+                            }
+                        } else {
+                            resultText = executeRuleTest(
+                                context = context,
+                                input = testInput,
+                                rules = categoryRules,
+                                category = selectedCategory,
+                                onStartWebViewResolve = { url, rule ->
+                                    resolvingUrl = url
+                                    resolvingRule = rule
+                                },
+                                onStartRedirectParse = { url, rule ->
+                                    resultText = context.getString(R.string.rule_result_match_redirect_parse, rule.name)
+                                    thread(name = "HyperCopyRedirectTest") {
+                                        val redirectedUrl = OneRedirectResolver.resolve(url)
+                                        val intent = rule.parseIntent(
+                                            redirectedUrl,
+                                            requireMatch = false,
+                                            extraParameters = mapOf("input" to testInput.trim(), "redirectUrl" to redirectedUrl),
+                                        )
+                                        (context as? android.app.Activity)?.runOnUiThread {
+                                            if (intent == null) {
+                                                resultText = context.getString(R.string.rule_result_redirect_parse_no_param, redirectedUrl)
+                                            } else {
+                                                resultText = runCatching { context.startActivity(intent) }
+                                                    .fold(
+                                                        onSuccess = { context.getString(R.string.rule_result_match_parse_open, rule.name, intent.data) },
+                                                        onFailure = { context.getString(R.string.rule_result_launch_failed, it.message) },
+                                                    )
+                                            }
                                         }
                                     }
-                                }
-                            },
-                            onStartActivity = { context.startActivity(it) },
-                        )
+                                },
+                                onStartActivity = { context.startActivity(it) },
+                            )
+                        }
                     },
                 )
             }
-            if (categoryRules.isEmpty()) {
+            if (selectedCategory == RulePageCategory.System) {
+                when {
+                    systemLinkLoading -> item { EmptyRulesCard(RulePageCategory.System) }
+                    systemLinkApps.isEmpty() -> item { EmptyRulesCard(RulePageCategory.System) }
+                    else -> items(systemLinkApps, key = { it.packageName }) { app ->
+                        SystemLinkAppListCard(
+                            app = app,
+                            onClick = {
+                                context.startActivity(
+                                    Intent(context, SystemLinkAppDetailActivity::class.java)
+                                        .putExtra(SystemLinkAppDetailActivity.EXTRA_PACKAGE_NAME, app.packageName)
+                                        .putExtra(SystemLinkAppDetailActivity.EXTRA_USER_ID, systemLinkUserId)
+                                        .putExtra(SystemLinkAppDetailActivity.EXTRA_APP_LABEL, app.label),
+                                )
+                            },
+                            onAppEnabledChange = { enabled ->
+                                toggleSystemLinkApp(context, systemLinkRepository, systemLinkUserId, app, enabled) { apps ->
+                                    systemLinkApps = apps
+                                }
+                            },
+                        )
+                    }
+                }
+            } else if (categoryRules.isEmpty()) {
                 item { EmptyRulesCard(selectedCategory) }
             } else {
                 items(categoryRules, key = { it.id }) { rule ->
@@ -243,25 +315,27 @@ fun RulesPage(
             )
         }
 
-        AddRuleMenu(
-            category = selectedCategory,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 24.dp, bottom = bottomContentPadding + 24.dp),
-            onBrowserClick = { context.startActivity(Intent(context, RuleBrowserActivity::class.java)) },
-            onLinkRuleClick = {
-                context.startActivity(
-                    Intent(context, RuleEditorActivity::class.java)
-                        .putExtra(RuleEditorActivity.EXTRA_CATEGORY, RuleCategory.Link.value),
-                )
-            },
-            onExpressRuleClick = {
-                context.startActivity(
-                    Intent(context, RuleEditorActivity::class.java)
-                        .putExtra(RuleEditorActivity.EXTRA_CATEGORY, RuleCategory.Express.value),
-                )
-            },
-        )
+        if (selectedCategory != RulePageCategory.System) {
+            AddRuleMenu(
+                category = selectedCategory,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 24.dp, bottom = bottomContentPadding + 24.dp),
+                onBrowserClick = { context.startActivity(Intent(context, RuleBrowserActivity::class.java)) },
+                onLinkRuleClick = {
+                    context.startActivity(
+                        Intent(context, RuleEditorActivity::class.java)
+                            .putExtra(RuleEditorActivity.EXTRA_CATEGORY, RuleCategory.Link.value),
+                    )
+                },
+                onExpressRuleClick = {
+                    context.startActivity(
+                        Intent(context, RuleEditorActivity::class.java)
+                            .putExtra(RuleEditorActivity.EXTRA_CATEGORY, RuleCategory.Express.value),
+                    )
+                },
+            )
+        }
 
         resolvingUrl?.let { url ->
             HiddenWebViewResolver(
@@ -401,6 +475,51 @@ fun RulesPage(
                 }
             }
         }
+    }
+}
+
+private fun toggleSystemLinkDomain(
+    context: android.content.Context,
+    repository: SystemLinkRepository,
+    userId: Int,
+    app: SystemLinkApp,
+    host: String,
+    enabled: Boolean,
+    onReloaded: (List<SystemLinkApp>) -> Unit,
+) {
+    thread(name = "HyperCopySystemLinkToggle") {
+        if (!Regex("[A-Za-z][A-Za-z0-9_]*(?:\\.[A-Za-z0-9_]+)+").matches(app.packageName)) {
+            HyperLog.d("HyperCopy", "invalid system link package: ${app.packageName}")
+            return@thread
+        }
+        runCatching { repository.setDomainEnabled(userId, app.packageName, host, enabled) }
+            .onFailure { HyperLog.d("HyperCopy", "toggle system link failed", it) }
+        val apps = runCatching { repository.readApps(userId) }
+            .getOrElse { throwable ->
+                HyperLog.d("HyperCopy", "reload system links failed", throwable)
+                listOf(app)
+            }
+        (context as? android.app.Activity)?.runOnUiThread { onReloaded(apps) }
+    }
+}
+
+private fun toggleSystemLinkApp(
+    context: android.content.Context,
+    repository: SystemLinkRepository,
+    userId: Int,
+    app: SystemLinkApp,
+    enabled: Boolean,
+    onReloaded: (List<SystemLinkApp>) -> Unit,
+) {
+    thread(name = "HyperCopySystemLinkAppToggle") {
+        runCatching { repository.setLinkHandlingAllowed(userId, app.packageName, enabled) }
+            .onFailure { HyperLog.d("HyperCopy", "toggle app system link failed", it) }
+        val apps = runCatching { repository.readApps(userId) }
+            .getOrElse { throwable ->
+                HyperLog.d("HyperCopy", "reload system links failed", throwable)
+                listOf(app)
+            }
+        (context as? android.app.Activity)?.runOnUiThread { onReloaded(apps) }
     }
 }
 

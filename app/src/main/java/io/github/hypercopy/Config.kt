@@ -12,7 +12,9 @@ object Config {
     const val KEY_JUMP_NOTIFICATION_MODE = "jump_notification_mode"
     const val KEY_APP_LIST_WORK_MODE = "app_list_work_mode"
     const val KEY_IGNORE_JUMP_APP = "ignore_jump_app"
+    const val KEY_DETECT_CLONED_APP = "detect_cloned_app"
     const val KEY_SYSTEM_LINK_HANDLING = "system_link_handling"
+    const val KEY_SYSTEM_LINK_USER_ID = "system_link_user_id"
     const val KEY_APP_LIST_PACKAGES = "app_list_packages"
 
     const val ACTION_HANDLE_CLIPBOARD_TEXT = "io.github.hypercopy.action.HANDLE_CLIPBOARD_TEXT"
@@ -22,6 +24,7 @@ object Config {
     const val EXTRA_CLIPBOARD_TEXT = "io.github.hypercopy.extra.CLIPBOARD_TEXT"
     const val EXTRA_CLIPBOARD_SOURCE = "io.github.hypercopy.extra.CLIPBOARD_SOURCE"
     const val EXTRA_PENDING_JUMP_ID = "io.github.hypercopy.extra.PENDING_JUMP_ID"
+    const val EXTRA_PENDING_JUMP_USER_ID = "io.github.hypercopy.extra.PENDING_JUMP_USER_ID"
 
     const val LOG_LEVEL_OFF = 0
     const val LOG_LEVEL_BASIC = 1
@@ -51,7 +54,9 @@ object Config {
     const val DEFAULT_JUMP_NOTIFICATION_MODE = JUMP_NOTIFICATION_MODE_NONE
     const val DEFAULT_APP_LIST_WORK_MODE = APP_LIST_WORK_MODE_BLACKLIST
     const val DEFAULT_IGNORE_JUMP_APP = true
+    const val DEFAULT_DETECT_CLONED_APP = true
     const val DEFAULT_SYSTEM_LINK_HANDLING = true
+    const val DEFAULT_SYSTEM_LINK_USER_ID = 0
 
     const val KEY_CLOUD_SOURCE = "cloud_source"
     const val CLOUD_SOURCE_GITHUB = "github"

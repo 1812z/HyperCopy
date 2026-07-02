@@ -10,10 +10,10 @@ object RootActivityLauncher {
     private const val TAG = "HyperCopy"
     private const val TIMEOUT_SECONDS = 5L
 
-    fun launch(intent: Intent): Boolean {
-        val command = IntentAmStartCommand.build(intent)
+    fun launch(intent: Intent, userId: Int = 0): Boolean {
+        val command = IntentAmStartCommand.build(intent, userId)
         return runCatching {
-            HyperLog.d(TAG, "root start activity: $command")
+            HyperLog.d(TAG, "root start activity")
             val process = ProcessBuilder("su", "-c", command).redirectErrorStream(true).start()
             val finished = process.waitFor(TIMEOUT_SECONDS, TimeUnit.SECONDS)
             if (!finished) {
@@ -23,7 +23,7 @@ object RootActivityLauncher {
             }
             val output = process.inputStream.bufferedReader().use { it.readText() }
             val success = process.exitValue() == 0 || output.indicatesActivityStarted()
-            if (!success) HyperLog.d(TAG, "root start activity failed: $output")
+            if (!success) HyperLog.d(TAG, "root start activity failed: ${output.take(300)}")
             success
         }.getOrElse { throwable ->
             HyperLog.d(TAG, "root start activity exception", throwable)

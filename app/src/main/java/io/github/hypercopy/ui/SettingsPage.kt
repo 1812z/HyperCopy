@@ -45,11 +45,13 @@ fun SettingsPage(
     logLevel: Int,
     autoCheckUpdate: Boolean,
     desktopIconHidden: Boolean,
+    detectClonedApp: Boolean,
     appLanguage: AppLanguage,
     jumpNotificationMode: JumpNotificationMode,
     onLogLevelChange: (Int) -> Unit,
     onAutoCheckUpdateChange: (Boolean) -> Unit,
     onDesktopIconHiddenChange: (Boolean) -> Unit,
+    onDetectClonedAppChange: (Boolean) -> Unit,
     onAppLanguageChange: (AppLanguage) -> Unit,
     onJumpNotificationModeChange: (JumpNotificationMode) -> Unit,
     onCheckUpdate: () -> Unit,
@@ -127,6 +129,13 @@ fun SettingsPage(
                     summary = stringResource(R.string.auto_check_update_summary),
                     checked = autoCheckUpdate,
                     onCheckedChange = { onAutoCheckUpdateChange(!autoCheckUpdate) },
+                )
+                SwitchAction(
+                    icon = MiuixIcons.AppRecording,
+                    title = stringResource(R.string.detect_cloned_app),
+                    summary = stringResource(R.string.detect_cloned_app_summary),
+                    checked = detectClonedApp,
+                    onCheckedChange = { onDetectClonedAppChange(!detectClonedApp) },
                 )
                 SwitchAction(
                     icon = MiuixIcons.AppRecording,

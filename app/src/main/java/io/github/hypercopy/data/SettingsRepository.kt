@@ -80,12 +80,28 @@ class SettingsRepository(private val context: Context) {
         preferences().edit(commit = true) { putBoolean(Config.KEY_IGNORE_JUMP_APP, value) }
     }
 
+    fun readDetectClonedApp(): Boolean {
+        return preferences().getBoolean(Config.KEY_DETECT_CLONED_APP, Config.DEFAULT_DETECT_CLONED_APP)
+    }
+
+    fun persistDetectClonedApp(value: Boolean) {
+        preferences().edit(commit = true) { putBoolean(Config.KEY_DETECT_CLONED_APP, value) }
+    }
+
     fun readSystemLinkHandling(): Boolean {
         return preferences().getBoolean(Config.KEY_SYSTEM_LINK_HANDLING, Config.DEFAULT_SYSTEM_LINK_HANDLING)
     }
 
     fun persistSystemLinkHandling(value: Boolean) {
         preferences().edit(commit = true) { putBoolean(Config.KEY_SYSTEM_LINK_HANDLING, value) }
+    }
+
+    fun readSystemLinkUserId(): Int {
+        return preferences().getInt(Config.KEY_SYSTEM_LINK_USER_ID, Config.DEFAULT_SYSTEM_LINK_USER_ID)
+    }
+
+    fun persistSystemLinkUserId(value: Int) {
+        preferences().edit(commit = true) { putInt(Config.KEY_SYSTEM_LINK_USER_ID, value) }
     }
 
     fun readAppListPackages(): Set<String> {

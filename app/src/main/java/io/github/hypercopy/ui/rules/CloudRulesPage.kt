@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,11 +43,8 @@ import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
-import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.ListPopupColumn
-import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -54,21 +52,22 @@ import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.Check
 import top.yukonga.miuix.kmp.icon.extended.Download
-import top.yukonga.miuix.kmp.icon.extended.ListView
-import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.icon.extended.Search
-import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun CloudRulesPage(
+    modifier: Modifier = Modifier,
     topContentPadding: Dp = 12.dp,
     bottomContentPadding: Dp = 16.dp,
+    showInstalledOnly: Boolean = false,
+    cloudSource: String = Config.CLOUD_SOURCE_ACCELERATED,
+    refreshTrigger: Int = 0,
+    downloadInstalledTrigger: Int = 0,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val settingsRepository = remember { SettingsRepository(context.applicationContext) }
-    var cloudSource by remember { mutableStateOf(settingsRepository.readCloudSource()) }
     val cloudRepository = remember(cloudSource) { CloudRulesRepository(cloudSource) }
     val localRepository = remember { RuleRepository(context.applicationContext) }
 
@@ -79,7 +78,6 @@ fun CloudRulesPage(
     var error by remember { mutableStateOf<String?>(null) }
     var downloadedIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     var installedPackageNames by remember { mutableStateOf<Set<String>>(emptySet()) }
-    var showInstalledOnly by remember { mutableStateOf(false) }
     val rulesCache = remember { mutableStateMapOf<RulePageCategory, List<CloudRule>>() }
     val downloadingIds = remember { mutableStateMapOf<String, Boolean>() }
 
@@ -114,6 +112,29 @@ fun CloudRulesPage(
         }
     }
 
+    fun downloadInstalledRules() {
+        val installedRules = cloudRules.filter { it.packageName in installedPackageNames }
+        val rules = installedRules.filter { it.stableId() !in downloadedIds && downloadingIds[it.fileName] != true }
+        if (rules.isEmpty()) {
+            Toast.makeText(context, R.string.cloud_toast_no_installed_rules_to_download, Toast.LENGTH_SHORT).show()
+            return
+        }
+        scope.launch {
+            var successCount = 0
+            rules.forEach { rule ->
+                downloadingIds[rule.fileName] = true
+                runCatching { cloudRepository.downloadRule(rule) }
+                    .onSuccess { config ->
+                        localRepository.saveRule(config)
+                        successCount++
+                    }
+                downloadingIds[rule.fileName] = false
+            }
+            refreshDownloadedIds()
+            Toast.makeText(context, context.getString(R.string.cloud_toast_batch_added, successCount), Toast.LENGTH_SHORT).show()
+        }
+    }
+
     LaunchedEffect(selectedCategory) { loadRules(selectedCategory) }
     LaunchedEffect(Unit) {
         installedPackageNames = withContext(Dispatchers.IO) {
@@ -121,6 +142,19 @@ fun CloudRulesPage(
             packageManager.getInstalledApplications(PackageManager.ApplicationInfoFlags.of(0))
                 .map { it.packageName }
                 .toSet()
+        }
+    }
+
+    LaunchedEffect(refreshTrigger) {
+        if (refreshTrigger > 0) {
+            rulesCache.clear()
+            loadRules(selectedCategory, forceRefresh = true, showSuccessToast = true)
+        }
+    }
+
+    LaunchedEffect(downloadInstalledTrigger) {
+        if (downloadInstalledTrigger > 0) {
+            downloadInstalledRules()
         }
     }
 
@@ -135,10 +169,6 @@ fun CloudRulesPage(
                 matchesInstalled && matchesQuery
             }
         }
-    }
-
-    val installedRules by remember(cloudRules, installedPackageNames) {
-        derivedStateOf { cloudRules.filter { it.packageName in installedPackageNames } }
     }
 
     fun handleDownload(rule: CloudRule) {
@@ -162,49 +192,16 @@ fun CloudRulesPage(
         }
     }
 
-    fun downloadInstalledRules() {
-        val rules = installedRules.filter { it.stableId() !in downloadedIds && downloadingIds[it.fileName] != true }
-        if (rules.isEmpty()) {
-            Toast.makeText(context, R.string.cloud_toast_no_installed_rules_to_download, Toast.LENGTH_SHORT).show()
-            return
-        }
-        scope.launch {
-            var successCount = 0
-            rules.forEach { rule ->
-                downloadingIds[rule.fileName] = true
-                runCatching { cloudRepository.downloadRule(rule) }
-                    .onSuccess { config ->
-                        localRepository.saveRule(config)
-                        successCount++
-                    }
-                downloadingIds[rule.fileName] = false
-            }
-            refreshDownloadedIds()
-            Toast.makeText(context, context.getString(R.string.cloud_toast_batch_added, successCount), Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = modifier.fillMaxSize()) {
         CloudRulesHeader(
-            title = stringResource(R.string.tab_cloud_rules),
             topContentPadding = topContentPadding,
             searchQuery = searchQuery,
             onSearchQueryChange = { searchQuery = it },
-            onRefresh = { loadRules(selectedCategory, forceRefresh = true, showSuccessToast = true) },
-            showInstalledOnly = showInstalledOnly,
-            onShowInstalledOnlyChange = { showInstalledOnly = it },
-            onDownloadInstalledRules = { downloadInstalledRules() },
-            cloudSource = cloudSource,
-            onCloudSourceChange = { source ->
-                settingsRepository.persistCloudSource(source)
-                cloudSource = source
-                rulesCache.clear()
-                loadRules(selectedCategory, forceRefresh = true)
-            },
         )
         RuleCategoryTabs(
             selectedCategory = selectedCategory,
             modifier = Modifier.padding(horizontal = 12.dp),
+            includeSystem = false,
             onSelected = {
                 selectedCategory = it
                 searchQuery = ""
@@ -261,112 +258,13 @@ private fun CloudRule.stableId(): String = "cloud_${folder}_${fileNameWithoutExt
 
 @Composable
 private fun CloudRulesHeader(
-    title: String,
     topContentPadding: Dp,
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
-    onRefresh: () -> Unit,
-    showInstalledOnly: Boolean,
-    onShowInstalledOnlyChange: (Boolean) -> Unit,
-    onDownloadInstalledRules: () -> Unit,
-    cloudSource: String,
-    onCloudSourceChange: (String) -> Unit,
 ) {
-    var showPopup by remember { mutableStateOf(false) }
-    var showSourcePopup by remember { mutableStateOf(false) }
-    val menuItems = listOf(
-        stringResource(R.string.cloud_menu_show_installed_only),
-        stringResource(R.string.cloud_menu_download_installed),
-        stringResource(R.string.cloud_menu_switch_source),
-    )
-
     Column(
         modifier = Modifier.fillMaxWidth().padding(start = 12.dp, top = topContentPadding, end = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = title,
-                style = MiuixTheme.textStyles.title1,
-                modifier = Modifier.weight(1f).padding(top = 8.dp),
-            )
-            IconButton(
-                onClick = onRefresh,
-                minWidth = 36.dp,
-                minHeight = 36.dp,
-                cornerRadius = 18.dp,
-            ) {
-                Icon(
-                    imageVector = MiuixIcons.Refresh,
-                    contentDescription = stringResource(R.string.action_refresh),
-                    tint = MiuixTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(18.dp),
-                )
-            }
-            Box {
-                IconButton(
-                    onClick = { showPopup = true },
-                    minWidth = 36.dp,
-                    minHeight = 36.dp,
-                    cornerRadius = 18.dp,
-                ) {
-                    Icon(
-                        imageVector = MiuixIcons.ListView,
-                        contentDescription = stringResource(R.string.cloud_menu_options),
-                        tint = MiuixTheme.colorScheme.onSurface,
-                        modifier = Modifier.size(18.dp),
-                    )
-                }
-                OverlayListPopup(
-                    show = showPopup,
-                    alignment = PopupPositionProvider.Align.End,
-                    onDismissRequest = { showPopup = false },
-                ) {
-                    ListPopupColumn {
-                        menuItems.forEachIndexed { index, text ->
-                            DropdownImpl(
-                                text = text,
-                                optionSize = menuItems.size,
-                                isSelected = index == 0 && showInstalledOnly,
-                                index = index,
-                                onSelectedIndexChange = {
-                                    showPopup = false
-                                    when (index) {
-                                        0 -> onShowInstalledOnlyChange(!showInstalledOnly)
-                                        1 -> onDownloadInstalledRules()
-                                        2 -> showSourcePopup = true
-                                    }
-                                },
-                            )
-                        }
-                    }
-                }
-                OverlayListPopup(
-                    show = showSourcePopup,
-                    alignment = PopupPositionProvider.Align.End,
-                    onDismissRequest = { showSourcePopup = false },
-                ) {
-                    ListPopupColumn {
-                        val sources = listOf(
-                            Config.CLOUD_SOURCE_ACCELERATED to stringResource(R.string.cloud_source_accelerated),
-                            Config.CLOUD_SOURCE_GITHUB to stringResource(R.string.cloud_source_github),
-                        )
-                        sources.forEachIndexed { index, (value, label) ->
-                            DropdownImpl(
-                                text = label,
-                                optionSize = sources.size,
-                                isSelected = cloudSource == value,
-                                index = index,
-                                onSelectedIndexChange = {
-                                    showSourcePopup = false
-                                    onCloudSourceChange(value)
-                                },
-                            )
-                        }
-                    }
-                }
-            }
-        }
         TextField(
             value = searchQuery,
             onValueChange = onSearchQueryChange,

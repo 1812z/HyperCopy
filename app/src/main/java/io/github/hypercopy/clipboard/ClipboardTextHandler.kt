@@ -50,7 +50,7 @@ object ClipboardTextHandler {
 
         val match = matchRule(input, rules)
         if (match != null) {
-            val targetPackageName = jumpPackageName(match.rule.target.packageName, match.intent)
+            val targetPackageName = jumpPackageName(appContext, match.rule.target.packageName, match.intent)
             if (shouldIgnoreJump(source, targetPackageName, ignoreJumpApp)) {
                 HyperLog.d(TAG, "ignore jump in target app before notification: source=$source target=$targetPackageName")
                 return
@@ -71,7 +71,7 @@ object ClipboardTextHandler {
         when (rule.actionMode) {
             RuleActionMode.DirectOpen -> {
                 val intent = rule.directIntent(input, appContext.packageManager)
-                val targetPackageName = jumpPackageName(rule.target.packageName, intent)
+                val targetPackageName = jumpPackageName(appContext, rule.target.packageName, intent)
                 if (shouldIgnoreJump(source, targetPackageName, ignoreJumpApp)) {
                     HyperLog.d(TAG, "ignore jump in target app before notification: source=$source target=$targetPackageName")
                     return
@@ -108,12 +108,13 @@ object ClipboardTextHandler {
                     HyperLog.d(TAG, "redirect parse no parameters: $redirectedUrl")
                     return@thread
                 }
+                val targetPackageName = jumpPackageName(context, rule.target.packageName, intent)
                 submitJump(
                     context,
                     PendingJump.IntentJump(
                         title = rule.name,
                         intent = intent,
-                        packageName = rule.target.packageName,
+                        packageName = targetPackageName,
                     ),
                     rule.clearClipboardAfterJump,
                 )
@@ -140,8 +141,9 @@ object ClipboardTextHandler {
         return ignoreJumpApp && source.isNotBlank() && source == targetPackageName
     }
 
-    private fun jumpPackageName(configPackageName: String, intent: android.content.Intent): String {
-        return configPackageName.ifBlank { intent.`package` ?: intent.component?.packageName.orEmpty() }
+    private fun jumpPackageName(context: Context, configPackageName: String, intent: android.content.Intent): String {
+        if (configPackageName.isNotBlank()) return configPackageName
+        return intent.`package` ?: intent.component?.packageName ?: intent.resolveActivity(context.packageManager)?.packageName.orEmpty()
     }
 
     private fun shouldIgnoreBeforeMatch(source: String, rules: List<RuleConfig>, ignoreJumpApp: Boolean): Boolean {

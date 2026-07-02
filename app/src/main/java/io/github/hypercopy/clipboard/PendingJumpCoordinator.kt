@@ -23,6 +23,7 @@ import io.github.hypercopy.HyperLog
 import io.github.hypercopy.R
 import io.github.hypercopy.clipboard.monitor.ClipboardFocusRequester
 import io.github.hypercopy.data.SettingsRepository
+import io.github.hypercopy.data.SystemLinkRepository
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.TimeUnit
@@ -36,7 +37,9 @@ object PendingJumpCoordinator {
     private const val SHIZUKU_FOREGROUND_CLEAR_TIMEOUT_MILLIS = 1_200L
     private val handler = Handler(Looper.getMainLooper())
     private val clipboardClearHandler = Handler(HandlerThread("HyperCopyClipboardClear").apply { start() }.looper)
+    private val notificationHandler = Handler(HandlerThread("HyperCopyJumpNotification").apply { start() }.looper)
     private val nextId = AtomicLong(1L)
+    @Volatile
     private var pending: Entry? = null
 
     fun submit(context: Context, jump: PendingJump, clearClipboardAfterJump: Boolean = false) {
@@ -58,7 +61,7 @@ object PendingJumpCoordinator {
         pending?.cancel(appContext)
         pending = entry
         createChannel(appContext)
-        postNotification(appContext, entry, notificationMode)
+        notificationHandler.post { postNotification(appContext, entry, notificationMode) }
         if (jump is PendingJump.WebViewJump) {
             entry.preload = HeadlessWebViewResolver.preload(
                 appContext,
@@ -70,7 +73,7 @@ object PendingJumpCoordinator {
         handler.postDelayed(entry.expireRunnable, EXPIRE_MILLIS)
     }
 
-    fun confirm(context: Context, id: Long) {
+    fun confirm(context: Context, id: Long, selectedUserId: Int? = null) {
         val appContext = context.applicationContext
         val entry = pending ?: return
         if (entry.id != id) return
@@ -79,10 +82,13 @@ object PendingJumpCoordinator {
         handler.removeCallbacks(entry.expireRunnable)
         when (val jump = entry.jump) {
             is PendingJump.IntentJump -> launchAfterClipboardClear(appContext, entry.clearClipboardAfterJump) {
-                ActivityLaunchStrategy.launch(appContext, jump.intent)
+                ActivityLaunchStrategy.launch(appContext, jump.intent, selectedUserId)
             }
-            is PendingJump.WebViewJump -> entry.preload?.continueLaunch(appContext)
-                ?: HeadlessWebViewResolver.resolveAndLaunch(appContext, jump.url, jump.packageName, entry.clearClipboardAfterJump)
+            is PendingJump.WebViewJump -> entry.preload?.continueLaunch(appContext, selectedUserId)
+                ?: HeadlessWebViewResolver.resolveAndLaunch(appContext, jump.url, jump.packageName, entry.clearClipboardAfterJump, selectedUserId)
+            is PendingJump.SystemLinkJump -> launchAfterClipboardClear(appContext, entry.clearClipboardAfterJump) {
+                SystemLinkRepository(appContext).openLink(selectedUserId ?: jump.userId, jump.url)
+            }
         }
     }
 
@@ -100,23 +106,23 @@ object PendingJumpCoordinator {
                 ActivityLaunchStrategy.launch(context, jump.intent)
             }
             is PendingJump.WebViewJump -> HeadlessWebViewResolver.resolveAndLaunch(context, jump.url, jump.packageName, clearClipboardAfterJump)
+            is PendingJump.SystemLinkJump -> launchAfterClipboardClear(context, clearClipboardAfterJump) {
+                val repository = SystemLinkRepository(context)
+                if (jump.packageName.isBlank() || repository.isPackageInstalledForUser(jump.userId, jump.packageName)) {
+                    repository.openLink(jump.userId, jump.url)
+                }
+            }
         }
     }
 
     private fun postNotification(context: Context, entry: Entry, notificationMode: String) {
-        val actionIntent = Intent(context, JumpConfirmReceiver::class.java).apply {
-            action = Config.ACTION_CONFIRM_JUMP
-            putExtra(Config.EXTRA_PENDING_JUMP_ID, entry.id)
-        }
-        val pendingIntent = PendingIntent.getBroadcast(
-            context,
-            entry.id.toInt(),
-            actionIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
-        val title = context.getString(R.string.notification_jump_title)
+        if (pending?.id != entry.id) return
+        val actions = jumpActions(context, entry)
+        HyperLog.d(TAG, "jump notification actions target=${entry.jump.packageName} count=${actions.size} titles=${actions.joinToString { it.title }}")
+        if (pending?.id != entry.id) return
+        val title = appLabel(context, entry.jump.packageName).ifBlank { context.getString(R.string.notification_jump_title) }
         val content = entry.jump.title.ifBlank { context.getString(R.string.notification_jump_text) }
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_menu_upload)
             .setContentTitle(title)
             .setContentText(content)
@@ -128,14 +134,65 @@ object PendingJumpCoordinator {
             .setShowWhen(false)
             .setOnlyAlertOnce(true)
             .setTimeoutAfter(EXPIRE_MILLIS)
-            .addAction(android.R.drawable.ic_menu_view, context.getString(R.string.action_jump), pendingIntent)
             .requestPromotedOngoing()
+        actions.forEach { action ->
+            builder.addAction(android.R.drawable.ic_menu_view, action.title, action.pendingIntent)
+        }
+        val notification = builder
             .build()
             .apply { flags = flags or Notification.FLAG_ONGOING_EVENT }
         if (notificationMode == Config.JUMP_NOTIFICATION_MODE_MIUI_ISLAND) {
-            MiuiSuperIslandNotification.apply(context, notification, title, content, entry.jump.packageName, pendingIntent)
+            MiuiSuperIslandNotification.apply(context, notification, title, content, entry.jump.packageName, actions)
         }
         NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
+    }
+
+    private fun jumpActions(context: Context, entry: Entry): List<JumpAction> {
+        val jump = entry.jump
+        if (jump.packageName.isNotBlank() && SettingsRepository(context).readDetectClonedApp()) {
+            val repository = SystemLinkRepository(context)
+            val availableUsers = listOf(0, 999).filter { userId ->
+                repository.isPackageInstalledForUser(userId, jump.packageName)
+            }
+            HyperLog.d(TAG, "cloned app check target=${jump.packageName} users=${availableUsers.joinToString()}")
+            if (availableUsers.size > 1) {
+                return availableUsers.map { userId ->
+                    JumpAction(userActionTitle(context, userId), confirmPendingIntent(context, entry.id, userId))
+                }
+            }
+            val defaultUserId = (jump as? PendingJump.SystemLinkJump)?.userId ?: 0
+            if (availableUsers.size == 1 && availableUsers.first() != defaultUserId) {
+                return listOf(JumpAction(context.getString(R.string.action_jump), confirmPendingIntent(context, entry.id, availableUsers.first())))
+            }
+        }
+        return listOf(JumpAction(context.getString(R.string.action_jump), confirmPendingIntent(context, entry.id, null)))
+    }
+
+    private fun userActionTitle(context: Context, userId: Int): String {
+        return if (userId == 999) context.getString(R.string.action_jump_cloned_user) else context.getString(R.string.action_jump_main_user)
+    }
+
+    private fun appLabel(context: Context, packageName: String): String {
+        if (packageName.isBlank()) return ""
+        return runCatching {
+            val info = context.packageManager.getApplicationInfo(packageName, 0)
+            context.packageManager.getApplicationLabel(info).toString()
+        }.getOrDefault(packageName)
+    }
+
+    private fun confirmPendingIntent(context: Context, id: Long, userId: Int?): PendingIntent {
+        val actionIntent = Intent(context, JumpConfirmReceiver::class.java).apply {
+            action = Config.ACTION_CONFIRM_JUMP
+            putExtra(Config.EXTRA_PENDING_JUMP_ID, id)
+            if (userId != null) putExtra(Config.EXTRA_PENDING_JUMP_USER_ID, userId)
+        }
+        val requestCode = (id * 10 + (userId ?: 0)).toInt()
+        return PendingIntent.getBroadcast(
+            context,
+            requestCode,
+            actionIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
     }
 
     internal fun clearClipboardIfNeeded(context: Context, clearClipboardAfterJump: Boolean) {
@@ -259,4 +316,9 @@ object PendingJumpCoordinator {
             NotificationManagerCompat.from(context).cancel(NOTIFICATION_ID)
         }
     }
+
+    data class JumpAction(
+        val title: String,
+        val pendingIntent: PendingIntent,
+    )
 }

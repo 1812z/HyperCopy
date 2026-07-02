@@ -11,8 +11,9 @@ import io.github.hypercopy.data.SettingsRepository
 object ActivityLaunchStrategy {
     private const val TAG = "HyperCopy"
 
-    fun launch(context: Context, intent: Intent): Boolean {
+    fun launch(context: Context, intent: Intent, userId: Int? = null): Boolean {
         val resolvedIntent = intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK).withResolvedActivity(context.packageManager)
+        if (userId != null) return launchPrivileged(context, resolvedIntent, userId)
         val usesPrivilegedLauncher = SettingsRepository(context.applicationContext).readClipboardMonitorMode() == Config.CLIPBOARD_MONITOR_MODE_SHIZUKU
         val launched = if (usesPrivilegedLauncher) {
             ShizukuActivityLauncher.launch(resolvedIntent) || launchNormally(context, resolvedIntent)
@@ -21,6 +22,13 @@ object ActivityLaunchStrategy {
         }
         if (!launched && usesPrivilegedLauncher) HyperLog.d(TAG, "Privileged start returned failure; suppress toast to avoid false negatives")
         if (!launched && !usesPrivilegedLauncher) Toast.makeText(context, R.string.toast_open_target_failed, Toast.LENGTH_SHORT).show()
+        return launched
+    }
+
+    private fun launchPrivileged(context: Context, intent: Intent, userId: Int): Boolean {
+        val usesShizuku = SettingsRepository(context.applicationContext).readClipboardMonitorMode() == Config.CLIPBOARD_MONITOR_MODE_SHIZUKU
+        val launched = if (usesShizuku) ShizukuActivityLauncher.launch(intent, userId) else RootActivityLauncher.launch(intent, userId)
+        if (!launched) Toast.makeText(context, R.string.toast_open_target_failed, Toast.LENGTH_SHORT).show()
         return launched
     }
 

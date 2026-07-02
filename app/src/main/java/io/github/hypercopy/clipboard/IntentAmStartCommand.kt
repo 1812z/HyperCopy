@@ -3,8 +3,8 @@ package io.github.hypercopy.clipboard
 import android.content.Intent
 
 object IntentAmStartCommand {
-    fun build(intent: Intent): String {
-        val args = mutableListOf("am", "start", "--user", "0")
+    fun build(intent: Intent, userId: Int = 0): String {
+        val args = mutableListOf("am", "start", "--user", userId.toString())
         intent.action?.takeIf { it.isNotBlank() }?.let { args += listOf("-a", it) }
         intent.dataString?.takeIf { it.isNotBlank() }?.let { args += listOf("-d", it) }
         intent.categories?.forEach { category -> args += listOf("-c", category) }
@@ -16,8 +16,8 @@ object IntentAmStartCommand {
             val value = intent.extras?.get(key)
             if (value is String) args += listOf("--es", key, value)
         }
-        return args.joinToString(" ") { it.shellQuote() }
+        return args.joinToString(" ") { shellQuote(it) }
     }
 
-    fun String.shellQuote(): String = "'" + replace("'", "'\\''") + "'"
+    fun shellQuote(value: String): String = "'" + value.replace("'", "'\\''") + "'"
 }

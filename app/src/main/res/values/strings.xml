@@ -56,6 +56,8 @@
     <string name="jump_notification_mode_none">无（直接跳转）</string>
     <string name="jump_notification_mode_live">实时通知</string>
     <string name="jump_notification_mode_miui_island">小米超级岛</string>
+    <string name="detect_cloned_app">检测双开应用</string>
+    <string name="detect_cloned_app_summary">系统链接跳转前检测主用户和分身是否都安装目标应用，已安装时通知显示两个跳转按钮</string>
     <string name="log_level">日志级别</string>
     <string name="log_level_summary">控制模块输出日志的详细程度</string>
     <string name="log_off">关闭</string>
@@ -93,6 +95,8 @@
     <string name="action_edit">编辑</string>
     <string name="action_open">打开</string>
     <string name="action_jump">跳转</string>
+    <string name="action_jump_main_user">主用户</string>
+    <string name="action_jump_cloned_user">分身</string>
     <string name="action_refresh">刷新</string>
     <string name="action_retry">重试</string>
     <string name="action_select_all">全选</string>
@@ -110,6 +114,7 @@
 
     <!-- 规则分类 -->
     <string name="category_link">链接</string>
+    <string name="category_system">系统</string>
     <string name="category_address">地址</string>
     <string name="category_express">快递</string>
     <string name="page_category_text">口令/文本</string>
@@ -125,6 +130,15 @@
     <string name="rule_menu_browser">模拟浏览器</string>
     <string name="rule_system_link_title">系统链接处理</string>
     <string name="rule_system_link_summary">开启后，复制普通网页链接时优先交给安卓“打开受支持的链接”处理；没有专属 App 处理时再继续匹配规则。</string>
+    <string name="rule_system_empty_description">未读取到系统链接应用，或当前 user 没有可管理的受支持链接。</string>
+    <string name="rule_system_test_running">正在通过 user %1$d 打开系统链接</string>
+    <string name="rule_system_test_started">已通过 user %1$s 交给系统打开链接</string>
+    <string name="rule_system_load_failed">系统链接读取失败：%1$s</string>
+    <string name="rule_system_app_link_allowed">在应用中打开</string>
+    <string name="rule_system_app_link_allowed_summary">控制该应用是否允许接管受支持链接</string>
+    <string name="rule_system_user_menu">系统链接用户</string>
+    <string name="rule_system_user_0">主用户 user 0</string>
+    <string name="rule_system_user_999">分身 user 999</string>
     <string name="rule_result_waiting">等待测试</string>
     <string name="rule_result_input_required">请输入要测试的%1$s内容</string>
     <string name="rule_result_no_match">未命中%1$s规则</string>

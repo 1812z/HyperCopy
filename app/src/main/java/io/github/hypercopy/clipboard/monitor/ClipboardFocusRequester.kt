@@ -5,12 +5,13 @@ import android.content.Context
 import android.content.Intent
 import io.github.hypercopy.HyperLog
 import io.github.hypercopy.clipboard.ClipboardFloatingActivity
-import io.github.hypercopy.clipboard.IntentAmStartCommand.shellQuote
+import io.github.hypercopy.clipboard.IntentAmStartCommand
 import java.util.UUID
 
 object ClipboardFocusRequester {
     private const val TAG = "HyperCopy"
     private const val REQUEST_DEBOUNCE_MILLIS = 800L
+    private const val SHIZUKU_COMMAND_TIMEOUT_MILLIS = 3_000L
 
     private var lastRequestAt = 0L
     private var pendingToken: String? = null
@@ -91,14 +92,19 @@ object ClipboardFocusRequester {
             "-f",
             Intent.FLAG_ACTIVITY_NEW_TASK.toString(),
         )
-        val command = commandParts.joinToString(" ") { it.shellQuote() }
+        val command = commandParts.joinToString(" ") { IntentAmStartCommand.shellQuote(it) }
         return runCatching {
             HyperLog.d(TAG, "Shizuku start clipboard floating activity")
             val process = ShizukuProcess.start(arrayOf("sh", "-c", command)) ?: return false
-            val exitCode = process.waitFor()
+            if (!waitForExit(process)) {
+                process.destroyForcibly()
+                HyperLog.d(TAG, "Shizuku start clipboard floating activity timeout")
+                return false
+            }
+            val exitCode = process.exitValue()
             if (exitCode != 0) {
                 val output = process.inputStream.bufferedReader().use { it.readText() }
-                HyperLog.d(TAG, "Shizuku start clipboard floating activity failed: $output")
+                HyperLog.d(TAG, "Shizuku start clipboard floating activity failed: ${output.take(300)}")
             }
             exitCode == 0
         }.getOrElse { throwable ->
@@ -121,7 +127,7 @@ object ClipboardFocusRequester {
             val process = ShizukuProcess.start(arrayOf("sh", "-c", "dumpsys window | grep -E 'mCurrentFocus|mFocusedApp'"))
                 ?: return ""
             val output = process.inputStream.bufferedReader().use { it.readText() }
-            process.waitFor()
+            if (!waitForExit(process)) process.destroyForcibly()
             Regex("[a-zA-Z0-9_]+(?:\\.[a-zA-Z0-9_]+)+").findAll(output)
                 .map { it.value }
                 .firstOrNull { it != context.packageName } ?: ""
@@ -129,6 +135,19 @@ object ClipboardFocusRequester {
             HyperLog.d(TAG, "read foreground package failed", throwable)
             ""
         }
+    }
+
+    private fun waitForExit(process: Process): Boolean {
+        val deadline = System.currentTimeMillis() + SHIZUKU_COMMAND_TIMEOUT_MILLIS
+        while (System.currentTimeMillis() < deadline) {
+            val exited = runCatching {
+                process.exitValue()
+                true
+            }.getOrDefault(false)
+            if (exited) return true
+            runCatching { Thread.sleep(50L) }
+        }
+        return false
     }
 
     const val EXTRA_START_TOKEN = "io.github.hypercopy.extra.FLOATING_START_TOKEN"

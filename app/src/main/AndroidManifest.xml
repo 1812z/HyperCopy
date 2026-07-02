@@ -71,6 +71,10 @@
             android:exported="false" />
 
         <activity
+            android:name=".ui.SystemLinkAppDetailActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".clipboard.ClipboardFloatingActivity"
             android:excludeFromRecents="true"
             android:exported="true"
