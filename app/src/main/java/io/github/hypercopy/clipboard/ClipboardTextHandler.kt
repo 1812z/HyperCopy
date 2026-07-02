@@ -40,6 +40,14 @@ object ClipboardTextHandler {
         val ignoreJumpApp = settingsRepository.readIgnoreJumpApp()
         if (shouldIgnoreBeforeMatch(source, rules, ignoreJumpApp)) return
 
+        if (settingsRepository.readSystemLinkHandling()) {
+            val systemJump = SystemLinkHandler.createJump(appContext, input)
+            if (systemJump != null && !shouldIgnoreJump(source, systemJump.packageName, ignoreJumpApp)) {
+                submitJump(appContext, systemJump, clearClipboardAfterJump = false)
+                return
+            }
+        }
+
         val match = matchRule(input, rules)
         if (match != null) {
             val targetPackageName = jumpPackageName(match.rule.target.packageName, match.intent)

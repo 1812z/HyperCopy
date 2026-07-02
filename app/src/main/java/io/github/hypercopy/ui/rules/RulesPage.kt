@@ -44,6 +44,7 @@ import io.github.hypercopy.data.RuleActionMode
 import io.github.hypercopy.data.RuleCategory
 import io.github.hypercopy.data.RuleConfig
 import io.github.hypercopy.data.RuleRepository
+import io.github.hypercopy.data.SettingsRepository
 import io.github.hypercopy.data.RuleTarget
 import io.github.hypercopy.data.RuleTargetType
 import io.github.hypercopy.data.directIntent
@@ -79,7 +80,9 @@ fun RulesPage(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val repository = remember { RuleRepository(context.applicationContext) }
+    val settingsRepository = remember { SettingsRepository(context.applicationContext) }
     var rules by remember { mutableStateOf(repository.readRules()) }
+    var systemLinkHandling by remember { mutableStateOf(settingsRepository.readSystemLinkHandling()) }
     var selectedCategory by remember { mutableStateOf(RulePageCategory.Link) }
     var testInput by remember { mutableStateOf("") }
     var resultText by remember { mutableStateOf(context.getString(R.string.rule_result_waiting)) }
@@ -130,6 +133,17 @@ fun RulesPage(
                         selectedRuleIds = emptySet()
                     },
                 )
+            }
+            if (selectedCategory == RulePageCategory.Link) {
+                item {
+                    SystemLinkHandlingCard(
+                        checked = systemLinkHandling,
+                        onCheckedChange = {
+                            systemLinkHandling = it
+                            settingsRepository.persistSystemLinkHandling(it)
+                        },
+                    )
+                }
             }
             item {
                 TestRuleCard(

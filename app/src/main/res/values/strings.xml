@@ -123,6 +123,8 @@
     <string name="rule_empty_title">还没有%1$s规则</string>
     <string name="rule_selected_count">已选择 %1$d 项</string>
     <string name="rule_menu_browser">模拟浏览器</string>
+    <string name="rule_system_link_title">系统链接处理</string>
+    <string name="rule_system_link_summary">开启后，复制普通网页链接时优先交给安卓“打开受支持的链接”处理；没有专属 App 处理时再继续匹配规则。</string>
     <string name="rule_result_waiting">等待测试</string>
     <string name="rule_result_input_required">请输入要测试的%1$s内容</string>
     <string name="rule_result_no_match">未命中%1$s规则</string>

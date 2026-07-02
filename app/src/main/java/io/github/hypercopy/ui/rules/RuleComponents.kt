@@ -94,6 +94,29 @@ internal fun TestRuleCard(
 }
 
 @Composable
+internal fun SystemLinkHandlingCard(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Card {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(text = stringResource(R.string.rule_system_link_title), style = MiuixTheme.textStyles.headline1)
+                Text(
+                    text = stringResource(R.string.rule_system_link_summary),
+                    style = MiuixTheme.textStyles.body2,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                )
+            }
+            Switch(checked = checked, onCheckedChange = { onCheckedChange(!checked) })
+        }
+    }
+}
+
+@Composable
 internal fun EmptyRulesCard(category: RulePageCategory) {
     Card {
         Column(modifier = Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

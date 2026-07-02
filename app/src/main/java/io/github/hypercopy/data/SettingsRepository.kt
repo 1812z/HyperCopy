@@ -80,6 +80,14 @@ class SettingsRepository(private val context: Context) {
         preferences().edit(commit = true) { putBoolean(Config.KEY_IGNORE_JUMP_APP, value) }
     }
 
+    fun readSystemLinkHandling(): Boolean {
+        return preferences().getBoolean(Config.KEY_SYSTEM_LINK_HANDLING, Config.DEFAULT_SYSTEM_LINK_HANDLING)
+    }
+
+    fun persistSystemLinkHandling(value: Boolean) {
+        preferences().edit(commit = true) { putBoolean(Config.KEY_SYSTEM_LINK_HANDLING, value) }
+    }
+
     fun readAppListPackages(): Set<String> {
         return preferences().getStringSet(Config.KEY_APP_LIST_PACKAGES, emptySet()).orEmpty()
     }
