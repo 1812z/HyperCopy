@@ -4,7 +4,7 @@
 
 # HyperCopy
 
-**复制后直达目标 App 的 Android 链接跳转增强模块**
+**An Android link-jump enhancement module that opens the target app right after copying**
 
 [![GitHub Release](https://img.shields.io/github/v/release/1812z/HyperCopy?style=flat-square&logo=github&color=black)](https://github.com/1812z/HyperCopy/releases)
 ![Downloads](https://img.shields.io/github/downloads/1812z/HyperCopy/total?style=flat-square)
@@ -13,41 +13,26 @@
 [![Shizuku](https://img.shields.io/badge/Support-Shizuku-2196F3?style=flat-square)](https://shizuku.rikka.app/)
 [![Build](https://img.shields.io/badge/Build-Kotlin%20%2B%20Compose-7F52FF?style=flat-square&logo=kotlin)](https://kotlinlang.org)
 
-**[English](README_EN.md)** | **简体中文**
+**English** | **[简体中文](README.md)**
 
 </div>
 
 ---
 
-## ✨ 功能介绍
+## Features
 
 <table>
 <tr>
 <td width="50%">
 
-### 📋 复制直达
-监听复制内容，命中规则后快速跳转到目标 App，节省手动打开、搜索、粘贴的时间。
+### Copy To Open
+Listens to copied content and quickly jumps to the target app when a rule matches, saving the time spent manually opening, searching, and pasting.
 
 </td>
 <td width="50%">
 
-### ☁️ 云规则
-内置云规则页，可在线获取规则，支持搜索、下载与一键配置。
-
-</td>
-</tr>
-
-<tr>
-<td width="50%">
-
-### 🔔 实时通知
-复制命中规则后可通过安卓实时通知确认跳转，也可选择小米超级岛样式提示。
-
-</td>
-<td width="50%">
-
-### 🔐 LSPosed / Shizuku 支持
-支持免 Root 的 Shizuku 方案，也支持 Root / LSPosed 监听剪贴板变化。
+### Cloud Rules
+Includes a cloud rules page for fetching rules online, with search, download, and one-tap configuration support.
 
 </td>
 </tr>
@@ -55,14 +40,29 @@
 <tr>
 <td width="50%">
 
-### 📱 分身应用
-检测到应用存在分身时，支持弹窗询问并选择需要打开的应用实例。
+### Real-Time Notifications
+After copied content matches a rule, Android real-time notifications can be used to confirm the jump. Xiaomi Hyper Island-style prompts are also supported.
 
 </td>
 <td width="50%">
 
-### ⚙️ 系统服务
-适配系统链接调用服务，支持快速配置默认链接调用方式。
+### LSPosed / Shizuku Support
+Supports a rootless Shizuku setup as well as Root / LSPosed clipboard change monitoring.
+
+</td>
+</tr>
+
+<tr>
+<td width="50%">
+
+### Cloned Apps
+When cloned app instances are detected, HyperCopy can show a dialog and let you choose which app instance to open.
+
+</td>
+<td width="50%">
+
+### System Services
+Adapts to the system link invocation service and supports quick configuration of the default link handling method.
 
 </td>
 </tr>
@@ -70,19 +70,19 @@
 
 ---
 
-## 使用说明
+## Usage
 
-1. 安装 HyperCopy。
-2. 按使用环境选择监听方案：`LSPosed` 或 `Shizuku`。
-3. 在“云规则”页下载常用应用规则，或在“规则”页手动添加规则。
-4. 复制链接、地址、快递单号或指定文本。
-5. 命中规则后，HyperCopy 会按设置直接跳转或弹出确认通知。
+1. Install HyperCopy.
+2. Choose a monitoring method based on your environment: `LSPosed` or `Shizuku`.
+3. Download common app rules from the Cloud Rules page, or manually add rules on the Rules page.
+4. Copy a link, address, tracking number, or specified text.
+5. When a rule matches, HyperCopy will either jump directly or show a confirmation notification based on your settings.
 
 ---
 
-## 规则能力
+## Rule Capabilities
 
-规则保存在应用私有目录的 `rules.json` 中，核心字段包括：
+Rules are stored in `rules.json` under the app's private directory. Core fields include:
 
 ```json
 {
@@ -99,24 +99,25 @@
 }
 ```
 
-支持的模板变量：
+Supported template variables:
 
-- `${p1}`、`${p2}`：`parameterRegex` 按顺序提取的捕获组。
-- `${r1}`、`${r1_1}`：`extractionRegexes` 提取到的捕获组。
-- `${input}`：完整复制内容。
-- `${url:input}`：从完整复制内容中提取第一个 URL。
-- `${redirectUrl}`：跳转后解析得到的重定向 URL。
-- `${raw:变量名}`：原样插入参数，不做 URL 编码。
+- `${p1}`, `${p2}`: Capture groups extracted by `parameterRegex` in order.
+- `${r1}`, `${r1_1}`: Capture groups extracted by `extractionRegexes`.
+- `${input}`: The full copied content.
+- `${url:input}`: The first URL extracted from the full copied content.
+- `${redirectUrl}`: The redirected URL resolved after jumping.
+- `${raw:variableName}`: Inserts the parameter as-is without URL encoding.
 
 ---
 
-## 构建
+## Build
 
-确保已安装 Android Studio、JDK 17 和 Android SDK，然后运行：
+Make sure Android Studio, JDK 17, and Android SDK are installed, then run:
 
 ```bash
 gradle assembleRelease
 ```
+
 ---
 
 ## Star History
@@ -131,9 +132,9 @@ gradle assembleRelease
 
 ---
 
-## 许可证
+## License
 
-许可证文件待补充。欢迎 Issue 与 PR。
+The license file is not available yet. Issues and PRs are welcome.
 
 <div align="center">
 
