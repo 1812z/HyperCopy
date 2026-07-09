@@ -9,7 +9,7 @@ object MiuiXmsfNetworkBlocker {
     private const val TAG = "HyperCopy"
     private const val XMSF_PACKAGE = "com.xiaomi.xmsf"
     private const val BINDER_COMMAND_CLASS = "io.github.hypercopy.clipboard.MiuiXmsfFirewallBinderCommand"
-    private const val BLOCK_MILLIS = 100L
+    private const val BLOCK_MILLIS = 80L
     private const val TIMEOUT_MILLIS = 1_500L
 
     fun notifyWithTemporaryBlock(context: Context, notify: () -> Unit) {
@@ -24,37 +24,79 @@ object MiuiXmsfNetworkBlocker {
             return
         }
 
+        var notified = false
         try {
-            setUidNetworkBlocked(context, uid, blocked = true)
-            notify()
-            Thread.sleep(BLOCK_MILLIS)
+            withTemporaryBlockSession(context, uid) {
+                notify()
+                notified = true
+                Thread.sleep(BLOCK_MILLIS)
+            }
         } catch (throwable: Throwable) {
             HyperLog.d(TAG, "xmsf temporary network block failed", throwable)
-            notify()
-        } finally {
-            runCatching { setUidNetworkBlocked(context, uid, blocked = false) }
-                .onFailure { HyperLog.d(TAG, "xmsf network restore failed", it) }
+            if (!notified) notify()
         }
     }
 
-    private fun setUidNetworkBlocked(context: Context, uid: Int, blocked: Boolean) {
-        val process = ShizukuProcess.start(
+    private fun withTemporaryBlockSession(context: Context, uid: Int, onBlocked: () -> Unit) {
+        val process = startBinderProcess(context, uid, "session")
+        val reader = process.inputStream.bufferedReader()
+        var ready = false
+        var restoreRequested = false
+        try {
+            ready = waitForReady(process, reader)
+            if (!ready) error("xmsf block session did not become ready")
+            onBlocked()
+            process.outputStream.write('\n'.code)
+            process.outputStream.flush()
+            restoreRequested = true
+            if (!waitForExit(process)) {
+                runCatching { process.destroyForcibly() }
+                error("timeout")
+            }
+            val exitCode = runCatching { process.exitValue() }.getOrDefault(-1)
+            if (exitCode != 0) error("exit=$exitCode")
+        } finally {
+            if (ready && !restoreRequested) {
+                runCatching {
+                    process.outputStream.write('\n'.code)
+                    process.outputStream.flush()
+                    waitForExit(process)
+                }
+            }
+            runCatching { reader.close() }
+            runCatching { process.outputStream.close() }
+            if (runCatching { process.exitValue(); false }.getOrDefault(true)) {
+                runCatching { process.destroyForcibly() }
+            }
+        }
+    }
+
+    private fun startBinderProcess(context: Context, uid: Int, action: String): Process {
+        return ShizukuProcess.start(
             arrayOf(
                 "app_process",
                 "-Djava.class.path=${context.applicationInfo.sourceDir}",
                 "/system/bin",
                 BINDER_COMMAND_CLASS,
                 uid.toString(),
-                if (blocked) "block" else "restore",
+                action,
             ),
         ) ?: error("Shizuku app_process unavailable")
-        if (!waitForExit(process)) {
-            runCatching { process.destroyForcibly() }
-            error("timeout")
+    }
+
+    private fun waitForReady(process: Process, reader: java.io.BufferedReader): Boolean {
+        val deadline = System.currentTimeMillis() + TIMEOUT_MILLIS
+        while (System.currentTimeMillis() < deadline) {
+            val exited = runCatching {
+                process.exitValue()
+                true
+            }.getOrDefault(false)
+            if (exited) return false
+
+            if (reader.ready() && reader.readLine() == "READY") return true
+            runCatching { Thread.sleep(20L) }
         }
-        val output = runCatching { process.inputStream.bufferedReader().use { it.readText() } }.getOrDefault("")
-        val exitCode = runCatching { process.exitValue() }.getOrDefault(-1)
-        if (exitCode != 0) error("exit=$exitCode output=${output.take(300)}")
+        return false
     }
 
     private fun waitForExit(process: Process): Boolean {

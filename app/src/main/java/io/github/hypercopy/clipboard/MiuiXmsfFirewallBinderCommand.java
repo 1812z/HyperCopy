@@ -12,13 +12,26 @@ public final class MiuiXmsfFirewallBinderCommand {
 
     public static void main(String[] args) throws Exception {
         if (args.length < 2) {
-            throw new IllegalArgumentException("Usage: MiuiXmsfFirewallBinderCommand <uid> <block|restore>");
+            throw new IllegalArgumentException("Usage: MiuiXmsfFirewallBinderCommand <uid> <block|restore|session>");
         }
 
         int uid = Integer.parseInt(args[0]);
-        boolean block = "block".equals(args[1]);
         Object connectivity = connectivityManager();
 
+        if ("session".equals(args[1])) {
+            setUidNetworkBlocked(connectivity, uid, true);
+            System.out.println("READY");
+            System.out.flush();
+            System.in.read();
+            setUidNetworkBlocked(connectivity, uid, false);
+            return;
+        }
+
+        boolean block = "block".equals(args[1]);
+        setUidNetworkBlocked(connectivity, uid, block);
+    }
+
+    private static void setUidNetworkBlocked(Object connectivity, int uid, boolean block) throws Exception {
         connectivity.getClass()
                 .getMethod("setFirewallChainEnabled", int.class, boolean.class)
                 .invoke(connectivity, FIREWALL_CHAIN_OEM_DENY_3, true);
