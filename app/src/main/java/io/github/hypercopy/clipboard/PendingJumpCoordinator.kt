@@ -18,6 +18,7 @@ import android.app.Notification
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import io.github.hypercopy.AppIconCache
 import io.github.hypercopy.Config
 import io.github.hypercopy.HyperLog
 import io.github.hypercopy.R
@@ -30,6 +31,7 @@ import java.util.concurrent.TimeUnit
 
 object PendingJumpCoordinator {
     private const val TAG = "HyperCopy"
+    private const val NORMAL_CHANNEL_ID = "hypercopy_jump_normal"
     private const val LIVE_CHANNEL_ID = "hypercopy_jump_live"
     private const val MIUI_ISLAND_CHANNEL_ID = "hypercopy_jump_miui_island"
     private const val NOTIFICATION_ID = 2001
@@ -123,6 +125,7 @@ object PendingJumpCoordinator {
         if (pending?.id != entry.id) return
         val title = appLabel(context, entry.jump.packageName).ifBlank { context.getString(R.string.notification_jump_title) }
         val content = entry.jump.title.ifBlank { context.getString(R.string.notification_jump_text) }
+        val appIcon = AppIconCache.loadNow(context, entry.jump.packageName)
         val builder = NotificationCompat.Builder(context, channelId(notificationMode))
             .setSmallIcon(android.R.drawable.ic_menu_upload)
             .setContentTitle(title)
@@ -135,6 +138,8 @@ object PendingJumpCoordinator {
             .setShowWhen(false)
             .setOnlyAlertOnce(true)
             .setTimeoutAfter(EXPIRE_MILLIS)
+        if (appIcon != null) builder.setLargeIcon(appIcon)
+        // Live notification mode: request Android promoted ongoing behavior.
         if (notificationMode == Config.JUMP_NOTIFICATION_MODE_LIVE) {
             builder.requestPromotedOngoing()
         }
@@ -144,9 +149,11 @@ object PendingJumpCoordinator {
         val notification = builder
             .build()
             .apply { flags = flags or Notification.FLAG_ONGOING_EVENT }
+        // Xiaomi Super Island mode: add MIUI focus extras before notify().
         if (notificationMode == Config.JUMP_NOTIFICATION_MODE_MIUI_ISLAND) {
             MiuiSuperIslandNotification.apply(context, notification, title, content, entry.jump.packageName, actions)
         }
+        // Normal notification mode reaches notify() below without live or MIUI extras.
         val notificationManager = NotificationManagerCompat.from(context)
         val settingsRepository = SettingsRepository(context)
         val shouldBypassMiuiIslandRestriction = notificationMode == Config.JUMP_NOTIFICATION_MODE_MIUI_ISLAND &&
@@ -292,23 +299,27 @@ object PendingJumpCoordinator {
 
     private fun createChannel(context: Context, notificationMode: String) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
-        val isMiuiIsland = notificationMode == Config.JUMP_NOTIFICATION_MODE_MIUI_ISLAND
+        val (nameRes, descriptionRes) = when (notificationMode) {
+            Config.JUMP_NOTIFICATION_MODE_MIUI_ISLAND -> R.string.notification_channel_jump_miui_island_name to R.string.notification_channel_jump_miui_island_description
+            Config.JUMP_NOTIFICATION_MODE_NORMAL -> R.string.notification_channel_jump_normal_name to R.string.notification_channel_jump_normal_description
+            else -> R.string.notification_channel_jump_live_name to R.string.notification_channel_jump_live_description
+        }
         val channel = NotificationChannel(
             channelId(notificationMode),
-            context.getString(
-                if (isMiuiIsland) R.string.notification_channel_jump_miui_island_name else R.string.notification_channel_jump_live_name,
-            ),
+            context.getString(nameRes),
             NotificationManager.IMPORTANCE_HIGH,
         ).apply {
-            description = context.getString(
-                if (isMiuiIsland) R.string.notification_channel_jump_miui_island_description else R.string.notification_channel_jump_live_description,
-            )
+            description = context.getString(descriptionRes)
         }
         context.getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
     }
 
     private fun channelId(notificationMode: String): String {
-        return if (notificationMode == Config.JUMP_NOTIFICATION_MODE_MIUI_ISLAND) MIUI_ISLAND_CHANNEL_ID else LIVE_CHANNEL_ID
+        return when (notificationMode) {
+            Config.JUMP_NOTIFICATION_MODE_MIUI_ISLAND -> MIUI_ISLAND_CHANNEL_ID
+            Config.JUMP_NOTIFICATION_MODE_NORMAL -> NORMAL_CHANNEL_ID
+            else -> LIVE_CHANNEL_ID
+        }
     }
 
     private fun NotificationCompat.Builder.requestPromotedOngoing(): NotificationCompat.Builder {

@@ -54,6 +54,7 @@
     <string name="jump_notification_mode">跳转通知</string>
     <string name="jump_notification_mode_summary">复制命中规则后是否先通知确认再跳转</string>
     <string name="jump_notification_mode_none">无（直接跳转）</string>
+    <string name="jump_notification_mode_normal">普通通知</string>
     <string name="jump_notification_mode_live">实时通知</string>
     <string name="jump_notification_mode_miui_island">小米超级岛</string>
     <string name="miui_island_bypass_restriction">绕过超级岛限制</string>
@@ -262,6 +263,8 @@
     <string name="update_latest_version">已是最新版本</string>
     <string name="update_current_version">当前版本：%1$s</string>
     <string name="update_check_failed">检查更新失败</string>
+    <string name="notification_channel_jump_normal_name">跳转普通通知</string>
+    <string name="notification_channel_jump_normal_description">复制命中规则后的普通跳转确认</string>
     <string name="notification_channel_jump_live_name">跳转实时通知</string>
     <string name="notification_channel_jump_live_description">复制命中规则后的安卓实时跳转确认</string>
     <string name="notification_channel_jump_miui_island_name">小米超级岛跳转</string>

@@ -286,6 +286,8 @@ private fun languageOptions() = listOf(
 @Composable
 private fun jumpNotificationModeOptions() = listOf(
     JumpNotificationModeOption(stringResource(R.string.jump_notification_mode_none), JumpNotificationMode.None),
+    // The three jump notification choices shown in Settings.
+    JumpNotificationModeOption(stringResource(R.string.jump_notification_mode_normal), JumpNotificationMode.Normal),
     JumpNotificationModeOption(stringResource(R.string.jump_notification_mode_live), JumpNotificationMode.Live),
     JumpNotificationModeOption(stringResource(R.string.jump_notification_mode_miui_island), JumpNotificationMode.MiuiIsland),
 )

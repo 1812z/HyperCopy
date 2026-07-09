@@ -19,6 +19,7 @@ enum class ClipboardMonitorMode(val value: String) {
 
 enum class JumpNotificationMode(val value: String) {
     None(Config.JUMP_NOTIFICATION_MODE_NONE),
+    Normal(Config.JUMP_NOTIFICATION_MODE_NORMAL),
     Live(Config.JUMP_NOTIFICATION_MODE_LIVE),
     MiuiIsland(Config.JUMP_NOTIFICATION_MODE_MIUI_ISLAND),
 }
@@ -37,6 +38,7 @@ fun clipboardMonitorModeFromValue(value: String): ClipboardMonitorMode = when (v
 }
 
 fun jumpNotificationModeFromValue(value: String): JumpNotificationMode = when (value) {
+    Config.JUMP_NOTIFICATION_MODE_NORMAL -> JumpNotificationMode.Normal
     Config.JUMP_NOTIFICATION_MODE_LIVE -> JumpNotificationMode.Live
     Config.JUMP_NOTIFICATION_MODE_MIUI_ISLAND -> JumpNotificationMode.MiuiIsland
     else -> JumpNotificationMode.None

@@ -42,6 +42,7 @@ object Config {
     const val CLIPBOARD_MONITOR_MODE_SHIZUKU = "shizuku"
 
     const val JUMP_NOTIFICATION_MODE_NONE = "none"
+    const val JUMP_NOTIFICATION_MODE_NORMAL = "normal"
     const val JUMP_NOTIFICATION_MODE_LIVE = "live"
     const val JUMP_NOTIFICATION_MODE_MIUI_ISLAND = "miui_island"
 
