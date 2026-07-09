@@ -104,6 +104,7 @@ fun AppScreen(
     var autoCheckUpdate by remember { mutableStateOf(settingsRepository.readAutoCheckUpdate()) }
     var desktopIconHidden by remember { mutableStateOf(settingsRepository.readDesktopIconHidden()) }
     var detectClonedApp by remember { mutableStateOf(settingsRepository.readDetectClonedApp()) }
+    var miuiIslandBypassRestriction by remember { mutableStateOf(settingsRepository.readMiuiIslandBypassRestriction()) }
     var appLanguage by remember { mutableStateOf(appLanguageFromValue(settingsRepository.readAppLanguage())) }
     var clipboardMonitorMode by remember {
         mutableStateOf(clipboardMonitorModeFromValue(settingsRepository.readClipboardMonitorMode()))
@@ -448,7 +449,9 @@ fun AppScreen(
                                 autoCheckUpdate = autoCheckUpdate,
                                 desktopIconHidden = desktopIconHidden,
                                 detectClonedApp = detectClonedApp,
+                                miuiIslandBypassRestriction = miuiIslandBypassRestriction,
                                 appLanguage = appLanguage,
+                                clipboardMonitorMode = clipboardMonitorMode,
                                 jumpNotificationMode = jumpNotificationMode,
                                 onLogLevelChange = {
                                     logLevel = it
@@ -465,6 +468,10 @@ fun AppScreen(
                                 onDetectClonedAppChange = {
                                     detectClonedApp = it
                                     settingsRepository.persistDetectClonedApp(it)
+                                },
+                                onMiuiIslandBypassRestrictionChange = {
+                                    miuiIslandBypassRestriction = it
+                                    settingsRepository.persistMiuiIslandBypassRestriction(it)
                                 },
                                 onAppLanguageChange = {
                                     appLanguage = it

@@ -12,7 +12,6 @@ import android.app.Activity;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 
@@ -39,6 +38,7 @@ public class HookEntry extends XposedModule {
 
     @Override
     public void onModuleLoaded(@NonNull ModuleLoadedParam param) {
+        HookLog.init(this);
         logDebug("module loaded: process=" + param.getProcessName()
             + ", systemServer=" + param.isSystemServer()
             + ", api=" + getApiVersion());
@@ -258,17 +258,14 @@ public class HookEntry extends XposedModule {
     }
 
     private void logDebug(String message) {
-        Log.d(TAG, message);
-        log(Log.DEBUG, TAG, message);
+        HookLog.d(this, TAG, message);
     }
 
     private void logWarn(String message, Throwable throwable) {
-        Log.d(TAG, message, throwable);
-        log(Log.WARN, TAG, message, throwable);
+        HookLog.w(this, TAG, message, throwable);
     }
 
     private void logError(String message, Throwable throwable) {
-        Log.d(TAG, message, throwable);
-        log(Log.ERROR, TAG, message, throwable);
+        HookLog.e(this, TAG, message, throwable);
     }
 }

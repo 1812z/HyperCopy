@@ -147,7 +147,18 @@ object PendingJumpCoordinator {
         if (notificationMode == Config.JUMP_NOTIFICATION_MODE_MIUI_ISLAND) {
             MiuiSuperIslandNotification.apply(context, notification, title, content, entry.jump.packageName, actions)
         }
-        NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
+        val notificationManager = NotificationManagerCompat.from(context)
+        val settingsRepository = SettingsRepository(context)
+        val shouldBypassMiuiIslandRestriction = notificationMode == Config.JUMP_NOTIFICATION_MODE_MIUI_ISLAND &&
+            settingsRepository.readClipboardMonitorMode() == Config.CLIPBOARD_MONITOR_MODE_SHIZUKU &&
+            settingsRepository.readMiuiIslandBypassRestriction()
+        if (shouldBypassMiuiIslandRestriction) {
+            MiuiXmsfNetworkBlocker.notifyWithTemporaryBlock(context) {
+                notificationManager.notify(NOTIFICATION_ID, notification)
+            }
+        } else {
+            notificationManager.notify(NOTIFICATION_ID, notification)
+        }
     }
 
     private fun jumpActions(context: Context, entry: Entry): List<JumpAction> {

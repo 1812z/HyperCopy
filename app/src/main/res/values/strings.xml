@@ -56,6 +56,8 @@
     <string name="jump_notification_mode_none">无（直接跳转）</string>
     <string name="jump_notification_mode_live">实时通知</string>
     <string name="jump_notification_mode_miui_island">小米超级岛</string>
+    <string name="miui_island_bypass_restriction">绕过超级岛限制</string>
+    <string name="miui_island_bypass_restriction_summary">发送小米超级岛通知前临时断开 xmsf 网络，仅 Shizuku 模式可用</string>
     <string name="detect_cloned_app">检测双开应用</string>
     <string name="detect_cloned_app_summary">系统链接跳转前检测主用户和分身是否都安装目标应用，已安装时通知显示两个跳转按钮</string>
     <string name="log_level">日志级别</string>

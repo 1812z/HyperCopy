@@ -10,6 +10,7 @@ object Config {
     const val KEY_COLOR_MODE = "color_mode"
     const val KEY_CLIPBOARD_MONITOR_MODE = "clipboard_monitor_mode"
     const val KEY_JUMP_NOTIFICATION_MODE = "jump_notification_mode"
+    const val KEY_MIUI_ISLAND_BYPASS_RESTRICTION = "miui_island_bypass_restriction"
     const val KEY_APP_LIST_WORK_MODE = "app_list_work_mode"
     const val KEY_IGNORE_JUMP_APP = "ignore_jump_app"
     const val KEY_DETECT_CLONED_APP = "detect_cloned_app"
@@ -53,6 +54,7 @@ object Config {
     const val DEFAULT_COLOR_MODE = COLOR_MODE_SYSTEM
     const val DEFAULT_CLIPBOARD_MONITOR_MODE = CLIPBOARD_MONITOR_MODE_LSPOSED
     const val DEFAULT_JUMP_NOTIFICATION_MODE = JUMP_NOTIFICATION_MODE_NONE
+    const val DEFAULT_MIUI_ISLAND_BYPASS_RESTRICTION = false
     const val DEFAULT_APP_LIST_WORK_MODE = APP_LIST_WORK_MODE_BLACKLIST
     const val DEFAULT_IGNORE_JUMP_APP = true
     const val DEFAULT_DETECT_CLONED_APP = true

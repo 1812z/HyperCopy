@@ -47,12 +47,15 @@ fun SettingsPage(
     autoCheckUpdate: Boolean,
     desktopIconHidden: Boolean,
     detectClonedApp: Boolean,
+    miuiIslandBypassRestriction: Boolean,
     appLanguage: AppLanguage,
+    clipboardMonitorMode: ClipboardMonitorMode,
     jumpNotificationMode: JumpNotificationMode,
     onLogLevelChange: (Int) -> Unit,
     onAutoCheckUpdateChange: (Boolean) -> Unit,
     onDesktopIconHiddenChange: (Boolean) -> Unit,
     onDetectClonedAppChange: (Boolean) -> Unit,
+    onMiuiIslandBypassRestrictionChange: (Boolean) -> Unit,
     onAppLanguageChange: (AppLanguage) -> Unit,
     onJumpNotificationModeChange: (JumpNotificationMode) -> Unit,
     onCheckUpdate: () -> Unit,
@@ -103,6 +106,15 @@ fun SettingsPage(
                     insideMargin = SettingsItemMargin,
                     onSelectedIndexChange = { onJumpNotificationModeChange(jumpNotificationModeOptions[it].value) },
                 )
+                if (jumpNotificationMode == JumpNotificationMode.MiuiIsland && clipboardMonitorMode == ClipboardMonitorMode.Shizuku) {
+                    SwitchAction(
+                        icon = MiuixIcons.Community,
+                        title = stringResource(R.string.miui_island_bypass_restriction),
+                        summary = stringResource(R.string.miui_island_bypass_restriction_summary),
+                        checked = miuiIslandBypassRestriction,
+                        onCheckedChange = { onMiuiIslandBypassRestrictionChange(!miuiIslandBypassRestriction) },
+                    )
+                }
                 OverlayDropdownPreference(
                     title = stringResource(R.string.log_level),
                     summary = stringResource(R.string.log_level_summary),

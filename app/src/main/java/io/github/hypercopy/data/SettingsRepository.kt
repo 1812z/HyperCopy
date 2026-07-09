@@ -4,7 +4,9 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.pm.PackageManager
 import androidx.core.content.edit
+import io.github.hypercopy.App
 import io.github.hypercopy.Config
+import io.github.libxposed.service.XposedService
 
 class SettingsRepository(private val context: Context) {
     fun readLogLevel(): Int {
@@ -13,6 +15,17 @@ class SettingsRepository(private val context: Context) {
 
     fun persistLogLevel(value: Int) {
         preferences().edit(commit = true) { putInt(Config.KEY_LOG_LEVEL, value) }
+        syncLogLevelToLsposed(App.xposedService, value)
+    }
+
+    fun syncLogLevelToLsposed(service: XposedService?, value: Int = readLogLevel()) {
+        if (service == null) return
+        runCatching {
+            service.getRemotePreferences(Config.PREFS_NAME)
+                .edit()
+                .putInt(Config.KEY_LOG_LEVEL, value)
+                .commit()
+        }
     }
 
     fun readAutoCheckUpdate(): Boolean {
@@ -59,6 +72,17 @@ class SettingsRepository(private val context: Context) {
 
     fun persistJumpNotificationMode(value: String) {
         preferences().edit(commit = true) { putString(Config.KEY_JUMP_NOTIFICATION_MODE, value) }
+    }
+
+    fun readMiuiIslandBypassRestriction(): Boolean {
+        return preferences().getBoolean(
+            Config.KEY_MIUI_ISLAND_BYPASS_RESTRICTION,
+            Config.DEFAULT_MIUI_ISLAND_BYPASS_RESTRICTION,
+        )
+    }
+
+    fun persistMiuiIslandBypassRestriction(value: Boolean) {
+        preferences().edit(commit = true) { putBoolean(Config.KEY_MIUI_ISLAND_BYPASS_RESTRICTION, value) }
     }
 
     fun readAppListWorkMode(): String {
