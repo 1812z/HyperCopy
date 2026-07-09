@@ -7,6 +7,7 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivityResultRegistryOwner
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,6 +21,7 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,8 +54,10 @@ class RuleBrowserActivity : ComponentActivity() {
         setContent {
             val settingsRepository = remember { SettingsRepository(applicationContext) }
             val colorMode = remember { appColorModeFromValue(settingsRepository.readColorMode()) }
-            MiuixTheme(controller = ThemeController(colorMode.toColorSchemeMode())) {
-                RuleBrowserScreen(onBack = { finish() })
+            CompositionLocalProvider(LocalActivityResultRegistryOwner provides this@RuleBrowserActivity) {
+                MiuixTheme(controller = ThemeController(colorMode.toColorSchemeMode())) {
+                    RuleBrowserScreen(onBack = { finish() })
+                }
             }
         }
     }

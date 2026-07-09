@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -27,16 +28,17 @@ import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.basic.ArrowRight
 import top.yukonga.miuix.kmp.icon.extended.AppRecording
 import top.yukonga.miuix.kmp.icon.extended.Community
+import top.yukonga.miuix.kmp.icon.extended.Copy
 import top.yukonga.miuix.kmp.icon.extended.Download
 import top.yukonga.miuix.kmp.icon.extended.File
 import top.yukonga.miuix.kmp.icon.extended.Link
 import top.yukonga.miuix.kmp.icon.extended.ListView
 import top.yukonga.miuix.kmp.icon.extended.Theme
+import top.yukonga.miuix.kmp.icon.extended.Translate
 import top.yukonga.miuix.kmp.icon.extended.Update
-import top.yukonga.miuix.kmp.icon.basic.ArrowRight
-import top.yukonga.miuix.kmp.icon.extended.Copy
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -82,6 +84,7 @@ fun SettingsPage(
                     summary = stringResource(R.string.language_summary),
                     items = languageOptions.map { it.label },
                     selectedIndex = languageOptions.indexOfFirst { it.value == appLanguage }.coerceAtLeast(0),
+                    startAction = { SettingsIcon(imageVector = MiuixIcons.Translate) },
                     insideMargin = SettingsItemMargin,
                     onSelectedIndexChange = { onAppLanguageChange(languageOptions[it].value) },
                 )
@@ -244,12 +247,14 @@ private fun SettingsRow(
 
 @Composable
 fun SettingsIcon(imageVector: ImageVector) {
-    Icon(
-        imageVector = imageVector,
-        contentDescription = null,
-        tint = MiuixTheme.colorScheme.onSurface,
-        modifier = Modifier.size(24.dp),
-    )
+    Row(modifier = Modifier.width(32.dp)) {
+        Icon(
+            imageVector = imageVector,
+            contentDescription = null,
+            tint = MiuixTheme.colorScheme.onSurface,
+            modifier = Modifier.size(24.dp),
+        )
+    }
 }
 
 @Composable
@@ -280,7 +285,9 @@ private fun logLevelOptions() = listOf(
 
 @Composable
 private fun languageOptions() = listOf(
+    LanguageOption(stringResource(R.string.language_system), AppLanguage.System),
     LanguageOption(stringResource(R.string.language_chinese), AppLanguage.Chinese),
+    LanguageOption(stringResource(R.string.language_english), AppLanguage.English),
 )
 
 @Composable

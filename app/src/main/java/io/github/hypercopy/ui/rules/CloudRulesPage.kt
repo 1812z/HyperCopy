@@ -267,7 +267,7 @@ private fun CloudRulesHeader(
         HyperSearchBar(
             query = searchQuery,
             onQueryChange = onSearchQueryChange,
-            label = stringResource(R.string.cloud_search_hint),
+            label = stringResource(R.string.app_list_search_hint),
             modifier = Modifier.fillMaxWidth(),
         )
     }

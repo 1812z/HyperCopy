@@ -2,6 +2,7 @@ package io.github.hypercopy.ui
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivityResultRegistryOwner
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
@@ -93,39 +95,23 @@ class SystemLinkAppDetailActivity : ComponentActivity() {
 
             val scrollBehavior = MiuixScrollBehavior(rememberTopAppBarState())
 
-            MiuixTheme(controller = ThemeController(colorSchemeModeOf(colorMode))) {
-                Scaffold(
-                    topBar = {
-                        TopAppBar(
-                            title = appLabel.ifBlank { packageName },
-                            largeTitle = appLabel.ifBlank { packageName },
-                            scrollBehavior = scrollBehavior,
-                            navigationIcon = {
-                                IconButton(onClick = { finish() }) {
-                                    Icon(imageVector = MiuixIcons.Back, contentDescription = stringResource(R.string.action_back))
-                                }
-                            },
-                        )
-                    },
-                ) { paddingValues ->
-                    if (isLoading) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(paddingValues)
-                                .padding(16.dp),
-                            verticalArrangement = Arrangement.Center,
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                        ) {
-                            Text(
-                                text = stringResource(R.string.rule_system_link_title),
-                                style = MiuixTheme.textStyles.body2,
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            CompositionLocalProvider(LocalActivityResultRegistryOwner provides this@SystemLinkAppDetailActivity) {
+                MiuixTheme(controller = ThemeController(colorSchemeModeOf(colorMode))) {
+                    Scaffold(
+                        topBar = {
+                            TopAppBar(
+                                title = appLabel.ifBlank { packageName },
+                                largeTitle = appLabel.ifBlank { packageName },
+                                scrollBehavior = scrollBehavior,
+                                navigationIcon = {
+                                    IconButton(onClick = { finish() }) {
+                                        Icon(imageVector = MiuixIcons.Back, contentDescription = stringResource(R.string.action_back))
+                                    }
+                                },
                             )
-                        }
-                    } else {
-                        val app = systemLinkApp
-                        if (app == null) {
+                        },
+                    ) { paddingValues ->
+                        if (isLoading) {
                             Column(
                                 modifier = Modifier
                                     .fillMaxSize()
@@ -135,55 +121,73 @@ class SystemLinkAppDetailActivity : ComponentActivity() {
                                 horizontalAlignment = Alignment.CenterHorizontally,
                             ) {
                                 Text(
-                                    text = stringResource(R.string.rule_system_empty_description),
+                                    text = stringResource(R.string.rule_system_link_title),
                                     style = MiuixTheme.textStyles.body2,
                                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 )
                             }
                         } else {
-                            LazyColumn(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .nestedScroll(scrollBehavior.nestedScrollConnection)
-                                    .padding(paddingValues),
-                                contentPadding = androidx.compose.foundation.layout.PaddingValues(12.dp),
-                                verticalArrangement = Arrangement.spacedBy(12.dp),
-                            ) {
-                                item {
-                                    AppInfoCard(app = app)
-                                }
-                                item {
-                                    AppLinkAllowedCard(
-                                        app = app,
-                                        onEnabledChange = { enabled ->
-                                            thread(name = "HyperCopySystemLinkAppToggle") {
-                                                runCatching { systemLinkRepository.setLinkHandlingAllowed(userId, app.packageName, enabled) }
-                                                    .onFailure { HyperLog.d("HyperCopy", "toggle app system link failed", it) }
-                                                loadApp()
-                                            }
-                                        },
+                            val app = systemLinkApp
+                            if (app == null) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(paddingValues)
+                                        .padding(16.dp),
+                                    verticalArrangement = Arrangement.Center,
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.rule_system_empty_description),
+                                        style = MiuixTheme.textStyles.body2,
+                                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                     )
                                 }
-                                if (app.domains.isNotEmpty()) {
+                            } else {
+                                LazyColumn(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .nestedScroll(scrollBehavior.nestedScrollConnection)
+                                        .padding(paddingValues),
+                                    contentPadding = androidx.compose.foundation.layout.PaddingValues(12.dp),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                                ) {
                                     item {
-                                        Text(
-                                            text = stringResource(R.string.rule_system_app_link_allowed_summary),
-                                            style = MiuixTheme.textStyles.body2,
-                                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                            modifier = Modifier.padding(start = 4.dp),
-                                        )
+                                        AppInfoCard(app = app)
                                     }
-                                    items(app.domains, key = { it.host }) { domain ->
-                                        DomainCard(
-                                            domain = domain,
+                                    item {
+                                        AppLinkAllowedCard(
+                                            app = app,
                                             onEnabledChange = { enabled ->
-                                                thread(name = "HyperCopySystemLinkDomainToggle") {
-                                                    runCatching { systemLinkRepository.setDomainEnabled(userId, app.packageName, domain.host, enabled) }
-                                                        .onFailure { HyperLog.d("HyperCopy", "toggle domain link failed", it) }
+                                                thread(name = "HyperCopySystemLinkAppToggle") {
+                                                    runCatching { systemLinkRepository.setLinkHandlingAllowed(userId, app.packageName, enabled) }
+                                                        .onFailure { HyperLog.d("HyperCopy", "toggle app system link failed", it) }
                                                     loadApp()
                                                 }
                                             },
                                         )
+                                    }
+                                    if (app.domains.isNotEmpty()) {
+                                        item {
+                                            Text(
+                                                text = stringResource(R.string.rule_system_app_link_allowed_summary),
+                                                style = MiuixTheme.textStyles.body2,
+                                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                                modifier = Modifier.padding(start = 4.dp),
+                                            )
+                                        }
+                                        items(app.domains, key = { it.host }) { domain ->
+                                            DomainCard(
+                                                domain = domain,
+                                                onEnabledChange = { enabled ->
+                                                    thread(name = "HyperCopySystemLinkDomainToggle") {
+                                                        runCatching { systemLinkRepository.setDomainEnabled(userId, app.packageName, domain.host, enabled) }
+                                                            .onFailure { HyperLog.d("HyperCopy", "toggle domain link failed", it) }
+                                                        loadApp()
+                                                    }
+                                                },
+                                            )
+                                        }
                                     }
                                 }
                             }

@@ -35,8 +35,10 @@
     <!-- 外观设置 -->
     <string name="appearance">外观</string>
     <string name="language">语言</string>
-    <string name="language_summary">当前仅支持中文</string>
+    <string name="language_summary">选择软件显示的语言</string>
+    <string name="language_system">跟随系统</string>
     <string name="language_chinese">中文</string>
+    <string name="language_english">英文</string>
     <string name="theme">主题</string>
     <string name="theme_summary">颜色模式</string>
     <string name="color_mode">颜色模式</string>
@@ -230,7 +232,6 @@
 
     <!-- 云规则 -->
     <string name="cloud_rules_count">%1$d 条%2$s规则</string>
-    <string name="cloud_search_hint">搜索规则名称或包名</string>
     <string name="cloud_loading">正在加载云端规则…</string>
     <string name="cloud_load_failed">加载失败</string>
     <string name="cloud_error_load">加载失败</string>

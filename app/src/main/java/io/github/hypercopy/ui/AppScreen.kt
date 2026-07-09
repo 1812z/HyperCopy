@@ -86,6 +86,7 @@ private enum class Tab(val icon: androidx.compose.ui.graphics.vector.ImageVector
 fun AppScreen(
     colorMode: AppColorMode = AppColorMode.System,
     onColorModeChange: (AppColorMode) -> Unit = {},
+    onAppLanguageChange: (AppLanguage) -> Unit = {},
 ) {
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
@@ -476,6 +477,7 @@ fun AppScreen(
                                 onAppLanguageChange = {
                                     appLanguage = it
                                     settingsRepository.persistAppLanguage(it.value)
+                                    onAppLanguageChange(it)
                                 },
                                 onJumpNotificationModeChange = {
                                     jumpNotificationMode = it

@@ -32,7 +32,9 @@ object Config {
     const val LOG_LEVEL_BASIC = 1
     const val LOG_LEVEL_DEBUG = 2
 
+    const val APP_LANGUAGE_SYSTEM = "system"
     const val APP_LANGUAGE_ZH = "zh"
+    const val APP_LANGUAGE_EN = "en"
 
     const val COLOR_MODE_SYSTEM = "system"
     const val COLOR_MODE_LIGHT = "light"
@@ -51,7 +53,7 @@ object Config {
 
     const val DEFAULT_LOG_LEVEL = LOG_LEVEL_BASIC
     const val DEFAULT_AUTO_CHECK_UPDATE = true
-    const val DEFAULT_APP_LANGUAGE = APP_LANGUAGE_ZH
+    const val DEFAULT_APP_LANGUAGE = APP_LANGUAGE_SYSTEM
     const val DEFAULT_COLOR_MODE = COLOR_MODE_SYSTEM
     const val DEFAULT_CLIPBOARD_MONITOR_MODE = CLIPBOARD_MONITOR_MODE_LSPOSED
     const val DEFAULT_JUMP_NOTIFICATION_MODE = JUMP_NOTIFICATION_MODE_NONE

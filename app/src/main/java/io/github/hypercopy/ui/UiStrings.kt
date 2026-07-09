@@ -3,7 +3,9 @@ package io.github.hypercopy.ui
 import io.github.hypercopy.Config
 
 enum class AppLanguage(val value: String) {
+    System(Config.APP_LANGUAGE_SYSTEM),
     Chinese(Config.APP_LANGUAGE_ZH),
+    English(Config.APP_LANGUAGE_EN),
 }
 
 enum class AppColorMode(val value: String) {
@@ -24,7 +26,11 @@ enum class JumpNotificationMode(val value: String) {
     MiuiIsland(Config.JUMP_NOTIFICATION_MODE_MIUI_ISLAND),
 }
 
-fun appLanguageFromValue(value: String): AppLanguage = AppLanguage.Chinese
+fun appLanguageFromValue(value: String): AppLanguage = when (value) {
+    Config.APP_LANGUAGE_ZH -> AppLanguage.Chinese
+    Config.APP_LANGUAGE_EN -> AppLanguage.English
+    else -> AppLanguage.System
+}
 
 fun appColorModeFromValue(value: String): AppColorMode = when (value) {
     Config.COLOR_MODE_LIGHT -> AppColorMode.Light

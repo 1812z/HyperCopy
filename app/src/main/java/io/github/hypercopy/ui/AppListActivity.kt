@@ -2,9 +2,11 @@ package io.github.hypercopy.ui
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivityResultRegistryOwner
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -76,52 +78,54 @@ class AppListActivity : ComponentActivity() {
                 ),
             )
 
-            MiuixTheme(controller = ThemeController(colorSchemeModeOf(colorMode))) {
-                Scaffold(
-                    topBar = {
-                        TopAppBar(
-                            title = stringResource(R.string.app_list),
-                            largeTitle = stringResource(R.string.app_list),
-                            scrollBehavior = scrollBehavior,
-                            navigationIcon = {
-                                IconButton(onClick = { finish() }) {
-                                    Icon(imageVector = MiuixIcons.Back, contentDescription = stringResource(R.string.action_back))
-                                }
-                            },
-                            actions = {
-                                Box {
-                                    IconButton(onClick = { showMenuPopup = true }) {
-                                        Icon(
-                                            imageVector = MiuixIcons.ListView,
-                                            contentDescription = stringResource(R.string.app_list_menu_options),
-                                            modifier = Modifier.size(18.dp),
+            CompositionLocalProvider(LocalActivityResultRegistryOwner provides this@AppListActivity) {
+                MiuixTheme(controller = ThemeController(colorSchemeModeOf(colorMode))) {
+                    Scaffold(
+                        topBar = {
+                            TopAppBar(
+                                title = stringResource(R.string.app_list),
+                                largeTitle = stringResource(R.string.app_list),
+                                scrollBehavior = scrollBehavior,
+                                navigationIcon = {
+                                    IconButton(onClick = { finish() }) {
+                                        Icon(imageVector = MiuixIcons.Back, contentDescription = stringResource(R.string.action_back))
+                                    }
+                                },
+                                actions = {
+                                    Box {
+                                        IconButton(onClick = { showMenuPopup = true }) {
+                                            Icon(
+                                                imageVector = MiuixIcons.ListView,
+                                                contentDescription = stringResource(R.string.app_list_menu_options),
+                                                modifier = Modifier.size(18.dp),
+                                            )
+                                        }
+                                        OverlayCascadingListPopup(
+                                            show = showMenuPopup,
+                                            entries = menuEntries,
+                                            onDismissRequest = { showMenuPopup = false },
                                         )
                                     }
-                                    OverlayCascadingListPopup(
-                                        show = showMenuPopup,
-                                        entries = menuEntries,
-                                        onDismissRequest = { showMenuPopup = false },
-                                    )
-                                }
-                            },
-                        )
-                    },
-                ) { paddingValues ->
-                    AppListPage(
-                        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-                        selectedPackages = appListPackages,
-                        onPackageCheckedChange = { packageName, checked ->
-                            val updatedPackages = if (checked) {
-                                appListPackages + packageName
-                            } else {
-                                appListPackages - packageName
-                            }
-                            appListPackages = updatedPackages
-                            settingsRepository.persistAppListPackages(updatedPackages)
+                                },
+                            )
                         },
-                        topContentPadding = paddingValues.calculateTopPadding() + 12.dp,
-                        bottomContentPadding = paddingValues.calculateBottomPadding() + 16.dp,
-                    )
+                    ) { paddingValues ->
+                        AppListPage(
+                            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+                            selectedPackages = appListPackages,
+                            onPackageCheckedChange = { packageName, checked ->
+                                val updatedPackages = if (checked) {
+                                    appListPackages + packageName
+                                } else {
+                                    appListPackages - packageName
+                                }
+                                appListPackages = updatedPackages
+                                settingsRepository.persistAppListPackages(updatedPackages)
+                            },
+                            topContentPadding = paddingValues.calculateTopPadding() + 12.dp,
+                            bottomContentPadding = paddingValues.calculateBottomPadding() + 16.dp,
+                        )
+                    }
                 }
             }
         }

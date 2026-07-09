@@ -7,17 +7,16 @@ import android.content.Context
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
-import androidx.compose.foundation.clickable
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivityResultRegistryOwner
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -26,6 +25,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -46,6 +46,7 @@ import io.github.hypercopy.data.triggerPatterns
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.TabRowWithContour
@@ -65,14 +66,16 @@ class RuleEditorActivity : ComponentActivity() {
         setContent {
             val settingsRepository = remember { SettingsRepository(applicationContext) }
             val colorMode = remember { appColorModeFromValue(settingsRepository.readColorMode()) }
-            MiuixTheme(controller = ThemeController(colorMode.toColorSchemeMode())) {
-                RuleEditorScreen(
-                    ruleId = intent.getStringExtra(EXTRA_RULE_ID).orEmpty(),
-                    initialCategory = ruleCategoryFromValue(intent.getStringExtra(EXTRA_CATEGORY).orEmpty()),
-                    initialSourceUrl = intent.getStringExtra(EXTRA_SOURCE_URL).orEmpty(),
-                    initialTargetUrl = intent.getStringExtra(EXTRA_TARGET_URL).orEmpty(),
-                    onBack = { finish() },
-                )
+            CompositionLocalProvider(LocalActivityResultRegistryOwner provides this@RuleEditorActivity) {
+                MiuixTheme(controller = ThemeController(colorMode.toColorSchemeMode())) {
+                    RuleEditorScreen(
+                        ruleId = intent.getStringExtra(EXTRA_RULE_ID).orEmpty(),
+                        initialCategory = ruleCategoryFromValue(intent.getStringExtra(EXTRA_CATEGORY).orEmpty()),
+                        initialSourceUrl = intent.getStringExtra(EXTRA_SOURCE_URL).orEmpty(),
+                        initialTargetUrl = intent.getStringExtra(EXTRA_TARGET_URL).orEmpty(),
+                        onBack = { finish() },
+                    )
+                }
             }
         }
     }
@@ -126,10 +129,8 @@ private fun RuleEditorScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Card(modifier = Modifier.size(42.dp), onClick = onBack) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Icon(imageVector = MiuixIcons.Back, contentDescription = stringResource(R.string.action_back))
-                    }
+                IconButton(onClick = onBack) {
+                    Icon(imageVector = MiuixIcons.Back, contentDescription = stringResource(R.string.action_back))
                 }
                 Text(
                     text = stringResource(
@@ -140,8 +141,7 @@ private fun RuleEditorScreen(
                     modifier = Modifier.weight(1f),
                 )
                 if (editingRule != null) {
-                    Card(
-                        modifier = Modifier.size(42.dp),
+                    IconButton(
                         onClick = {
                             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                             clipboard.setPrimaryClip(
@@ -153,9 +153,7 @@ private fun RuleEditorScreen(
                             Toast.makeText(context, R.string.rule_toast_exported, Toast.LENGTH_SHORT).show()
                         },
                     ) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Icon(imageVector = MiuixIcons.Forward, contentDescription = stringResource(R.string.action_export_rule))
-                        }
+                        Icon(imageVector = MiuixIcons.Forward, contentDescription = stringResource(R.string.action_export_rule))
                     }
                 }
             }
