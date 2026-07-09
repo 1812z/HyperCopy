@@ -102,6 +102,8 @@
     <string name="action_select_all">全选</string>
     <string name="action_select_none">全不选</string>
     <string name="action_cancel_selection">取消选择</string>
+    <string name="action_edit_rules">编辑规则</string>
+    <string name="action_sort_rule">排序规则</string>
     <string name="action_run_test">执行测试</string>
     <string name="action_save_rule">保存规则</string>
     <string name="action_add_rule">添加规则</string>
@@ -140,6 +142,7 @@
     <string name="rule_system_app_link_allowed">在应用中打开</string>
     <string name="rule_system_app_link_allowed_summary">控制该应用是否允许接管受支持链接</string>
     <string name="rule_system_user_menu">系统链接用户</string>
+    <string name="rule_sort_tip">规则从上往下顺序命中</string>
     <string name="rule_system_user_0">主用户 user 0</string>
     <string name="rule_system_user_999">分身 user 999</string>
     <string name="rule_result_waiting">等待测试</string>

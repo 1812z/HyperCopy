@@ -32,6 +32,20 @@ class RuleRepository(private val context: Context) {
         persistRules(readRules().filterNot { it.id in ruleIds })
     }
 
+    fun reorderRules(categories: Set<RuleCategory>, orderedRuleIds: List<String>) {
+        if (categories.isEmpty() || orderedRuleIds.isEmpty()) return
+        val currentRules = readRules()
+        val categoryRules = currentRules.filter { it.category in categories }
+        val orderedIds = orderedRuleIds.toSet()
+        val orderedRules = orderedRuleIds.mapNotNull { ruleId -> categoryRules.firstOrNull { it.id == ruleId } } +
+            categoryRules.filterNot { it.id in orderedIds }
+        val categoryIterator = orderedRules.iterator()
+        val rules = currentRules.map { rule ->
+            if (rule.category in categories && categoryIterator.hasNext()) categoryIterator.next() else rule
+        }
+        persistRules(rules)
+    }
+
     fun persistRules(rules: List<RuleConfig>) {
         rulesFile().writeText(rulesToJson(rules))
         ruleChanges.tryEmit(Unit)

@@ -3,6 +3,7 @@ package io.github.hypercopy.ui.rules
 import android.content.Intent
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,7 +25,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
@@ -61,17 +64,26 @@ import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.window.WindowDialog
 import kotlin.concurrent.thread
+import kotlin.math.ceil
+import kotlin.math.floor
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun RulesPage(
     modifier: Modifier = Modifier,
     showImportDialog: Boolean = false,
     onDismissImportDialog: () -> Unit = {},
+    sortMode: Boolean = false,
+    onSortModeChange: (Boolean) -> Unit = {},
+    editMode: Boolean = false,
+    onEditModeChange: (Boolean) -> Unit = {},
+    onRuleActionsAvailableChange: (Boolean) -> Unit = {},
     topContentPadding: Dp = 12.dp,
     bottomContentPadding: Dp = 16.dp,
     systemLinkUserId: Int = 0,
 ) {
     val context = LocalContext.current
+    val density = LocalDensity.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val repository = remember { RuleRepository(context.applicationContext) }
     val settingsRepository = remember { SettingsRepository(context.applicationContext) }
@@ -91,6 +103,13 @@ fun RulesPage(
     var selectedRuleIds by remember { mutableStateOf(emptySet<String>()) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var importText by remember { mutableStateOf("") }
+    var sortedCategoryRules by remember { mutableStateOf<List<RuleConfig>?>(null) }
+    var draggingRuleId by remember { mutableStateOf<String?>(null) }
+    var dragTotalOffsetY by remember { mutableStateOf(0f) }
+    var dragMovedSteps by remember { mutableStateOf(0) }
+    val itemSpacingPx = remember(density) { with(density) { 12.dp.toPx() } }
+    val fallbackRuleItemStepPx = remember(density) { with(density) { 84.dp.toPx() } }
+    var ruleItemStepPx by remember { mutableStateOf(0f) }
 
     DisposableEffect(lifecycleOwner, repository) {
         val observer = LifecycleEventObserver { _, event ->
@@ -107,23 +126,94 @@ fun RulesPage(
     }
 
     val categoryRules = rules.filter { it.category in selectedCategory.ruleCategories() }
-    val filteredCategoryRules = categoryRules.filter { rule ->
-        searchText.isBlank() || rule.name.contains(searchText, ignoreCase = true) ||
-            rule.target.packageName.contains(searchText, ignoreCase = true)
+    val displayedCategoryRules = if (sortMode) sortedCategoryRules ?: categoryRules else categoryRules
+    val filteredCategoryRules = if (sortMode || editMode) {
+        displayedCategoryRules
+    } else {
+        displayedCategoryRules.filter { rule ->
+            searchText.isBlank() || rule.name.contains(searchText, ignoreCase = true) ||
+                rule.target.packageName.contains(searchText, ignoreCase = true)
+        }
     }
     val filteredSystemLinkApps = systemLinkApps.filter { app ->
         searchText.isBlank() || app.label.contains(searchText, ignoreCase = true) ||
             app.packageName.contains(searchText, ignoreCase = true)
     }
     val categoryRuleIds = categoryRules.map { it.id }.toSet()
-    val selectionMode = selectedRuleIds.isNotEmpty()
+    val selectionMode = selectedRuleIds.isNotEmpty() || editMode
 
-    BackHandler(enabled = selectionMode && !showDeleteDialog) {
+    BackHandler(enabled = sortMode && selectedCategory != RulePageCategory.System) {
+        onSortModeChange(false)
+    }
+
+    BackHandler(enabled = editMode && selectedCategory != RulePageCategory.System) {
+        onEditModeChange(false)
+    }
+
+    BackHandler(enabled = selectedRuleIds.isNotEmpty() && !showDeleteDialog && !editMode && !sortMode) {
         selectedRuleIds = emptySet()
     }
 
     LaunchedEffect(selectedCategory, categoryRuleIds) {
         selectedRuleIds = selectedRuleIds.intersect(categoryRuleIds)
+        if (selectedCategory == RulePageCategory.System) {
+            onSortModeChange(false)
+            onEditModeChange(false)
+        }
+        onRuleActionsAvailableChange(selectedCategory != RulePageCategory.System)
+    }
+
+    LaunchedEffect(sortMode, selectedCategory, categoryRuleIds) {
+        if (sortMode) {
+            selectedRuleIds = emptySet()
+            sortedCategoryRules = categoryRules
+            if (selectedCategory == RulePageCategory.System) onSortModeChange(false)
+        } else {
+            sortedCategoryRules = null
+            draggingRuleId = null
+            dragTotalOffsetY = 0f
+            dragMovedSteps = 0
+        }
+    }
+
+    LaunchedEffect(editMode, selectedCategory) {
+        if (editMode) {
+            selectedRuleIds = emptySet()
+            if (selectedCategory == RulePageCategory.System) onEditModeChange(false)
+        }
+    }
+
+    fun moveSortingRule(ruleId: String, direction: Int): Boolean {
+        val currentRules = sortedCategoryRules ?: categoryRules
+        val fromIndex = currentRules.indexOfFirst { it.id == ruleId }
+        if (fromIndex < 0) return false
+        val toIndex = (fromIndex + direction).coerceIn(currentRules.indices)
+        if (fromIndex == toIndex) return false
+        sortedCategoryRules = currentRules.toMutableList().apply { add(toIndex, removeAt(fromIndex)) }
+        return true
+    }
+
+    fun dragRule(ruleId: String, deltaY: Float) {
+        val step = ruleItemStepPx.takeIf { it > 0f } ?: fallbackRuleItemStepPx
+        dragTotalOffsetY += deltaY
+        val targetSteps = if (dragTotalOffsetY >= 0f) {
+            floor(dragTotalOffsetY / step).toInt()
+        } else {
+            ceil(dragTotalOffsetY / step).toInt()
+        }
+        while (dragMovedSteps < targetSteps && moveSortingRule(ruleId, 1)) {
+            dragMovedSteps++
+        }
+        while (dragMovedSteps > targetSteps && moveSortingRule(ruleId, -1)) {
+            dragMovedSteps--
+        }
+    }
+
+    fun persistSorting() {
+        val sortedRules = sortedCategoryRules ?: return
+        repository.reorderRules(selectedCategory.ruleCategories(), sortedRules.map { it.id })
+        rules = repository.readRules()
+        sortedCategoryRules = rules.filter { it.category in selectedCategory.ruleCategories() }
     }
 
     fun loadSystemLinks() {
@@ -182,70 +272,72 @@ fun RulesPage(
                     )
                 }
             }
-            item {
-                TestRuleCard(
-                    category = selectedCategory,
-                    value = testInput,
-                    resultText = resultText,
-                    onValueChange = { testInput = it },
-                    onExecute = {
-                        if (selectedCategory == RulePageCategory.System) {
-                            resultText = context.getString(R.string.rule_system_test_running, systemLinkUserId)
-                            thread(name = "HyperCopySystemLinkTest") {
-                                val inputUrl = extractFirstInputUrl(testInput)
-                                val success = inputUrl?.let { systemLinkRepository.openLink(systemLinkUserId, it) } == true
-                                (context as? android.app.Activity)?.runOnUiThread {
-                                    resultText = context.getString(
-                                        if (success) R.string.rule_system_test_started else R.string.rule_result_launch_failed,
-                                        if (success) systemLinkUserId.toString() else "no url found",
-                                    )
-                                }
-                            }
-                        } else {
-                            resultText = executeRuleTest(
-                                context = context,
-                                input = testInput,
-                                rules = categoryRules,
-                                category = selectedCategory,
-                                onStartWebViewResolve = { url, rule ->
-                                    resolvingUrl = url
-                                    resolvingRule = rule
-                                },
-                                onStartRedirectParse = { url, rule ->
-                                    resultText = context.getString(R.string.rule_result_match_redirect_parse, rule.name)
-                                    thread(name = "HyperCopyRedirectTest") {
-                                        val redirectedUrl = OneRedirectResolver.resolve(url)
-                                        val intent = rule.parseIntent(
-                                            redirectedUrl,
-                                            requireMatch = false,
-                                            extraParameters = mapOf("input" to testInput.trim(), "redirectUrl" to redirectedUrl),
+            if (!sortMode && !selectionMode) {
+                item {
+                    TestRuleCard(
+                        category = selectedCategory,
+                        value = testInput,
+                        resultText = resultText,
+                        onValueChange = { testInput = it },
+                        onExecute = {
+                            if (selectedCategory == RulePageCategory.System) {
+                                resultText = context.getString(R.string.rule_system_test_running, systemLinkUserId)
+                                thread(name = "HyperCopySystemLinkTest") {
+                                    val inputUrl = extractFirstInputUrl(testInput)
+                                    val success = inputUrl?.let { systemLinkRepository.openLink(systemLinkUserId, it) } == true
+                                    (context as? android.app.Activity)?.runOnUiThread {
+                                        resultText = context.getString(
+                                            if (success) R.string.rule_system_test_started else R.string.rule_result_launch_failed,
+                                            if (success) systemLinkUserId.toString() else "no url found",
                                         )
-                                        (context as? android.app.Activity)?.runOnUiThread {
-                                            if (intent == null) {
-                                                resultText = context.getString(R.string.rule_result_redirect_parse_no_param, redirectedUrl)
-                                            } else {
-                                                resultText = runCatching { context.startActivity(intent) }
-                                                    .fold(
-                                                        onSuccess = { context.getString(R.string.rule_result_match_parse_open, rule.name, intent.data) },
-                                                        onFailure = { context.getString(R.string.rule_result_launch_failed, it.message) },
-                                                    )
+                                    }
+                                }
+                            } else {
+                                resultText = executeRuleTest(
+                                    context = context,
+                                    input = testInput,
+                                    rules = categoryRules,
+                                    category = selectedCategory,
+                                    onStartWebViewResolve = { url, rule ->
+                                        resolvingUrl = url
+                                        resolvingRule = rule
+                                    },
+                                    onStartRedirectParse = { url, rule ->
+                                        resultText = context.getString(R.string.rule_result_match_redirect_parse, rule.name)
+                                        thread(name = "HyperCopyRedirectTest") {
+                                            val redirectedUrl = OneRedirectResolver.resolve(url)
+                                            val intent = rule.parseIntent(
+                                                redirectedUrl,
+                                                requireMatch = false,
+                                                extraParameters = mapOf("input" to testInput.trim(), "redirectUrl" to redirectedUrl),
+                                            )
+                                            (context as? android.app.Activity)?.runOnUiThread {
+                                                if (intent == null) {
+                                                    resultText = context.getString(R.string.rule_result_redirect_parse_no_param, redirectedUrl)
+                                                } else {
+                                                    resultText = runCatching { context.startActivity(intent) }
+                                                        .fold(
+                                                            onSuccess = { context.getString(R.string.rule_result_match_parse_open, rule.name, intent.data) },
+                                                            onFailure = { context.getString(R.string.rule_result_launch_failed, it.message) },
+                                                        )
+                                                }
                                             }
                                         }
-                                    }
-                                },
-                                onStartActivity = { context.startActivity(it) },
-                            )
-                        }
-                    },
-                )
-            }
-            item {
-                HyperSearchBar(
-                    query = searchText,
-                    onQueryChange = { searchText = it },
-                    label = stringResource(R.string.rule_search_hint),
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                                    },
+                                    onStartActivity = { context.startActivity(it) },
+                                )
+                            }
+                        },
+                    )
+                }
+                item {
+                    HyperSearchBar(
+                        query = searchText,
+                        onQueryChange = { searchText = it },
+                        label = stringResource(R.string.rule_search_hint),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
             }
             if (selectedCategory == RulePageCategory.System) {
                 when {
@@ -278,6 +370,18 @@ fun RulesPage(
                         rule = rule,
                         selected = rule.id in selectedRuleIds,
                         selectionMode = selectionMode,
+                        sortMode = sortMode,
+                        dragging = draggingRuleId == rule.id,
+                        dragOffsetY = if (draggingRuleId == rule.id) {
+                            dragTotalOffsetY - dragMovedSteps * (ruleItemStepPx.takeIf { it > 0f } ?: fallbackRuleItemStepPx)
+                        } else {
+                            0f
+                        },
+                        modifier = Modifier
+                            .onGloballyPositioned { coordinates ->
+                                if (coordinates.size.height > 0) ruleItemStepPx = coordinates.size.height + itemSpacingPx
+                            }
+                            .let { cardModifier -> if (draggingRuleId == rule.id) cardModifier else cardModifier.animateItem() },
                         onEnabledChange = { enabled ->
                             repository.setRuleEnabled(rule.id, enabled)
                             rules = repository.readRules()
@@ -299,12 +403,57 @@ fun RulesPage(
                                 selectedRuleIds + rule.id
                             }
                         },
+                        onDragStart = {
+                            draggingRuleId = rule.id
+                            dragTotalOffsetY = 0f
+                            dragMovedSteps = 0
+                        },
+                        onDrag = { deltaY -> dragRule(rule.id, deltaY) },
+                        onDragEnd = {
+                            persistSorting()
+                            draggingRuleId = null
+                            dragTotalOffsetY = 0f
+                            dragMovedSteps = 0
+                        },
                     )
                 }
             }
         }
 
-        if (selectionMode) {
+        if (sortMode && selectedCategory != RulePageCategory.System) {
+            RuleEditBar(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(start = 12.dp, top = topContentPadding, end = 12.dp),
+                onCloseClick = { onSortModeChange(false) },
+            )
+        }
+
+        if (editMode && selectedCategory != RulePageCategory.System) {
+            RuleSelectionBar(
+                selectedCount = selectedRuleIds.size,
+                allSelected = selectedRuleIds.size == categoryRules.size,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(start = 12.dp, top = topContentPadding, end = 12.dp),
+                onCloseClick = {
+                    selectedRuleIds = emptySet()
+                    onEditModeChange(false)
+                },
+                onSelectAllClick = {
+                    selectedRuleIds = if (selectedRuleIds.size == categoryRules.size) {
+                        emptySet()
+                    } else {
+                        categoryRuleIds
+                    }
+                },
+                onDeleteClick = {
+                    if (selectedRuleIds.isNotEmpty()) showDeleteDialog = true
+                },
+            )
+        }
+
+        if (selectedRuleIds.isNotEmpty() && !sortMode && !editMode) {
             RuleSelectionBar(
                 selectedCount = selectedRuleIds.size,
                 allSelected = selectedRuleIds.size == categoryRules.size,
@@ -319,13 +468,11 @@ fun RulesPage(
                         categoryRuleIds
                     }
                 },
-                onDeleteClick = {
-                    showDeleteDialog = true
-                },
+                onDeleteClick = { showDeleteDialog = true },
             )
         }
 
-        if (selectedCategory != RulePageCategory.System) {
+        if (selectedCategory != RulePageCategory.System && !sortMode && !selectionMode) {
             AddRuleMenu(
                 category = selectedCategory,
                 modifier = Modifier

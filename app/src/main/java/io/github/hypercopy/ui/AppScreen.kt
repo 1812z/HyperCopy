@@ -65,6 +65,8 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.AppRecording
 import top.yukonga.miuix.kmp.icon.extended.Backup
 import top.yukonga.miuix.kmp.icon.extended.Carrier
+import top.yukonga.miuix.kmp.icon.extended.Edit
+import top.yukonga.miuix.kmp.icon.extended.Filter
 import top.yukonga.miuix.kmp.icon.extended.Import
 import top.yukonga.miuix.kmp.icon.extended.ListView
 import top.yukonga.miuix.kmp.icon.extended.Refresh
@@ -332,6 +334,9 @@ fun AppScreen(
                         val scrollBehavior = MiuixScrollBehavior(rememberTopAppBarState())
                         var showImportDialog by remember { mutableStateOf(false) }
                         var showRulesMenu by remember { mutableStateOf(false) }
+                        var ruleSortMode by remember { mutableStateOf(false) }
+                        var ruleEditMode by remember { mutableStateOf(false) }
+                        var ruleActionsAvailable by remember { mutableStateOf(false) }
                         var systemLinkUserId by remember { mutableStateOf(settingsRepository.readSystemLinkUserId()) }
                         Scaffold(
                             topBar = {
@@ -340,41 +345,63 @@ fun AppScreen(
                                     largeTitle = stringResource(R.string.tab_rules),
                                     scrollBehavior = scrollBehavior,
                                     actions = {
-                                        Box {
-                                            IconButton(onClick = { showRulesMenu = true }) {
+                                        if (ruleActionsAvailable) {
+                                            IconButton(onClick = {
+                                                ruleEditMode = false
+                                                ruleSortMode = true
+                                            }) {
                                                 Icon(
-                                                    imageVector = MiuixIcons.ListView,
-                                                    contentDescription = stringResource(R.string.rule_system_user_menu),
+                                                    imageVector = MiuixIcons.Filter,
+                                                    contentDescription = stringResource(R.string.action_sort_rule),
                                                 )
                                             }
-                                            OverlayCascadingListPopup(
-                                                show = showRulesMenu,
-                                                entries = listOf(
-                                                    DropdownEntry(
-                                                        items = listOf(
-                                                            DropdownItem(
-                                                                text = stringResource(R.string.rule_system_user_0),
-                                                                selected = systemLinkUserId == 0,
-                                                                onClick = {
-                                                                    showRulesMenu = false
-                                                                    systemLinkUserId = 0
-                                                                    settingsRepository.persistSystemLinkUserId(0)
-                                                                },
-                                                            ),
-                                                            DropdownItem(
-                                                                text = stringResource(R.string.rule_system_user_999),
-                                                                selected = systemLinkUserId == 999,
-                                                                onClick = {
-                                                                    showRulesMenu = false
-                                                                    systemLinkUserId = 999
-                                                                    settingsRepository.persistSystemLinkUserId(999)
-                                                                },
+                                            IconButton(onClick = {
+                                                ruleSortMode = false
+                                                ruleEditMode = true
+                                            }) {
+                                                Icon(
+                                                    imageVector = MiuixIcons.Edit,
+                                                    contentDescription = stringResource(R.string.action_edit_rules),
+                                                )
+                                            }
+                                        }
+                                        if (!ruleActionsAvailable) {
+                                            Box {
+                                                IconButton(onClick = { showRulesMenu = true }) {
+                                                    Icon(
+                                                        imageVector = MiuixIcons.ListView,
+                                                        contentDescription = stringResource(R.string.rule_system_user_menu),
+                                                    )
+                                                }
+                                                OverlayCascadingListPopup(
+                                                    show = showRulesMenu,
+                                                    entries = listOf(
+                                                        DropdownEntry(
+                                                            items = listOf(
+                                                                DropdownItem(
+                                                                    text = stringResource(R.string.rule_system_user_0),
+                                                                    selected = systemLinkUserId == 0,
+                                                                    onClick = {
+                                                                        showRulesMenu = false
+                                                                        systemLinkUserId = 0
+                                                                        settingsRepository.persistSystemLinkUserId(0)
+                                                                    },
+                                                                ),
+                                                                DropdownItem(
+                                                                    text = stringResource(R.string.rule_system_user_999),
+                                                                    selected = systemLinkUserId == 999,
+                                                                    onClick = {
+                                                                        showRulesMenu = false
+                                                                        systemLinkUserId = 999
+                                                                        settingsRepository.persistSystemLinkUserId(999)
+                                                                    },
+                                                                ),
                                                             ),
                                                         ),
                                                     ),
-                                                ),
-                                                onDismissRequest = { showRulesMenu = false },
-                                            )
+                                                    onDismissRequest = { showRulesMenu = false },
+                                                )
+                                            }
                                         }
                                         IconButton(onClick = { showImportDialog = true }) {
                                             Icon(
@@ -391,6 +418,11 @@ fun AppScreen(
                                 modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
                                 showImportDialog = showImportDialog,
                                 onDismissImportDialog = { showImportDialog = false },
+                                sortMode = ruleSortMode,
+                                onSortModeChange = { ruleSortMode = it },
+                                editMode = ruleEditMode,
+                                onEditModeChange = { ruleEditMode = it },
+                                onRuleActionsAvailableChange = { ruleActionsAvailable = it },
                                 topContentPadding = pagePadding.calculateTopPadding() + 12.dp,
                                 bottomContentPadding = pagePadding.calculateBottomPadding() + 16.dp,
                                 systemLinkUserId = systemLinkUserId,

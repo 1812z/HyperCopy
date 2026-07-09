@@ -3,6 +3,7 @@ package io.github.hypercopy.ui.rules
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,9 +18,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.unit.dp
 import io.github.hypercopy.R
 import io.github.hypercopy.data.RuleCategory
@@ -44,6 +48,7 @@ import top.yukonga.miuix.kmp.icon.extended.Add
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.Delete
+import top.yukonga.miuix.kmp.icon.extended.ListView
 import top.yukonga.miuix.kmp.icon.extended.SelectAll
 import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -323,25 +328,75 @@ internal fun RuleSelectionBar(
     }
 }
 
+@Composable
+internal fun RuleEditBar(
+    modifier: Modifier = Modifier,
+    onCloseClick: () -> Unit,
+) {
+    Card(modifier = modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            IconButton(
+                onClick = onCloseClick,
+                minWidth = 36.dp,
+                minHeight = 36.dp,
+                cornerRadius = 18.dp,
+            ) {
+                Icon(
+                    imageVector = MiuixIcons.Close,
+                    contentDescription = stringResource(R.string.action_close),
+                    tint = MiuixTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+            Text(
+                text = stringResource(R.string.rule_sort_tip),
+                style = MiuixTheme.textStyles.headline1,
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
+}
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun RuleCard(
     rule: RuleConfig,
     selected: Boolean,
     selectionMode: Boolean,
+    sortMode: Boolean,
+    dragging: Boolean,
+    dragOffsetY: Float,
+    modifier: Modifier = Modifier,
     onEnabledChange: (Boolean) -> Unit,
     onEditClick: () -> Unit,
     onLongClick: () -> Unit,
     onSelectionToggle: () -> Unit,
+    onDragStart: () -> Unit,
+    onDrag: (Float) -> Unit,
+    onDragEnd: () -> Unit,
 ) {
-    Card {
+    Card(
+        modifier = modifier
+            .zIndex(if (dragging) 1f else 0f)
+            .graphicsLayer { translationY = dragOffsetY },
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .combinedClickable(
-                    onClick = { if (selectionMode) onSelectionToggle() else onEditClick() },
-                    onLongClick = onLongClick,
-                )
+                .let { rowModifier ->
+                    if (sortMode) {
+                        rowModifier
+                    } else {
+                        rowModifier.combinedClickable(
+                            onClick = { if (selectionMode) onSelectionToggle() else onEditClick() },
+                            onLongClick = onLongClick,
+                        )
+                    }
+                }
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -357,14 +412,34 @@ internal fun RuleCard(
                     color = MiuixTheme.colorScheme.primary,
                 )
             }
-            if (selectionMode) {
+            if (sortMode) {
+                Icon(
+                    imageVector = MiuixIcons.ListView,
+                    contentDescription = stringResource(R.string.action_sort_rule),
+                    tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    modifier = Modifier
+                        .padding(start = 12.dp)
+                        .size(24.dp)
+                        .pointerInput(rule.id) {
+                            detectDragGesturesAfterLongPress(
+                                onDragStart = { onDragStart() },
+                                onDragEnd = onDragEnd,
+                                onDragCancel = onDragEnd,
+                                onDrag = { change, dragAmount ->
+                                    change.consume()
+                                    onDrag(dragAmount.y)
+                                },
+                            )
+                        },
+                )
+            } else if (selectionMode) {
                 Checkbox(
                     state = if (selected) ToggleableState.On else ToggleableState.Off,
                     onClick = onSelectionToggle,
                     modifier = Modifier.padding(start = 12.dp),
                 )
             }
-            if (!selectionMode) {
+            if (!selectionMode && !sortMode) {
                 Switch(checked = rule.enabled, onCheckedChange = { onEnabledChange(!rule.enabled) })
                 IconButton(
                     onClick = onEditClick,
