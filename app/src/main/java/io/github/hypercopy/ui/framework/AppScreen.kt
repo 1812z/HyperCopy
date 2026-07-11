@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -38,6 +39,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import io.github.hypercopy.App
 import io.github.hypercopy.Config
 import io.github.hypercopy.R
@@ -101,6 +103,11 @@ fun AppScreen(
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
     ) {}
+    val shizukuNotificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) {
+        ClipboardMonitorController.startForCurrentMode(context.applicationContext)
+    }
     val tabs = remember { Tab.entries.toList() }
     val pagerState = rememberPagerState(pageCount = { tabs.size })
     val coroutineScope = rememberCoroutineScope()
@@ -224,7 +231,14 @@ fun AppScreen(
                                 onClipboardMonitorModeChange = {
                                     clipboardMonitorMode = it
                                     settingsRepository.persistClipboardMonitorMode(it.value)
-                                    ClipboardMonitorController.onModeChanged(context.applicationContext, it.value)
+                                    if (it == ClipboardMonitorMode.Shizuku &&
+                                        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                                        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+                                    ) {
+                                        shizukuNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                    } else {
+                                        ClipboardMonitorController.onModeChanged(context.applicationContext, it.value)
+                                    }
                                 },
                                 topContentPadding = pagePadding.calculateTopPadding() + 12.dp,
                                 bottomContentPadding = pagePadding.calculateBottomPadding() + 16.dp,

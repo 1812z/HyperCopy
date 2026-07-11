@@ -274,4 +274,8 @@
     <string name="notification_channel_jump_miui_island_description">复制命中规则后通过小米超级岛确认跳转</string>
     <string name="notification_jump_title">等待跳转确认</string>
     <string name="notification_jump_text">点击"跳转"以进入应用</string>
+    <string name="notification_channel_foreground_service_name">后台剪贴板监听</string>
+    <string name="notification_channel_foreground_service_description">Shizuku 剪贴板监听运行时显示的常驻通知</string>
+    <string name="notification_foreground_service_title">HyperCopy后台服务运行中</string>
+    <string name="notification_foreground_service_text">正在通过 Shizuku 监听剪贴板</string>
 </resources>
