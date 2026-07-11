@@ -2,7 +2,7 @@ package io.github.hypercopy
 
 import android.app.Application
 import io.github.hypercopy.clipboard.monitor.ClipboardMonitorController
-import io.github.hypercopy.data.SettingsRepository
+import io.github.hypercopy.data.settings.SettingsRepository
 import io.github.libxposed.service.XposedService
 import io.github.libxposed.service.XposedServiceHelper
 import java.util.concurrent.CopyOnWriteArraySet

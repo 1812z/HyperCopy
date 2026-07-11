@@ -6,7 +6,7 @@ import android.widget.Toast
 import io.github.hypercopy.Config
 import io.github.hypercopy.HyperLog
 import io.github.hypercopy.R
-import io.github.hypercopy.data.SettingsRepository
+import io.github.hypercopy.data.settings.SettingsRepository
 
 object ActivityLaunchStrategy {
     private const val TAG = "HyperCopy"

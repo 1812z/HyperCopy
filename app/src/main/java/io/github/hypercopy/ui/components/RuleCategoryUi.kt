@@ -2,8 +2,8 @@ package io.github.hypercopy.ui.components
 
 import androidx.annotation.StringRes
 import io.github.hypercopy.R
-import io.github.hypercopy.data.RuleActionMode
-import io.github.hypercopy.data.RuleCategory
+import io.github.hypercopy.data.rules.RuleActionMode
+import io.github.hypercopy.data.rules.RuleCategory
 
 internal enum class RulePageCategory {
     System,
@@ -100,7 +100,7 @@ internal fun RuleActionMode.labelRes(): Int = when (this) {
 }
 
 @StringRes
-internal fun ruleActionLabelRes(rule: io.github.hypercopy.data.RuleConfig): Int {
+internal fun ruleActionLabelRes(rule: io.github.hypercopy.data.rules.RuleConfig): Int {
     if (rule.category != RuleCategory.Link) {
         return if (rule.target.template.isBlank()) R.string.rule_action_direct_open_app else R.string.rule_action_open_url
     }

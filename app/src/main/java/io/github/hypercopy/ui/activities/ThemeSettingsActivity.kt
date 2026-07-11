@@ -16,7 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import io.github.hypercopy.data.SettingsRepository
+import io.github.hypercopy.data.settings.SettingsRepository
 import io.github.hypercopy.ui.framework.AppLanguage
 import io.github.hypercopy.ui.framework.appLanguageFromValue
 import io.github.hypercopy.ui.framework.appColorModeFromValue

@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.content.ContextCompat
 import io.github.hypercopy.Config
-import io.github.hypercopy.data.SettingsRepository
+import io.github.hypercopy.data.settings.SettingsRepository
 
 object ClipboardMonitorController {
     fun startForCurrentMode(context: Context) {

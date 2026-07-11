@@ -26,9 +26,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.unit.dp
 import io.github.hypercopy.R
-import io.github.hypercopy.data.RuleCategory
-import io.github.hypercopy.data.RuleConfig
-import io.github.hypercopy.data.SystemLinkApp
+import io.github.hypercopy.data.rules.RuleCategory
+import io.github.hypercopy.data.rules.RuleConfig
+import io.github.hypercopy.data.systemlink.SystemLinkApp
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Checkbox

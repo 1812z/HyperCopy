@@ -4,7 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import io.github.hypercopy.Config
-import io.github.hypercopy.data.SettingsRepository
+import io.github.hypercopy.data.settings.SettingsRepository
 
 class ClipboardTextReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {

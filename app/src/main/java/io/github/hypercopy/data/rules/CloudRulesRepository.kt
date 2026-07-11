@@ -1,4 +1,4 @@
-package io.github.hypercopy.data
+package io.github.hypercopy.data.rules
 
 import io.github.hypercopy.Config
 import io.github.hypercopy.HyperLog

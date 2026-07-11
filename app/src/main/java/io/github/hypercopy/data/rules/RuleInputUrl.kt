@@ -1,4 +1,4 @@
-package io.github.hypercopy.data
+package io.github.hypercopy.data.rules
 
 fun RuleConfig.resolveInputUrl(text: String): String {
     return extractMatchingWebUrl(text)?.let(::normalizeInputUrl) ?: normalizeInputUrl(text)

@@ -6,9 +6,9 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import io.github.hypercopy.HyperLog
 import io.github.hypercopy.R
-import io.github.hypercopy.data.extractFirstInputUrl
-import io.github.hypercopy.data.SettingsRepository
-import io.github.hypercopy.data.SystemLinkRepository
+import io.github.hypercopy.data.rules.extractFirstInputUrl
+import io.github.hypercopy.data.settings.SettingsRepository
+import io.github.hypercopy.data.systemlink.SystemLinkRepository
 
 object SystemLinkHandler {
     private const val TAG = "HyperCopy"

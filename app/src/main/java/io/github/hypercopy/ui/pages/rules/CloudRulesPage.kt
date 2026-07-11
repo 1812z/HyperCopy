@@ -31,11 +31,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.hypercopy.R
 import io.github.hypercopy.Config
-import io.github.hypercopy.data.CloudRule
-import io.github.hypercopy.data.CloudRuleException
-import io.github.hypercopy.data.CloudRulesRepository
-import io.github.hypercopy.data.RuleRepository
-import io.github.hypercopy.data.SettingsRepository
+import io.github.hypercopy.data.rules.CloudRule
+import io.github.hypercopy.data.rules.CloudRuleException
+import io.github.hypercopy.data.rules.CloudRulesRepository
+import io.github.hypercopy.data.rules.RuleRepository
+import io.github.hypercopy.data.settings.SettingsRepository
 import io.github.hypercopy.ui.components.HyperSearchBar
 import io.github.hypercopy.ui.components.PackageIcon
 import io.github.hypercopy.ui.components.RulePageCategory

@@ -3,15 +3,15 @@ package io.github.hypercopy.clipboard
 import android.content.Context
 import io.github.hypercopy.Config
 import io.github.hypercopy.HyperLog
-import io.github.hypercopy.data.RuleActionMode
-import io.github.hypercopy.data.RuleConfig
-import io.github.hypercopy.data.RuleRepository
-import io.github.hypercopy.data.SettingsRepository
-import io.github.hypercopy.data.directIntent
-import io.github.hypercopy.data.findRule
-import io.github.hypercopy.data.matchRule
-import io.github.hypercopy.data.parseIntent
-import io.github.hypercopy.data.resolveInputUrl
+import io.github.hypercopy.data.rules.RuleActionMode
+import io.github.hypercopy.data.rules.RuleConfig
+import io.github.hypercopy.data.rules.RuleRepository
+import io.github.hypercopy.data.settings.SettingsRepository
+import io.github.hypercopy.data.rules.directIntent
+import io.github.hypercopy.data.rules.findRule
+import io.github.hypercopy.data.rules.matchRule
+import io.github.hypercopy.data.rules.parseIntent
+import io.github.hypercopy.data.rules.resolveInputUrl
 import kotlin.concurrent.thread
 
 object ClipboardTextHandler {

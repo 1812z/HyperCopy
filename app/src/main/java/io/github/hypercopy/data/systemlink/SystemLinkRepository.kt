@@ -1,9 +1,12 @@
-package io.github.hypercopy.data
+package io.github.hypercopy.data.systemlink
 
 import android.content.Context
 import io.github.hypercopy.HyperLog
 import io.github.hypercopy.clipboard.IntentAmStartCommand
 import io.github.hypercopy.clipboard.PrivilegedShell
+import io.github.hypercopy.clipboard.ShellResult
+import io.github.hypercopy.data.rules.normalizeInputUrl
+import io.github.hypercopy.data.settings.SettingsRepository
 import java.util.concurrent.ConcurrentHashMap
 
 data class SystemLinkApp(
@@ -79,12 +82,12 @@ class SystemLinkRepository(private val context: Context) {
         return runFirstSuccessfulResult(*commands).output
     }
 
-    private fun runFirstSuccessfulResult(vararg commands: String): io.github.hypercopy.clipboard.ShellResult {
+    private fun runFirstSuccessfulResult(vararg commands: String): ShellResult {
         commands.forEach { command ->
             val result = PrivilegedShell.run(settingsRepository, command)
             if (result.exitCode == 0) return result
         }
-        return io.github.hypercopy.clipboard.ShellResult(-1, "")
+        return ShellResult(-1, "")
     }
 
     private fun parseApps(output: String, userId: Int): List<SystemLinkApp> {

@@ -4,7 +4,7 @@ import io.github.hypercopy.Config
 import io.github.hypercopy.HyperLog
 import io.github.hypercopy.clipboard.monitor.ShizukuPermission
 import io.github.hypercopy.clipboard.monitor.ShizukuProcess
-import io.github.hypercopy.data.SettingsRepository
+import io.github.hypercopy.data.settings.SettingsRepository
 
 data class ShellResult(val exitCode: Int, val output: String)
 

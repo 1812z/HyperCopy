@@ -44,9 +44,9 @@ import io.github.hypercopy.App
 import io.github.hypercopy.Config
 import io.github.hypercopy.R
 import io.github.hypercopy.clipboard.monitor.ClipboardMonitorController
-import io.github.hypercopy.data.SettingsRepository
-import io.github.hypercopy.data.UpdateCheckResult
-import io.github.hypercopy.data.UpdateRepository
+import io.github.hypercopy.data.settings.SettingsRepository
+import io.github.hypercopy.data.update.UpdateCheckResult
+import io.github.hypercopy.data.update.UpdateRepository
 import io.github.hypercopy.ui.activities.AppListActivity
 import io.github.hypercopy.ui.activities.ThemeSettingsActivity
 import io.github.hypercopy.ui.pages.cloudrules.CloudRulesPage

@@ -20,7 +20,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.hypercopy.Config
 import io.github.hypercopy.R
-import io.github.hypercopy.data.SettingsRepository
+import io.github.hypercopy.data.settings.SettingsRepository
 import io.github.hypercopy.ui.framework.AppLanguage
 import io.github.hypercopy.ui.framework.appLanguageFromValue
 import io.github.hypercopy.ui.framework.appColorModeFromValue

@@ -23,9 +23,9 @@ import android.os.Handler
 import android.os.Looper
 import io.github.hypercopy.HyperLog
 import io.github.hypercopy.R
-import io.github.hypercopy.data.SystemLinkApp
-import io.github.hypercopy.data.SystemLinkDomain
-import io.github.hypercopy.data.SystemLinkRepository
+import io.github.hypercopy.data.systemlink.SystemLinkApp
+import io.github.hypercopy.data.systemlink.SystemLinkDomain
+import io.github.hypercopy.data.systemlink.SystemLinkRepository
 import io.github.hypercopy.ui.components.PackageIcon
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon

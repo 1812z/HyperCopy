@@ -1,4 +1,4 @@
-package io.github.hypercopy.data
+package io.github.hypercopy.data.update
 
 import android.content.Context
 import androidx.core.content.pm.PackageInfoCompat

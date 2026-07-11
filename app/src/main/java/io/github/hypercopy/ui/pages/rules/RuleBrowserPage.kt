@@ -28,7 +28,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import io.github.hypercopy.R
-import io.github.hypercopy.data.RuleCategory
+import io.github.hypercopy.data.rules.RuleCategory
 import io.github.hypercopy.ui.activities.RuleEditorActivity
 import io.github.hypercopy.ui.components.isWebUrl
 import top.yukonga.miuix.kmp.basic.Card

@@ -44,7 +44,7 @@ import io.github.hypercopy.Config
 import io.github.hypercopy.R
 import io.github.hypercopy.clipboard.monitor.RootPermission
 import io.github.hypercopy.clipboard.monitor.ShizukuPermission
-import io.github.hypercopy.data.RuleRepository
+import io.github.hypercopy.data.rules.RuleRepository
 import io.github.hypercopy.ui.framework.ClipboardMonitorMode
 import io.github.libxposed.service.XposedService
 import java.text.SimpleDateFormat

@@ -10,7 +10,7 @@ import android.os.Looper
 import android.view.WindowManager
 import io.github.hypercopy.Config
 import io.github.hypercopy.clipboard.monitor.ClipboardFocusRequester
-import io.github.hypercopy.data.SettingsRepository
+import io.github.hypercopy.data.settings.SettingsRepository
 
 class ClipboardFloatingActivity : Activity() {
     private var handled = false

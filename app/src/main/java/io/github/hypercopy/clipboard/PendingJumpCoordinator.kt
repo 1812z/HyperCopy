@@ -23,8 +23,8 @@ import io.github.hypercopy.Config
 import io.github.hypercopy.HyperLog
 import io.github.hypercopy.R
 import io.github.hypercopy.clipboard.monitor.ClipboardFocusRequester
-import io.github.hypercopy.data.SettingsRepository
-import io.github.hypercopy.data.SystemLinkRepository
+import io.github.hypercopy.data.settings.SettingsRepository
+import io.github.hypercopy.data.systemlink.SystemLinkRepository
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.TimeUnit

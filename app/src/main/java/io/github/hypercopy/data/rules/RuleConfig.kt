@@ -1,4 +1,4 @@
-package io.github.hypercopy.data
+package io.github.hypercopy.data.rules
 
 import android.content.Intent
 import org.json.JSONArray
