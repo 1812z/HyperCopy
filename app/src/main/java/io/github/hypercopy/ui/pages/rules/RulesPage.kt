@@ -36,7 +36,7 @@ import io.github.hypercopy.R
 import io.github.hypercopy.HyperLog
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import io.github.hypercopy.clipboard.OneRedirectResolver
+import io.github.hypercopy.clipboard.handling.OneRedirectResolver
 import io.github.hypercopy.data.rules.RuleActionMode
 import io.github.hypercopy.data.rules.RuleCategory
 import io.github.hypercopy.data.rules.RuleConfig

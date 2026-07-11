@@ -1,4 +1,4 @@
-package io.github.hypercopy.clipboard
+package io.github.hypercopy.clipboard.handling
 
 import android.content.BroadcastReceiver
 import android.content.Context

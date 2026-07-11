@@ -1,4 +1,4 @@
-package io.github.hypercopy.clipboard
+package io.github.hypercopy.clipboard.privileged
 
 import io.github.hypercopy.Config
 import io.github.hypercopy.HyperLog

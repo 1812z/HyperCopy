@@ -1,4 +1,4 @@
-package io.github.hypercopy.clipboard
+package io.github.hypercopy.clipboard.jump
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -8,6 +8,8 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import io.github.hypercopy.HyperLog
+import io.github.hypercopy.clipboard.privileged.ActivityLaunchStrategy
+import io.github.hypercopy.clipboard.privileged.toViewIntent
 import java.util.concurrent.atomic.AtomicBoolean
 
 object HeadlessWebViewResolver {

@@ -1,8 +1,10 @@
-package io.github.hypercopy.clipboard
+package io.github.hypercopy.clipboard.handling
 
 import android.content.Context
 import io.github.hypercopy.Config
 import io.github.hypercopy.HyperLog
+import io.github.hypercopy.clipboard.jump.PendingJump
+import io.github.hypercopy.clipboard.jump.PendingJumpCoordinator
 import io.github.hypercopy.data.rules.RuleActionMode
 import io.github.hypercopy.data.rules.RuleConfig
 import io.github.hypercopy.data.rules.RuleRepository

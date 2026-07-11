@@ -2,9 +2,9 @@ package io.github.hypercopy.data.systemlink
 
 import android.content.Context
 import io.github.hypercopy.HyperLog
-import io.github.hypercopy.clipboard.IntentAmStartCommand
-import io.github.hypercopy.clipboard.PrivilegedShell
-import io.github.hypercopy.clipboard.ShellResult
+import io.github.hypercopy.clipboard.privileged.IntentAmStartCommand
+import io.github.hypercopy.clipboard.privileged.PrivilegedShell
+import io.github.hypercopy.clipboard.privileged.ShellResult
 import io.github.hypercopy.data.rules.normalizeInputUrl
 import io.github.hypercopy.data.settings.SettingsRepository
 import java.util.concurrent.ConcurrentHashMap

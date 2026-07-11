@@ -1,4 +1,4 @@
-package io.github.hypercopy.clipboard
+package io.github.hypercopy.clipboard.jump
 
 import android.content.Intent
 

@@ -1,4 +1,4 @@
-package io.github.hypercopy.clipboard
+package io.github.hypercopy.clipboard.jump
 
 import android.Manifest
 import android.app.NotificationChannel
@@ -22,6 +22,8 @@ import io.github.hypercopy.AppIconCache
 import io.github.hypercopy.Config
 import io.github.hypercopy.HyperLog
 import io.github.hypercopy.R
+import io.github.hypercopy.clipboard.privileged.ActivityLaunchStrategy
+import io.github.hypercopy.clipboard.privileged.MiuiXmsfNetworkBlocker
 import io.github.hypercopy.clipboard.monitor.ClipboardFocusRequester
 import io.github.hypercopy.data.settings.SettingsRepository
 import io.github.hypercopy.data.systemlink.SystemLinkRepository

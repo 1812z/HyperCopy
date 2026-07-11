@@ -4,8 +4,8 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import io.github.hypercopy.HyperLog
-import io.github.hypercopy.clipboard.ClipboardFloatingActivity
-import io.github.hypercopy.clipboard.IntentAmStartCommand
+import io.github.hypercopy.clipboard.handling.ClipboardFloatingActivity
+import io.github.hypercopy.clipboard.privileged.IntentAmStartCommand
 import java.util.UUID
 
 object ClipboardFocusRequester {

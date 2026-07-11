@@ -1,4 +1,4 @@
-package io.github.hypercopy.clipboard
+package io.github.hypercopy.clipboard.privileged
 
 import android.content.Context
 import io.github.hypercopy.HyperLog
@@ -8,7 +8,7 @@ import io.github.hypercopy.clipboard.monitor.ShizukuProcess
 object MiuiXmsfNetworkBlocker {
     private const val TAG = "HyperCopy"
     private const val XMSF_PACKAGE = "com.xiaomi.xmsf"
-    private const val BINDER_COMMAND_CLASS = "io.github.hypercopy.clipboard.MiuiXmsfFirewallBinderCommand"
+    private const val BINDER_COMMAND_CLASS = "io.github.hypercopy.clipboard.privileged.MiuiXmsfFirewallBinderCommand"
     private const val BLOCK_MILLIS = 80L
     private const val TIMEOUT_MILLIS = 1_500L
 

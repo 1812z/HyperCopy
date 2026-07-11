@@ -24,7 +24,7 @@ import io.github.libxposed.api.XposedModule;
 public class HookEntry extends XposedModule {
     private static final String TAG = "HyperCopy";
     private static final String CLIPBOARD_SERVICE_CLASS = "com.android.server.clipboard.ClipboardService";
-    private static final String RECEIVER_CLASS = "io.github.hypercopy.clipboard.ClipboardTextReceiver";
+    private static final String RECEIVER_CLASS = "io.github.hypercopy.clipboard.handling.ClipboardTextReceiver";
     private static final long DUPLICATE_WINDOW_MILLIS = 1500L;
     private static final int INSTALL_RETRY_LIMIT = 20;
     private static final long INSTALL_RETRY_DELAY_MILLIS = 1000L;

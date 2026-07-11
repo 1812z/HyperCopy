@@ -1,4 +1,4 @@
-package io.github.hypercopy.clipboard
+package io.github.hypercopy.clipboard.handling
 
 import io.github.hypercopy.HyperLog
 import java.net.HttpURLConnection

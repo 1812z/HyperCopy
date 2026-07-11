@@ -1,4 +1,4 @@
-package io.github.hypercopy.clipboard
+package io.github.hypercopy.clipboard.handling
 
 import android.content.Context
 import android.content.Intent
@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import io.github.hypercopy.HyperLog
 import io.github.hypercopy.R
+import io.github.hypercopy.clipboard.jump.PendingJump
 import io.github.hypercopy.data.rules.extractFirstInputUrl
 import io.github.hypercopy.data.settings.SettingsRepository
 import io.github.hypercopy.data.systemlink.SystemLinkRepository
