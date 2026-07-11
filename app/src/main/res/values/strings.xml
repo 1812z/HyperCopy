@@ -72,6 +72,8 @@
     <string name="check_update_summary">通过 GitHub Release 检查最新版本</string>
     <string name="auto_check_update">自动检查更新</string>
     <string name="auto_check_update_summary">启动时检查 GitHub Release 是否有新版本</string>
+    <string name="hide_from_recents">从最近任务隐藏</string>
+    <string name="hide_from_recents_summary">开启后应用不会显示在系统最近任务列表中</string>
     <string name="hide_desktop_icon">隐藏桌面图标</string>
     <string name="hide_desktop_icon_summary">开启后启动器中不显示应用图标，仍可从 LSPosed 模块设置打开</string>
 

@@ -36,6 +36,14 @@ class SettingsRepository(private val context: Context) {
         preferences().edit(commit = true) { putBoolean(Config.KEY_AUTO_CHECK_UPDATE, value) }
     }
 
+    fun readHideFromRecents(): Boolean {
+        return preferences().getBoolean(Config.KEY_HIDE_FROM_RECENTS, Config.DEFAULT_HIDE_FROM_RECENTS)
+    }
+
+    fun persistHideFromRecents(value: Boolean) {
+        preferences().edit(commit = true) { putBoolean(Config.KEY_HIDE_FROM_RECENTS, value) }
+    }
+
     fun readAppLanguage(): String {
         return preferences().getString(Config.KEY_APP_LANGUAGE, Config.DEFAULT_APP_LANGUAGE) ?: Config.DEFAULT_APP_LANGUAGE
     }

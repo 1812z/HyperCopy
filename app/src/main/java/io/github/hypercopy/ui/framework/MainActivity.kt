@@ -1,5 +1,6 @@
 package io.github.hypercopy.ui.framework
 
+import android.app.ActivityManager
 import android.os.Bundle
 import android.content.ContextWrapper
 import androidx.activity.ComponentActivity
@@ -80,5 +81,17 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        updateRecentsVisibility(SettingsRepository(applicationContext).readHideFromRecents())
+    }
+
+    fun updateRecentsVisibility(hideFromRecents: Boolean) {
+        val activityManager = getSystemService(ActivityManager::class.java)
+        activityManager.appTasks
+            .firstOrNull { it.taskInfo?.taskId == taskId }
+            ?.setExcludeFromRecents(hideFromRecents)
     }
 }

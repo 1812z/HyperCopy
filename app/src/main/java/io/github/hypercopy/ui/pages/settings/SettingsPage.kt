@@ -34,6 +34,7 @@ import top.yukonga.miuix.kmp.icon.extended.Link
 import top.yukonga.miuix.kmp.icon.extended.ListView
 import top.yukonga.miuix.kmp.icon.extended.Theme
 import top.yukonga.miuix.kmp.icon.extended.Translate
+import top.yukonga.miuix.kmp.icon.extended.Unpin
 import top.yukonga.miuix.kmp.icon.extended.Update
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 
@@ -42,6 +43,7 @@ fun SettingsPage(
     modifier: Modifier = Modifier,
     logLevel: Int,
     autoCheckUpdate: Boolean,
+    hideFromRecents: Boolean,
     desktopIconHidden: Boolean,
     detectClonedApp: Boolean,
     miuiIslandBypassRestriction: Boolean,
@@ -50,6 +52,7 @@ fun SettingsPage(
     jumpNotificationMode: JumpNotificationMode,
     onLogLevelChange: (Int) -> Unit,
     onAutoCheckUpdateChange: (Boolean) -> Unit,
+    onHideFromRecentsChange: (Boolean) -> Unit,
     onDesktopIconHiddenChange: (Boolean) -> Unit,
     onDetectClonedAppChange: (Boolean) -> Unit,
     onMiuiIslandBypassRestrictionChange: (Boolean) -> Unit,
@@ -140,6 +143,13 @@ fun SettingsPage(
                     summary = stringResource(R.string.auto_check_update_summary),
                     checked = autoCheckUpdate,
                     onCheckedChange = { onAutoCheckUpdateChange(!autoCheckUpdate) },
+                )
+                SwitchAction(
+                    icon = MiuixIcons.Unpin,
+                    title = stringResource(R.string.hide_from_recents),
+                    summary = stringResource(R.string.hide_from_recents_summary),
+                    checked = hideFromRecents,
+                    onCheckedChange = { onHideFromRecentsChange(!hideFromRecents) },
                 )
                 SwitchAction(
                     icon = MiuixIcons.Copy,

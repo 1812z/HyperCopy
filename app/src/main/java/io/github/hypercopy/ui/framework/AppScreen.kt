@@ -1,6 +1,8 @@
 package io.github.hypercopy.ui.framework
 
 import android.Manifest
+import android.content.Context
+import android.content.ContextWrapper
 import android.content.Intent
 import android.os.Build
 import android.widget.Toast
@@ -107,6 +109,7 @@ fun AppScreen(
     var xposedService by remember { mutableStateOf(App.xposedService) }
     var logLevel by remember { mutableIntStateOf(settingsRepository.readLogLevel()) }
     var autoCheckUpdate by remember { mutableStateOf(settingsRepository.readAutoCheckUpdate()) }
+    var hideFromRecents by remember { mutableStateOf(settingsRepository.readHideFromRecents()) }
     var desktopIconHidden by remember { mutableStateOf(settingsRepository.readDesktopIconHidden()) }
     var detectClonedApp by remember { mutableStateOf(settingsRepository.readDetectClonedApp()) }
     var miuiIslandBypassRestriction by remember { mutableStateOf(settingsRepository.readMiuiIslandBypassRestriction()) }
@@ -452,6 +455,7 @@ fun AppScreen(
                                 modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
                                 logLevel = logLevel,
                                 autoCheckUpdate = autoCheckUpdate,
+                                hideFromRecents = hideFromRecents,
                                 desktopIconHidden = desktopIconHidden,
                                 detectClonedApp = detectClonedApp,
                                 miuiIslandBypassRestriction = miuiIslandBypassRestriction,
@@ -465,6 +469,11 @@ fun AppScreen(
                                 onAutoCheckUpdateChange = {
                                     autoCheckUpdate = it
                                     settingsRepository.persistAutoCheckUpdate(it)
+                                },
+                                onHideFromRecentsChange = {
+                                    hideFromRecents = it
+                                    settingsRepository.persistHideFromRecents(it)
+                                    context.findMainActivity()?.updateRecentsVisibility(it)
                                 },
                                 onDesktopIconHiddenChange = {
                                     desktopIconHidden = it
@@ -539,6 +548,10 @@ private fun localizedUpdateFailure(defaultMessage: String, message: String): Str
     "检查更新失败" -> defaultMessage
     else -> message
 }
+
+private fun Context.findMainActivity(): MainActivity? = generateSequence(this) {
+    (it as? ContextWrapper)?.baseContext
+}.filterIsInstance<MainActivity>().firstOrNull()
 
 private data class UpdateDialogState(
     val title: String,

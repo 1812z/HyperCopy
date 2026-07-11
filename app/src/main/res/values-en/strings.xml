@@ -67,6 +67,8 @@
     <string name="check_update_summary">Check the latest version from GitHub Releases</string>
     <string name="auto_check_update">Check updates automatically</string>
     <string name="auto_check_update_summary">Check GitHub Releases for new versions on startup</string>
+    <string name="hide_from_recents">Hide from recents</string>
+    <string name="hide_from_recents_summary">When enabled, the app is hidden from the system recent tasks list</string>
     <string name="hide_desktop_icon">Hide launcher icon</string>
     <string name="hide_desktop_icon_summary">When enabled, the app icon is hidden from the launcher but can still be opened from LSPosed module settings</string>
 

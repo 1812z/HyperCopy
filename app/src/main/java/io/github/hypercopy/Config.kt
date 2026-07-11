@@ -6,6 +6,7 @@ object Config {
     const val PREFS_NAME = "hypercopy_settings"
     const val KEY_LOG_LEVEL = "log_level"
     const val KEY_AUTO_CHECK_UPDATE = "auto_check_update"
+    const val KEY_HIDE_FROM_RECENTS = "hide_from_recents"
     const val KEY_APP_LANGUAGE = "app_language"
     const val KEY_COLOR_MODE = "color_mode"
     const val KEY_CLIPBOARD_MONITOR_MODE = "clipboard_monitor_mode"
@@ -53,6 +54,7 @@ object Config {
 
     const val DEFAULT_LOG_LEVEL = LOG_LEVEL_BASIC
     const val DEFAULT_AUTO_CHECK_UPDATE = true
+    const val DEFAULT_HIDE_FROM_RECENTS = false
     const val DEFAULT_APP_LANGUAGE = APP_LANGUAGE_SYSTEM
     const val DEFAULT_COLOR_MODE = COLOR_MODE_SYSTEM
     const val DEFAULT_CLIPBOARD_MONITOR_MODE = CLIPBOARD_MONITOR_MODE_LSPOSED
