@@ -32,8 +32,9 @@
 -keep class io.github.hypercopy.clipboard.** extends android.content.BroadcastReceiver { *; }
 
 # Started by Shizuku app_process using its literal class name. Release builds
-# must keep both the class name and main(String[]) entry point.
--keep class io.github.hypercopy.clipboard.MiuiXmsfFirewallBinderCommand { *; }
+# must keep the class and all members because it is loaded outside the app's
+# normal class-loading and R8 reachability analysis.
+-keep class io.github.hypercopy.clipboard.privileged.MiuiXmsfFirewallBinderCommand { *; }
 
 # Shizuku and libxposed use binder/service integration and generated provider
 # metadata. Preserve public API shape while still allowing unused code removal.
