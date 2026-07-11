@@ -62,6 +62,8 @@ import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.extended.Copy
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.height
 
 @Composable
 fun HomePage(
@@ -151,77 +153,111 @@ fun HomePage(
 
 @Composable
 private fun StatusCard(active: Boolean, batteryUnrestricted: Boolean, workMode: String, enabledRuleCount: Int) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        val warning = active && !batteryUnrestricted
-        val statusColor = when {
-            warning -> Color(0xFFFF9F0A)
-            active -> Color(0xFF36D167)
-            else -> Color(0xFFFF5A52)
-        }
-        val statusBackground = when {
-            warning -> Color(0xFFFFF1D6)
-            active -> Color(0xFFDFFAE4)
-            else -> Color(0xFFFFE5E3)
-        }
-
-        Card(
-            modifier = Modifier.weight(1f).aspectRatio(1f),
-            colors = CardDefaults.defaultColors(color = statusBackground),
-        ) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                Box(
-                    modifier = Modifier.fillMaxSize().offset(34.dp, 38.dp),
-                    contentAlignment = Alignment.BottomEnd,
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        if (maxWidth >= 600.dp) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                MainStatusCard(
+                    active = active,
+                    batteryUnrestricted = batteryUnrestricted,
+                    modifier = Modifier.weight(1f).height(112.dp),
+                )
+                StatCard(
+                    title = stringResource(R.string.home_work_mode),
+                    content = workModeLabel(workMode),
+                    modifier = Modifier.weight(1f).height(112.dp),
+                )
+                StatCard(
+                    title = stringResource(R.string.home_rule_count),
+                    content = stringResource(R.string.home_enabled_rule_count, enabledRuleCount),
+                    modifier = Modifier.weight(1f).height(112.dp),
+                )
+            }
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                MainStatusCard(
+                    active = active,
+                    batteryUnrestricted = batteryUnrestricted,
+                    modifier = Modifier.weight(1f).aspectRatio(1f),
+                )
+                Column(
+                    modifier = Modifier.weight(1f).aspectRatio(1f),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Icon(
-                        modifier = Modifier.size(136.dp),
-                        imageVector = MiuixIcons.Copy,
-                        contentDescription = null,
-                        tint = statusColor.copy(alpha = 0.78f),
+                    StatCard(
+                        title = stringResource(R.string.home_work_mode),
+                        content = workModeLabel(workMode),
+                        modifier = Modifier.weight(1f),
                     )
-                }
-                Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-                    Text(
-                        text = stringResource(if (active) R.string.status_working else R.string.status_not_active),
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF101010),
-                    )
-                    Text(
-                        text = stringResource(
-                            when {
-                                warning -> R.string.status_battery_abnormal
-                                active -> R.string.status_module_connected
-                                else -> R.string.status_module_disconnected
-                            },
-                        ),
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = if (warning) Color(0xFFE07000) else Color(0xFF2F3A32).copy(alpha = 0.78f),
-                        modifier = Modifier.padding(top = 2.dp),
+                    StatCard(
+                        title = stringResource(R.string.home_rule_count),
+                        content = stringResource(R.string.home_enabled_rule_count, enabledRuleCount),
+                        modifier = Modifier.weight(1f),
                     )
                 }
             }
         }
+    }
+}
 
-        Column(
-            modifier = Modifier.weight(1f).aspectRatio(1f),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            StatCard(
-                title = stringResource(R.string.home_work_mode),
-                content = workModeLabel(workMode),
-                modifier = Modifier.weight(1f),
-            )
-            StatCard(
-                title = stringResource(R.string.home_rule_count),
-                content = stringResource(R.string.home_enabled_rule_count, enabledRuleCount),
-                modifier = Modifier.weight(1f),
-            )
+@Composable
+private fun MainStatusCard(active: Boolean, batteryUnrestricted: Boolean, modifier: Modifier = Modifier) {
+    val warning = active && !batteryUnrestricted
+    val statusColor = when {
+        warning -> Color(0xFFFF9F0A)
+        active -> Color(0xFF36D167)
+        else -> Color(0xFFFF5A52)
+    }
+    val statusBackground = when {
+        warning -> Color(0xFFFFF1D6)
+        active -> Color(0xFFDFFAE4)
+        else -> Color(0xFFFFE5E3)
+    }
+
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.defaultColors(color = statusBackground),
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier.fillMaxSize().offset(34.dp, 38.dp),
+                contentAlignment = Alignment.BottomEnd,
+            ) {
+                Icon(
+                    modifier = Modifier.size(136.dp),
+                    imageVector = MiuixIcons.Copy,
+                    contentDescription = null,
+                    tint = statusColor.copy(alpha = 0.78f),
+                )
+            }
+            Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                Text(
+                    text = stringResource(if (active) R.string.status_working else R.string.status_not_active),
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFF101010),
+                )
+                Text(
+                    text = stringResource(
+                        when {
+                            warning -> R.string.status_battery_abnormal
+                            active -> R.string.status_module_connected
+                            else -> R.string.status_module_disconnected
+                        },
+                    ),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = if (warning) Color(0xFFE07000) else Color(0xFF2F3A32).copy(alpha = 0.78f),
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            }
         }
     }
 }
