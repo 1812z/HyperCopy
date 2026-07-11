@@ -11,6 +11,9 @@ object ShizukuPermission {
     private const val TAG = "HyperCopy"
     private const val REQUEST_CODE = 3001
     private const val BINDER_WAIT_TIMEOUT_MS = 3_000L
+    private val permissionLock = Any()
+    private val pendingPermissionResults = mutableListOf<(Boolean) -> Unit>()
+    private var permissionRequestInFlight = false
 
     fun isAvailable(): Boolean = runCatching { Shizuku.pingBinder() }.getOrDefault(false)
 
@@ -53,13 +56,22 @@ object ShizukuPermission {
             return
         }
 
+        synchronized(permissionLock) {
+            pendingPermissionResults += onResult
+            if (permissionRequestInFlight) return
+            permissionRequestInFlight = true
+        }
+
         val mainHandler = Handler(Looper.getMainLooper())
         fun dispatchResult(granted: Boolean) {
-            if (Looper.myLooper() == Looper.getMainLooper()) {
-                onResult(granted)
-            } else {
-                mainHandler.post { onResult(granted) }
+            val dispatch = {
+                val callbacks = synchronized(permissionLock) {
+                    permissionRequestInFlight = false
+                    pendingPermissionResults.toList().also { pendingPermissionResults.clear() }
+                }
+                callbacks.forEach { it(granted) }
             }
+            if (Looper.myLooper() == Looper.getMainLooper()) dispatch() else mainHandler.post(dispatch)
         }
 
         val listener = object : Shizuku.OnRequestPermissionResultListener {
