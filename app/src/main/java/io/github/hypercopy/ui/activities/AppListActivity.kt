@@ -1,6 +1,7 @@
-package io.github.hypercopy.ui
+package io.github.hypercopy.ui.activities
 
 import android.os.Bundle
+import android.content.ContextWrapper
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivityResultRegistryOwner
 import androidx.activity.compose.setContent
@@ -13,11 +14,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.hypercopy.Config
 import io.github.hypercopy.R
 import io.github.hypercopy.data.SettingsRepository
+import io.github.hypercopy.ui.framework.AppLanguage
+import io.github.hypercopy.ui.framework.appLanguageFromValue
+import io.github.hypercopy.ui.framework.appColorModeFromValue
+import io.github.hypercopy.ui.framework.colorSchemeModeOf
+import io.github.hypercopy.ui.pages.applist.AppListPage
 import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
@@ -32,6 +40,7 @@ import top.yukonga.miuix.kmp.icon.extended.ListView
 import top.yukonga.miuix.kmp.overlay.OverlayCascadingListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
+import java.util.Locale
 
 class AppListActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,6 +48,22 @@ class AppListActivity : ComponentActivity() {
         setContent {
             val settingsRepository = remember { SettingsRepository(applicationContext) }
             val colorMode = remember { appColorModeFromValue(settingsRepository.readColorMode()) }
+            val appLanguage = appLanguageFromValue(settingsRepository.readAppLanguage())
+            val activityContext = LocalContext.current
+            val configuration = LocalConfiguration.current
+            val localizedContext = remember(appLanguage, activityContext, configuration) {
+                if (appLanguage == AppLanguage.System) {
+                    activityContext
+                } else {
+                    val config = android.content.res.Configuration(configuration)
+                    config.setLocale(Locale.forLanguageTag(appLanguage.value))
+                    val localeContext = activityContext.createConfigurationContext(config)
+                    object : ContextWrapper(activityContext) {
+                        override fun getAssets() = localeContext.assets
+                        override fun getResources() = localeContext.resources
+                    }
+                }
+            }
             var appListWorkMode by remember { mutableStateOf(settingsRepository.readAppListWorkMode()) }
             var ignoreJumpApp by remember { mutableStateOf(settingsRepository.readIgnoreJumpApp()) }
             var appListPackages by remember { mutableStateOf(settingsRepository.readAppListPackages()) }
@@ -78,7 +103,10 @@ class AppListActivity : ComponentActivity() {
                 ),
             )
 
-            CompositionLocalProvider(LocalActivityResultRegistryOwner provides this@AppListActivity) {
+            CompositionLocalProvider(
+                LocalContext provides localizedContext,
+                LocalActivityResultRegistryOwner provides this@AppListActivity,
+            ) {
                 MiuixTheme(controller = ThemeController(colorSchemeModeOf(colorMode))) {
                     Scaffold(
                         topBar = {

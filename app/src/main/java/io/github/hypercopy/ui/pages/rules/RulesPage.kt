@@ -1,4 +1,4 @@
-package io.github.hypercopy.ui.rules
+package io.github.hypercopy.ui.pages.rules
 
 import android.content.Intent
 import android.widget.Toast
@@ -54,11 +54,23 @@ import io.github.hypercopy.data.parseIntent
 import io.github.hypercopy.data.resolveInputUrl
 import io.github.hypercopy.data.rulesFromJson
 import io.github.hypercopy.data.toIntent
-import io.github.hypercopy.ui.HiddenWebViewResolver
-import io.github.hypercopy.ui.HyperSearchBar
-import io.github.hypercopy.ui.RuleBrowserActivity
-import io.github.hypercopy.ui.RuleEditorActivity
-import io.github.hypercopy.ui.SystemLinkAppDetailActivity
+import io.github.hypercopy.ui.activities.RuleBrowserActivity
+import io.github.hypercopy.ui.activities.RuleEditorActivity
+import io.github.hypercopy.ui.activities.SystemLinkAppDetailActivity
+import io.github.hypercopy.ui.components.AddRuleMenu
+import io.github.hypercopy.ui.components.EmptyRulesCard
+import io.github.hypercopy.ui.components.HiddenWebViewResolver
+import io.github.hypercopy.ui.components.HyperSearchBar
+import io.github.hypercopy.ui.components.RuleCard
+import io.github.hypercopy.ui.components.RuleCategoryTabs
+import io.github.hypercopy.ui.components.RuleEditBar
+import io.github.hypercopy.ui.components.RulePageCategory
+import io.github.hypercopy.ui.components.RuleSelectionBar
+import io.github.hypercopy.ui.components.SystemLinkAppListCard
+import io.github.hypercopy.ui.components.SystemLinkHandlingCard
+import io.github.hypercopy.ui.components.TestRuleCard
+import io.github.hypercopy.ui.components.ruleCategories
+import io.github.hypercopy.ui.components.titleRes
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField

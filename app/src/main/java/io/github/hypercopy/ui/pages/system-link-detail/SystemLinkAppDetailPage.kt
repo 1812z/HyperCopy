@@ -1,9 +1,5 @@
-package io.github.hypercopy.ui
+package io.github.hypercopy.ui.pages.systemlinkdetail
 
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.LocalActivityResultRegistryOwner
-import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,7 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
@@ -24,13 +19,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import android.os.Handler
+import android.os.Looper
 import io.github.hypercopy.HyperLog
 import io.github.hypercopy.R
-import io.github.hypercopy.data.SettingsRepository
 import io.github.hypercopy.data.SystemLinkApp
 import io.github.hypercopy.data.SystemLinkDomain
 import io.github.hypercopy.data.SystemLinkRepository
-import io.github.hypercopy.ui.rules.PackageIcon
+import io.github.hypercopy.ui.components.PackageIcon
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -43,33 +39,18 @@ import top.yukonga.miuix.kmp.basic.rememberTopAppBarState
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.theme.ThemeController
 import kotlin.concurrent.thread
 
-class SystemLinkAppDetailActivity : ComponentActivity() {
-
-    companion object {
-        const val EXTRA_PACKAGE_NAME = "package_name"
-        const val EXTRA_USER_ID = "user_id"
-        const val EXTRA_APP_LABEL = "app_label"
-    }
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        val packageName = intent.getStringExtra(EXTRA_PACKAGE_NAME).orEmpty()
-        val userId = intent.getIntExtra(EXTRA_USER_ID, 0)
-        val appLabel = intent.getStringExtra(EXTRA_APP_LABEL).orEmpty()
-
-        if (packageName.isBlank()) {
-            finish()
-            return
-        }
-
-        setContent {
-            val settingsRepository = remember { SettingsRepository(applicationContext) }
-            val systemLinkRepository = remember { SystemLinkRepository(applicationContext) }
-            val colorMode = remember { appColorModeFromValue(settingsRepository.readColorMode()) }
+@Composable
+fun SystemLinkAppDetailPage(
+    packageName: String,
+    userId: Int,
+    appLabel: String,
+    onBack: () -> Unit,
+) {
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val mainHandler = remember { Handler(Looper.getMainLooper()) }
+            val systemLinkRepository = remember { SystemLinkRepository(context.applicationContext) }
             var systemLinkApp by remember { mutableStateOf<SystemLinkApp?>(null) }
             var isLoading by remember { mutableStateOf(true) }
 
@@ -82,7 +63,7 @@ class SystemLinkAppDetailActivity : ComponentActivity() {
                             emptyList()
                         }
                     val app = apps.firstOrNull { it.packageName == packageName }
-                    runOnUiThread {
+                    mainHandler.post {
                         systemLinkApp = app
                         isLoading = false
                     }
@@ -95,8 +76,6 @@ class SystemLinkAppDetailActivity : ComponentActivity() {
 
             val scrollBehavior = MiuixScrollBehavior(rememberTopAppBarState())
 
-            CompositionLocalProvider(LocalActivityResultRegistryOwner provides this@SystemLinkAppDetailActivity) {
-                MiuixTheme(controller = ThemeController(colorSchemeModeOf(colorMode))) {
                     Scaffold(
                         topBar = {
                             TopAppBar(
@@ -104,7 +83,7 @@ class SystemLinkAppDetailActivity : ComponentActivity() {
                                 largeTitle = appLabel.ifBlank { packageName },
                                 scrollBehavior = scrollBehavior,
                                 navigationIcon = {
-                                    IconButton(onClick = { finish() }) {
+                                    IconButton(onClick = onBack) {
                                         Icon(imageVector = MiuixIcons.Back, contentDescription = stringResource(R.string.action_back))
                                     }
                                 },
@@ -193,10 +172,6 @@ class SystemLinkAppDetailActivity : ComponentActivity() {
                             }
                         }
                     }
-                }
-            }
-        }
-    }
 }
 
 @Composable

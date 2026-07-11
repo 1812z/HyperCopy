@@ -1,4 +1,4 @@
-package io.github.hypercopy.ui
+package io.github.hypercopy.ui.pages.home
 
 import android.content.ActivityNotFoundException
 import android.content.Context
@@ -45,6 +45,7 @@ import io.github.hypercopy.R
 import io.github.hypercopy.clipboard.monitor.RootPermission
 import io.github.hypercopy.clipboard.monitor.ShizukuPermission
 import io.github.hypercopy.data.RuleRepository
+import io.github.hypercopy.ui.framework.ClipboardMonitorMode
 import io.github.libxposed.service.XposedService
 import java.text.SimpleDateFormat
 import java.util.Date

@@ -1,4 +1,4 @@
-package io.github.hypercopy.ui.rules
+package io.github.hypercopy.ui.components
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable

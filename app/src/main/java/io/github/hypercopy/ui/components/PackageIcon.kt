@@ -1,4 +1,4 @@
-package io.github.hypercopy.ui.rules
+package io.github.hypercopy.ui.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box

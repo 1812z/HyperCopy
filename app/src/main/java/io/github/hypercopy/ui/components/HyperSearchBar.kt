@@ -1,4 +1,4 @@
-package io.github.hypercopy.ui
+package io.github.hypercopy.ui.components
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable

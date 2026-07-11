@@ -1,4 +1,4 @@
-package io.github.hypercopy.ui.rules
+package io.github.hypercopy.ui.pages.cloudrules
 
 import android.content.pm.PackageManager
 import android.widget.Toast
@@ -17,7 +17,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,7 +36,12 @@ import io.github.hypercopy.data.CloudRuleException
 import io.github.hypercopy.data.CloudRulesRepository
 import io.github.hypercopy.data.RuleRepository
 import io.github.hypercopy.data.SettingsRepository
-import io.github.hypercopy.ui.HyperSearchBar
+import io.github.hypercopy.ui.components.HyperSearchBar
+import io.github.hypercopy.ui.components.PackageIcon
+import io.github.hypercopy.ui.components.RulePageCategory
+import io.github.hypercopy.ui.components.RuleCategoryTabs
+import io.github.hypercopy.ui.components.folderName
+import io.github.hypercopy.ui.components.titleRes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext

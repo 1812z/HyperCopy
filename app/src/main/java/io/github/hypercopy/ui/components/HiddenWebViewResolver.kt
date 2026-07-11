@@ -1,4 +1,4 @@
-package io.github.hypercopy.ui
+package io.github.hypercopy.ui.components
 
 import android.annotation.SuppressLint
 import android.webkit.WebResourceRequest

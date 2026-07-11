@@ -1,4 +1,4 @@
-package io.github.hypercopy.ui
+package io.github.hypercopy.ui.pages.applist
 
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -29,7 +29,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.hypercopy.R
-import io.github.hypercopy.ui.rules.PackageIcon
+import io.github.hypercopy.ui.components.HyperSearchBar
+import io.github.hypercopy.ui.components.PackageIcon
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Card

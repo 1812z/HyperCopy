@@ -1,14 +1,10 @@
-package io.github.hypercopy.ui
+package io.github.hypercopy.ui.pages.rules
 
 import android.annotation.SuppressLint
 import android.content.Intent
-import android.os.Bundle
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.LocalActivityResultRegistryOwner
-import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,7 +17,6 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,7 +29,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import io.github.hypercopy.R
 import io.github.hypercopy.data.RuleCategory
-import io.github.hypercopy.data.SettingsRepository
+import io.github.hypercopy.ui.activities.RuleEditorActivity
+import io.github.hypercopy.ui.components.isWebUrl
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
@@ -44,27 +40,10 @@ import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
-import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.theme.ThemeController
-
-class RuleBrowserActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent {
-            val settingsRepository = remember { SettingsRepository(applicationContext) }
-            val colorMode = remember { appColorModeFromValue(settingsRepository.readColorMode()) }
-            CompositionLocalProvider(LocalActivityResultRegistryOwner provides this@RuleBrowserActivity) {
-                MiuixTheme(controller = ThemeController(colorMode.toColorSchemeMode())) {
-                    RuleBrowserScreen(onBack = { finish() })
-                }
-            }
-        }
-    }
-}
 
 @Composable
-private fun RuleBrowserScreen(onBack: () -> Unit) {
+fun RuleBrowserPage(onBack: () -> Unit) {
     val context = LocalContext.current
     var pageUrl by remember { mutableStateOf(DEFAULT_URL) }
     var address by remember { mutableStateOf(DEFAULT_URL) }
@@ -208,12 +187,6 @@ private data class InterceptedJump(val sourceUrl: String, val targetUrl: String)
 private fun normalizeUrl(text: String): String {
     val value = text.trim()
     return if (value.startsWith("http://") || value.startsWith("https://")) value else "https://$value"
-}
-
-private fun AppColorMode.toColorSchemeMode(): ColorSchemeMode = when (this) {
-    AppColorMode.System -> ColorSchemeMode.System
-    AppColorMode.Light -> ColorSchemeMode.Light
-    AppColorMode.Dark -> ColorSchemeMode.Dark
 }
 
 private const val DEFAULT_URL = "https://www.bing.com"

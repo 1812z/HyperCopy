@@ -1,4 +1,4 @@
-package io.github.hypercopy.ui
+package io.github.hypercopy.ui.pages.themesettings
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
@@ -11,6 +11,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.hypercopy.R
+import io.github.hypercopy.ui.framework.AppColorMode
+import io.github.hypercopy.ui.components.SettingsIcon
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text

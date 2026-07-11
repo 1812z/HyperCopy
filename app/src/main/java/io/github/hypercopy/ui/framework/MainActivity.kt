@@ -1,4 +1,4 @@
-package io.github.hypercopy.ui
+package io.github.hypercopy.ui.framework
 
 import android.os.Bundle
 import android.content.ContextWrapper

@@ -1,4 +1,4 @@
-package io.github.hypercopy.ui
+package io.github.hypercopy.ui.framework
 
 import android.Manifest
 import android.content.Intent
@@ -43,8 +43,12 @@ import io.github.hypercopy.clipboard.monitor.ClipboardMonitorController
 import io.github.hypercopy.data.SettingsRepository
 import io.github.hypercopy.data.UpdateCheckResult
 import io.github.hypercopy.data.UpdateRepository
-import io.github.hypercopy.ui.rules.CloudRulesPage
-import io.github.hypercopy.ui.rules.RulesPage
+import io.github.hypercopy.ui.activities.AppListActivity
+import io.github.hypercopy.ui.activities.ThemeSettingsActivity
+import io.github.hypercopy.ui.pages.cloudrules.CloudRulesPage
+import io.github.hypercopy.ui.pages.home.HomePage
+import io.github.hypercopy.ui.pages.rules.RulesPage
+import io.github.hypercopy.ui.pages.settings.SettingsPage
 import io.github.libxposed.service.XposedService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

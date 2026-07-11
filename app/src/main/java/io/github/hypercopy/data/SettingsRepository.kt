@@ -179,6 +179,6 @@ class SettingsRepository(private val context: Context) {
     private fun preferences() = context.getSharedPreferences(Config.PREFS_NAME, Context.MODE_PRIVATE)
 
     private companion object {
-        const val DESKTOP_ICON_ALIAS = "io.github.hypercopy.ui.MainActivityAlias"
+        const val DESKTOP_ICON_ALIAS = "io.github.hypercopy.ui.framework.MainActivityAlias"
     }
 }

@@ -1,15 +1,11 @@
-package io.github.hypercopy.ui
+package io.github.hypercopy.ui.pages.rules
 
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Intent
 import android.content.Context
 import android.net.Uri
-import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.LocalActivityResultRegistryOwner
-import androidx.activity.compose.setContent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -25,7 +21,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -38,9 +33,7 @@ import io.github.hypercopy.data.RuleConfig
 import io.github.hypercopy.data.RuleRepository
 import io.github.hypercopy.data.RuleTarget
 import io.github.hypercopy.data.RuleTargetType
-import io.github.hypercopy.data.SettingsRepository
 import io.github.hypercopy.data.extractionPatterns
-import io.github.hypercopy.data.ruleCategoryFromValue
 import io.github.hypercopy.data.toJson
 import io.github.hypercopy.data.triggerPatterns
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -56,40 +49,11 @@ import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Forward
-import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.theme.ThemeController
-
-class RuleEditorActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent {
-            val settingsRepository = remember { SettingsRepository(applicationContext) }
-            val colorMode = remember { appColorModeFromValue(settingsRepository.readColorMode()) }
-            CompositionLocalProvider(LocalActivityResultRegistryOwner provides this@RuleEditorActivity) {
-                MiuixTheme(controller = ThemeController(colorMode.toColorSchemeMode())) {
-                    RuleEditorScreen(
-                        ruleId = intent.getStringExtra(EXTRA_RULE_ID).orEmpty(),
-                        initialCategory = ruleCategoryFromValue(intent.getStringExtra(EXTRA_CATEGORY).orEmpty()),
-                        initialSourceUrl = intent.getStringExtra(EXTRA_SOURCE_URL).orEmpty(),
-                        initialTargetUrl = intent.getStringExtra(EXTRA_TARGET_URL).orEmpty(),
-                        onBack = { finish() },
-                    )
-                }
-            }
-        }
-    }
-
-    companion object {
-        const val EXTRA_SOURCE_URL = "source_url"
-        const val EXTRA_TARGET_URL = "target_url"
-        const val EXTRA_RULE_ID = "rule_id"
-        const val EXTRA_CATEGORY = "category"
-    }
-}
+import java.util.UUID
 
 @Composable
-private fun RuleEditorScreen(
+fun RuleEditorPage(
     ruleId: String,
     initialCategory: RuleCategory,
     initialSourceUrl: String,
@@ -221,7 +185,7 @@ private fun RuleEditorScreen(
                                 return@TextButton
                             }
                             val rule = RuleConfig(
-                                id = editingRule?.id ?: ruleId.ifBlank { java.util.UUID.randomUUID().toString() },
+                                id = editingRule?.id ?: ruleId.ifBlank { UUID.randomUUID().toString() },
                                 name = name.ifBlank { context.getString(R.string.rule_unnamed) },
                                 category = category,
                                 actionMode = if (category == RuleCategory.Link) actionMode else RuleActionMode.DirectOpen,
@@ -485,8 +449,3 @@ private fun parsePackageName(targetUrl: String): String {
 
 private fun List<String>.firstNonBlankOr(default: String): String = firstOrNull { it.isNotBlank() } ?: default
 
-private fun AppColorMode.toColorSchemeMode(): ColorSchemeMode = when (this) {
-    AppColorMode.System -> ColorSchemeMode.System
-    AppColorMode.Light -> ColorSchemeMode.Light
-    AppColorMode.Dark -> ColorSchemeMode.Dark
-}
