@@ -40,7 +40,6 @@ object ClipboardTextHandler {
 
         val rules = RuleRepository(appContext).readRules()
         val ignoreJumpApp = settingsRepository.readIgnoreJumpApp()
-        if (shouldIgnoreBeforeMatch(source, rules, ignoreJumpApp)) return
 
         if (settingsRepository.readSystemLinkHandling()) {
             val systemJump = SystemLinkHandler.createJump(appContext, input)
@@ -146,11 +145,6 @@ object ClipboardTextHandler {
     private fun jumpPackageName(context: Context, configPackageName: String, intent: android.content.Intent): String {
         if (configPackageName.isNotBlank()) return configPackageName
         return intent.`package` ?: intent.component?.packageName ?: intent.resolveActivity(context.packageManager)?.packageName.orEmpty()
-    }
-
-    private fun shouldIgnoreBeforeMatch(source: String, rules: List<RuleConfig>, ignoreJumpApp: Boolean): Boolean {
-        if (!ignoreJumpApp || source.isBlank()) return false
-        return rules.any { it.target.packageName == source }
     }
 
     private fun shouldSkipByAppList(source: String, workMode: String, packages: Set<String>): Boolean {

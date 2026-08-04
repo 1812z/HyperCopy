@@ -85,8 +85,8 @@
     <string name="app_list_work_mode">工作模式</string>
     <string name="app_list_whitelist">白名单</string>
     <string name="app_list_blacklist">黑名单</string>
-    <string name="app_list_ignore_jump">忽略跳转应用</string>
-    <string name="app_list_ignore_jump_summary">在被跳转的应用内不要跳转自己</string>
+    <string name="app_list_ignore_jump">避免跳回来源应用</string>
+    <string name="app_list_ignore_jump_summary">复制内容的来源应用与链接目标应用相同时，不显示跳转提示</string>
 
     <!-- 关于 -->
     <string name="about">关于</string>

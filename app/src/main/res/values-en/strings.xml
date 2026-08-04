@@ -79,8 +79,8 @@
     <string name="app_list_work_mode">Work mode</string>
     <string name="app_list_whitelist">Whitelist</string>
     <string name="app_list_blacklist">Blacklist</string>
-    <string name="app_list_ignore_jump">Ignore jumped-to app</string>
-    <string name="app_list_ignore_jump_summary">Do not jump to the same app again while already inside the target app</string>
+    <string name="app_list_ignore_jump">Prevent jumps back to source app</string>
+    <string name="app_list_ignore_jump_summary">Do not show a jump prompt when the source app is also the link target</string>
 
     <string name="about">About</string>
     <string name="open_home_page">Open homepage</string>
