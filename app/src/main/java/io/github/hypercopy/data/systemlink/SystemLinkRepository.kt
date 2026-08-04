@@ -22,6 +22,11 @@ data class SystemLinkDomain(
     val state: String,
 )
 
+data class AndroidUser(
+    val id: Int,
+    val name: String,
+)
+
 class SystemLinkRepository(private val context: Context) {
     private val tag = "HyperCopy"
     private val settingsRepository = SettingsRepository(context.applicationContext)
@@ -33,6 +38,22 @@ class SystemLinkRepository(private val context: Context) {
         HyperLog.d(tag, "system link apps parsed user=$userId count=${apps.size}")
         return apps
             .sortedWith(compareBy<SystemLinkApp> { it.label }.thenBy { it.packageName })
+    }
+
+    fun readUsers(): List<AndroidUser> {
+        val output = runFirstSuccessful("pm list users", "cmd user list")
+        val users = Regex("UserInfo\\{(\\d+):([^:}]*)[:}]")
+            .findAll(output)
+            .mapNotNull { match ->
+                val id = match.groupValues[1].toIntOrNull() ?: return@mapNotNull null
+                AndroidUser(id, match.groupValues[2].trim())
+            }
+            .distinctBy { it.id }
+            .sortedBy { it.id }
+            .toList()
+        val result = if (users.any { it.id == 0 }) users else listOf(AndroidUser(0, "")) + users
+        HyperLog.d(tag, "system users detected: ${result.joinToString { "${it.id}:${it.name}" }}")
+        return result
     }
 
     fun readDomains(userId: Int, packageName: String): List<SystemLinkDomain> {

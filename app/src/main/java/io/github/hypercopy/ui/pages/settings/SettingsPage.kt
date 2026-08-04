@@ -18,6 +18,7 @@ import io.github.hypercopy.R
 import io.github.hypercopy.ui.framework.AppLanguage
 import io.github.hypercopy.ui.framework.ClipboardMonitorMode
 import io.github.hypercopy.ui.framework.JumpNotificationMode
+import io.github.hypercopy.data.systemlink.AndroidUser
 import io.github.hypercopy.ui.components.SettingsAction
 import io.github.hypercopy.ui.components.SettingsActionWithArrow
 import io.github.hypercopy.ui.components.SettingsIcon
@@ -46,6 +47,8 @@ fun SettingsPage(
     hideFromRecents: Boolean,
     desktopIconHidden: Boolean,
     detectClonedApp: Boolean,
+    clonedAppUserId: Int,
+    clonedAppUsers: List<AndroidUser>,
     miuiIslandBypassRestriction: Boolean,
     appLanguage: AppLanguage,
     clipboardMonitorMode: ClipboardMonitorMode,
@@ -55,6 +58,7 @@ fun SettingsPage(
     onHideFromRecentsChange: (Boolean) -> Unit,
     onDesktopIconHiddenChange: (Boolean) -> Unit,
     onDetectClonedAppChange: (Boolean) -> Unit,
+    onClonedAppUserIdChange: (Int) -> Unit,
     onMiuiIslandBypassRestrictionChange: (Boolean) -> Unit,
     onAppLanguageChange: (AppLanguage) -> Unit,
     onJumpNotificationModeChange: (JumpNotificationMode) -> Unit,
@@ -68,6 +72,7 @@ fun SettingsPage(
     val logLevelOptions = logLevelOptions()
     val languageOptions = languageOptions()
     val jumpNotificationModeOptions = jumpNotificationModeOptions()
+    val clonedAppUserOptions = clonedAppUserOptions(clonedAppUsers)
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -158,6 +163,17 @@ fun SettingsPage(
                     checked = detectClonedApp,
                     onCheckedChange = { onDetectClonedAppChange(!detectClonedApp) },
                 )
+                if (detectClonedApp) {
+                    OverlayDropdownPreference(
+                        title = stringResource(R.string.cloned_app_user),
+                        summary = stringResource(R.string.cloned_app_user_summary),
+                        items = clonedAppUserOptions.map { it.label },
+                        selectedIndex = clonedAppUserOptions.indexOfFirst { it.userId == clonedAppUserId }.coerceAtLeast(0),
+                        startAction = { SettingsIcon(imageVector = MiuixIcons.Copy) },
+                        insideMargin = SettingsItemMargin,
+                        onSelectedIndexChange = { onClonedAppUserIdChange(clonedAppUserOptions[it].userId) },
+                    )
+                }
                 SwitchAction(
                     icon = MiuixIcons.AppRecording,
                     title = stringResource(R.string.hide_desktop_icon),
@@ -188,6 +204,8 @@ private data class LanguageOption(val label: String, val value: AppLanguage)
 
 private data class JumpNotificationModeOption(val label: String, val value: JumpNotificationMode)
 
+private data class ClonedAppUserOption(val label: String, val userId: Int)
+
 @Composable
 private fun logLevelOptions() = listOf(
     LogLevelOption(stringResource(R.string.log_off), Config.LOG_LEVEL_OFF),
@@ -210,6 +228,15 @@ private fun jumpNotificationModeOptions() = listOf(
     JumpNotificationModeOption(stringResource(R.string.jump_notification_mode_live), JumpNotificationMode.Live),
     JumpNotificationModeOption(stringResource(R.string.jump_notification_mode_miui_island), JumpNotificationMode.MiuiIsland),
 )
+
+@Composable
+private fun clonedAppUserOptions(users: List<AndroidUser>): List<ClonedAppUserOption> {
+    return listOf(ClonedAppUserOption(stringResource(R.string.cloned_app_user_auto), Config.CLONED_APP_USER_AUTO)) +
+        users.filter { it.id != 0 }.map { user ->
+            val name = user.name.ifBlank { stringResource(R.string.cloned_app_user_fallback, user.id) }
+            ClonedAppUserOption(stringResource(R.string.cloned_app_user_format, name, user.id), user.id)
+        }
+}
 
 private val SettingsItemMargin = PaddingValues(horizontal = 18.dp, vertical = 14.dp)
 private const val GITHUB_URL = "https://github.com/1812z/HyperCopy"

@@ -57,7 +57,12 @@
     <string name="miui_island_bypass_restriction">Bypass Super Island restriction</string>
     <string name="miui_island_bypass_restriction_summary">Temporarily disconnect xmsf network before sending Xiaomi Super Island notifications. Shizuku mode only.</string>
     <string name="detect_cloned_app">Detect cloned apps</string>
-    <string name="detect_cloned_app_summary">Before system link jumps, detect whether both the main user and clone have the target app installed. If installed, the notification shows two jump buttons.</string>
+    <string name="detect_cloned_app_summary">Detect which Android users have the target app installed and launch it for the selected user.</string>
+    <string name="cloned_app_user">Clone user</string>
+    <string name="cloned_app_user_summary">Automatic mode shows the main user and all available clones, or limits choices to the main user and one selected clone.</string>
+    <string name="cloned_app_user_auto">Automatic</string>
+    <string name="cloned_app_user_format">%1$s (user %2$d)</string>
+    <string name="cloned_app_user_fallback">User %1$d</string>
     <string name="log_level">Log level</string>
     <string name="log_level_summary">Control how much detail the module logs</string>
     <string name="log_off">Off</string>
@@ -96,6 +101,7 @@
     <string name="action_jump">Jump</string>
     <string name="action_jump_main_user">Main user</string>
     <string name="action_jump_cloned_user">Clone</string>
+    <string name="action_jump_user_format">%1$s (%2$d)</string>
     <string name="action_refresh">Refresh</string>
     <string name="action_retry">Retry</string>
     <string name="action_select_all">Select all</string>
@@ -141,7 +147,6 @@
     <string name="rule_system_user_menu">System link user</string>
     <string name="rule_sort_tip">Rules match from top to bottom</string>
     <string name="rule_system_user_0">Main user 0</string>
-    <string name="rule_system_user_999">Clone user 999</string>
     <string name="rule_result_waiting">Waiting for test</string>
     <string name="rule_result_input_required">Please enter %1$s content to test</string>
     <string name="rule_result_no_match">No %1$s rule matched</string>

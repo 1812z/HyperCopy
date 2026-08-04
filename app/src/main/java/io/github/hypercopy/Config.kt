@@ -15,6 +15,7 @@ object Config {
     const val KEY_APP_LIST_WORK_MODE = "app_list_work_mode"
     const val KEY_IGNORE_JUMP_APP = "ignore_jump_app"
     const val KEY_DETECT_CLONED_APP = "detect_cloned_app"
+    const val KEY_CLONED_APP_USER_ID = "cloned_app_user_id"
     const val KEY_SYSTEM_LINK_HANDLING = "system_link_handling"
     const val KEY_SYSTEM_LINK_CLEAR_CLIPBOARD_AFTER_JUMP = "system_link_clear_clipboard_after_jump"
     const val KEY_SYSTEM_LINK_USER_ID = "system_link_user_id"
@@ -63,6 +64,8 @@ object Config {
     const val DEFAULT_APP_LIST_WORK_MODE = APP_LIST_WORK_MODE_BLACKLIST
     const val DEFAULT_IGNORE_JUMP_APP = true
     const val DEFAULT_DETECT_CLONED_APP = true
+    const val CLONED_APP_USER_AUTO = -1
+    const val DEFAULT_CLONED_APP_USER_ID = CLONED_APP_USER_AUTO
     const val DEFAULT_SYSTEM_LINK_HANDLING = true
     const val DEFAULT_SYSTEM_LINK_CLEAR_CLIPBOARD_AFTER_JUMP = true
     const val DEFAULT_SYSTEM_LINK_USER_ID = 0

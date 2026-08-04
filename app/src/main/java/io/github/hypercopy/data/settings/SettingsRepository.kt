@@ -120,6 +120,14 @@ class SettingsRepository(private val context: Context) {
         preferences().edit(commit = true) { putBoolean(Config.KEY_DETECT_CLONED_APP, value) }
     }
 
+    fun readClonedAppUserId(): Int {
+        return preferences().getInt(Config.KEY_CLONED_APP_USER_ID, Config.DEFAULT_CLONED_APP_USER_ID)
+    }
+
+    fun persistClonedAppUserId(value: Int) {
+        preferences().edit(commit = true) { putInt(Config.KEY_CLONED_APP_USER_ID, value) }
+    }
+
     fun readSystemLinkHandling(): Boolean {
         return preferences().getBoolean(Config.KEY_SYSTEM_LINK_HANDLING, Config.DEFAULT_SYSTEM_LINK_HANDLING)
     }

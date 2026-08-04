@@ -45,6 +45,8 @@ import io.github.hypercopy.Config
 import io.github.hypercopy.R
 import io.github.hypercopy.clipboard.monitor.ClipboardMonitorController
 import io.github.hypercopy.data.settings.SettingsRepository
+import io.github.hypercopy.data.systemlink.AndroidUser
+import io.github.hypercopy.data.systemlink.SystemLinkRepository
 import io.github.hypercopy.data.update.UpdateCheckResult
 import io.github.hypercopy.data.update.UpdateRepository
 import io.github.hypercopy.ui.activities.AppListActivity
@@ -100,6 +102,7 @@ fun AppScreen(
     val uriHandler = LocalUriHandler.current
     val settingsRepository = remember { SettingsRepository(context.applicationContext) }
     val updateRepository = remember { UpdateRepository(context.applicationContext) }
+    val systemLinkRepository = remember { SystemLinkRepository(context.applicationContext) }
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
     ) {}
@@ -119,6 +122,8 @@ fun AppScreen(
     var hideFromRecents by remember { mutableStateOf(settingsRepository.readHideFromRecents()) }
     var desktopIconHidden by remember { mutableStateOf(settingsRepository.readDesktopIconHidden()) }
     var detectClonedApp by remember { mutableStateOf(settingsRepository.readDetectClonedApp()) }
+    var clonedAppUserId by remember { mutableIntStateOf(settingsRepository.readClonedAppUserId()) }
+    var clonedAppUsers by remember { mutableStateOf<List<AndroidUser>>(emptyList()) }
     var miuiIslandBypassRestriction by remember { mutableStateOf(settingsRepository.readMiuiIslandBypassRestriction()) }
     var appLanguage by remember { mutableStateOf(appLanguageFromValue(settingsRepository.readAppLanguage())) }
     var clipboardMonitorMode by remember {
@@ -157,6 +162,14 @@ fun AppScreen(
                     showOpenButton = true,
                 )
             }
+        }
+    }
+
+    LaunchedEffect(clipboardMonitorMode) {
+        clonedAppUsers = withContext(Dispatchers.IO) { systemLinkRepository.readUsers() }
+        if (clonedAppUserId != Config.CLONED_APP_USER_AUTO && clonedAppUsers.none { it.id == clonedAppUserId && it.id != 0 }) {
+            clonedAppUserId = Config.CLONED_APP_USER_AUTO
+            settingsRepository.persistClonedAppUserId(clonedAppUserId)
         }
     }
 
@@ -400,26 +413,17 @@ fun AppScreen(
                                                     show = showRulesMenu,
                                                     entries = listOf(
                                                         DropdownEntry(
-                                                            items = listOf(
+                                                            items = clonedAppUsers.map { user ->
                                                                 DropdownItem(
-                                                                    text = stringResource(R.string.rule_system_user_0),
-                                                                    selected = systemLinkUserId == 0,
+                                                                    text = user.name.ifBlank { context.getString(R.string.cloned_app_user_fallback, user.id) } + " user ${user.id}",
+                                                                    selected = systemLinkUserId == user.id,
                                                                     onClick = {
                                                                         showRulesMenu = false
-                                                                        systemLinkUserId = 0
-                                                                        settingsRepository.persistSystemLinkUserId(0)
+                                                                        systemLinkUserId = user.id
+                                                                        settingsRepository.persistSystemLinkUserId(user.id)
                                                                     },
-                                                                ),
-                                                                DropdownItem(
-                                                                    text = stringResource(R.string.rule_system_user_999),
-                                                                    selected = systemLinkUserId == 999,
-                                                                    onClick = {
-                                                                        showRulesMenu = false
-                                                                        systemLinkUserId = 999
-                                                                        settingsRepository.persistSystemLinkUserId(999)
-                                                                    },
-                                                                ),
-                                                            ),
+                                                                )
+                                                            },
                                                         ),
                                                     ),
                                                     onDismissRequest = { showRulesMenu = false },
@@ -472,6 +476,8 @@ fun AppScreen(
                                 hideFromRecents = hideFromRecents,
                                 desktopIconHidden = desktopIconHidden,
                                 detectClonedApp = detectClonedApp,
+                                clonedAppUserId = clonedAppUserId,
+                                clonedAppUsers = clonedAppUsers,
                                 miuiIslandBypassRestriction = miuiIslandBypassRestriction,
                                 appLanguage = appLanguage,
                                 clipboardMonitorMode = clipboardMonitorMode,
@@ -496,6 +502,10 @@ fun AppScreen(
                                 onDetectClonedAppChange = {
                                     detectClonedApp = it
                                     settingsRepository.persistDetectClonedApp(it)
+                                },
+                                onClonedAppUserIdChange = {
+                                    clonedAppUserId = it
+                                    settingsRepository.persistClonedAppUserId(it)
                                 },
                                 onMiuiIslandBypassRestrictionChange = {
                                     miuiIslandBypassRestriction = it

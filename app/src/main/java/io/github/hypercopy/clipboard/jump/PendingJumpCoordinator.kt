@@ -26,6 +26,7 @@ import io.github.hypercopy.clipboard.privileged.ActivityLaunchStrategy
 import io.github.hypercopy.clipboard.privileged.MiuiXmsfNetworkBlocker
 import io.github.hypercopy.clipboard.monitor.ClipboardFocusRequester
 import io.github.hypercopy.data.settings.SettingsRepository
+import io.github.hypercopy.data.systemlink.AndroidUser
 import io.github.hypercopy.data.systemlink.SystemLinkRepository
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicLong
@@ -106,15 +107,23 @@ object PendingJumpCoordinator {
     }
 
     private fun launch(context: Context, jump: PendingJump, clearClipboardAfterJump: Boolean) {
+        val configuredUserId = selectedClonedAppUserId(context)
         when (jump) {
             is PendingJump.IntentJump -> launchAfterClipboardClear(context, clearClipboardAfterJump) {
-                ActivityLaunchStrategy.launch(context, jump.intent)
+                ActivityLaunchStrategy.launch(context, jump.intent, configuredUserId)
             }
-            is PendingJump.WebViewJump -> HeadlessWebViewResolver.resolveAndLaunch(context, jump.url, jump.packageName, clearClipboardAfterJump)
+            is PendingJump.WebViewJump -> HeadlessWebViewResolver.resolveAndLaunch(
+                context,
+                jump.url,
+                jump.packageName,
+                clearClipboardAfterJump,
+                configuredUserId,
+            )
             is PendingJump.SystemLinkJump -> launchAfterClipboardClear(context, clearClipboardAfterJump) {
                 val repository = SystemLinkRepository(context)
-                if (jump.packageName.isBlank() || repository.isPackageInstalledForUser(jump.userId, jump.packageName)) {
-                    repository.openLink(jump.userId, jump.url)
+                val userId = configuredUserId ?: jump.userId
+                if (jump.packageName.isBlank() || repository.isPackageInstalledForUser(userId, jump.packageName)) {
+                    repository.openLink(userId, jump.url)
                 }
             }
         }
@@ -172,27 +181,44 @@ object PendingJumpCoordinator {
 
     private fun jumpActions(context: Context, entry: Entry): List<JumpAction> {
         val jump = entry.jump
-        if (jump.packageName.isNotBlank() && SettingsRepository(context).readDetectClonedApp()) {
+        val settingsRepository = SettingsRepository(context)
+        if (jump.packageName.isNotBlank() && settingsRepository.readDetectClonedApp()) {
             val repository = SystemLinkRepository(context)
-            val availableUsers = listOf(0, 999).filter { userId ->
-                repository.isPackageInstalledForUser(userId, jump.packageName)
+            val configuredUserId = settingsRepository.readClonedAppUserId()
+            val users = repository.readUsers()
+            val candidateUsers = if (configuredUserId == Config.CLONED_APP_USER_AUTO) {
+                users
+            } else {
+                users.filter { it.id == 0 || it.id == configuredUserId }
             }
-            HyperLog.d(TAG, "cloned app check target=${jump.packageName} users=${availableUsers.joinToString()}")
+            val availableUsers = candidateUsers.filter { user ->
+                repository.isPackageInstalledForUser(user.id, jump.packageName)
+            }
+            HyperLog.d(TAG, "cloned app check target=${jump.packageName} users=${availableUsers.joinToString { it.id.toString() }}")
             if (availableUsers.size > 1) {
-                return availableUsers.map { userId ->
-                    JumpAction(userActionTitle(context, userId), confirmPendingIntent(context, entry.id, userId))
+                return availableUsers.map { user ->
+                    JumpAction(userActionTitle(context, user.id, users), confirmPendingIntent(context, entry.id, user.id))
                 }
             }
             val defaultUserId = (jump as? PendingJump.SystemLinkJump)?.userId ?: 0
-            if (availableUsers.size == 1 && availableUsers.first() != defaultUserId) {
-                return listOf(JumpAction(context.getString(R.string.action_jump), confirmPendingIntent(context, entry.id, availableUsers.first())))
+            if (availableUsers.size == 1 && availableUsers.first().id != defaultUserId) {
+                return listOf(JumpAction(context.getString(R.string.action_jump), confirmPendingIntent(context, entry.id, availableUsers.first().id)))
             }
         }
         return listOf(JumpAction(context.getString(R.string.action_jump), confirmPendingIntent(context, entry.id, null)))
     }
 
-    private fun userActionTitle(context: Context, userId: Int): String {
-        return if (userId == 999) context.getString(R.string.action_jump_cloned_user) else context.getString(R.string.action_jump_main_user)
+    private fun userActionTitle(context: Context, userId: Int, users: List<AndroidUser>): String {
+        if (userId == 0) return context.getString(R.string.action_jump_main_user)
+        val name = users.firstOrNull { it.id == userId }?.name.orEmpty()
+            .ifBlank { context.getString(R.string.action_jump_cloned_user) }
+        return context.getString(R.string.action_jump_user_format, name, userId)
+    }
+
+    private fun selectedClonedAppUserId(context: Context): Int? {
+        val settingsRepository = SettingsRepository(context.applicationContext)
+        if (!settingsRepository.readDetectClonedApp()) return null
+        return settingsRepository.readClonedAppUserId().takeIf { it != Config.CLONED_APP_USER_AUTO }
     }
 
     private fun appLabel(context: Context, packageName: String): String {
