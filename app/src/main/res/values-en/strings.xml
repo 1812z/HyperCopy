@@ -264,4 +264,13 @@
     <string name="notification_channel_jump_miui_island_description">Confirm jumps through Xiaomi Super Island after copied content matches a rule</string>
     <string name="notification_jump_title">Waiting for jump confirmation</string>
     <string name="notification_jump_text">Tap \"Jump\" to enter the app</string>
+    <string name="notification_channel_foreground_service_name">Background clipboard monitor</string>
+    <string name="notification_channel_foreground_service_description">Persistent notification shown while Shizuku clipboard monitoring is enabled</string>
+    <string name="notification_foreground_service_title">HyperCopy clipboard monitor</string>
+    <string name="notification_foreground_service_checking">Checking Shizuku status and permission</string>
+    <string name="notification_foreground_service_running_shizuku">Monitoring started through Shizuku</string>
+    <string name="notification_foreground_service_running_read_logs">Monitoring started with READ_LOGS permission</string>
+    <string name="notification_foreground_service_permission_denied">Shizuku permission is missing; clipboard monitoring is not running</string>
+    <string name="notification_foreground_service_unavailable">Shizuku is not running and READ_LOGS is unavailable; clipboard monitoring is not running</string>
+    <string name="notification_foreground_service_stopped">Clipboard monitoring has stopped</string>
 </resources>

@@ -281,6 +281,11 @@
     <string name="notification_jump_text">点击"跳转"以进入应用</string>
     <string name="notification_channel_foreground_service_name">后台剪贴板监听</string>
     <string name="notification_channel_foreground_service_description">Shizuku 剪贴板监听运行时显示的常驻通知</string>
-    <string name="notification_foreground_service_title">HyperCopy后台服务运行中</string>
-    <string name="notification_foreground_service_text">正在通过 Shizuku 监听剪贴板</string>
+    <string name="notification_foreground_service_title">HyperCopy 剪贴板监听</string>
+    <string name="notification_foreground_service_checking">正在检查 Shizuku 状态和权限</string>
+    <string name="notification_foreground_service_running_shizuku">监听已启动，正在通过 Shizuku 监听剪贴板</string>
+    <string name="notification_foreground_service_running_read_logs">监听已启动，正在通过 READ_LOGS 权限监听剪贴板</string>
+    <string name="notification_foreground_service_permission_denied">Shizuku 权限不足，剪贴板监听未启动</string>
+    <string name="notification_foreground_service_unavailable">Shizuku 未运行且无 READ_LOGS 权限，剪贴板监听未启动</string>
+    <string name="notification_foreground_service_stopped">剪贴板监听已停止</string>
 </resources>

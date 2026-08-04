@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 class ShizukuLogcatClipboardDetector(
     private val packageName: String,
     private val processStarter: (Array<String>) -> Process?,
+    private val onRunningChanged: (Boolean) -> Unit,
     private val onClipboardChanged: () -> Unit,
 ) {
     private val running = AtomicBoolean(false)
@@ -32,12 +33,19 @@ class ShizukuLogcatClipboardDetector(
         runCatching {
             val since = SimpleDateFormat("MM-dd HH:mm:ss.SSS", Locale.US).format(Date())
             HyperLog.d(TAG, "start Shizuku logcat clipboard detector")
-            process = processStarter(arrayOf("logcat", "-T", since, "ClipboardService:E", "*:S")) ?: return
+            process = processStarter(arrayOf("logcat", "-T", since, "ClipboardService:E", "*:S"))
+            if (process == null) {
+                running.set(false)
+                onRunningChanged(false)
+                return
+            }
+            onRunningChanged(true)
             process?.inputStream?.bufferedReader()?.use(::readLines)
         }.onFailure { throwable ->
             if (running.get()) HyperLog.d(TAG, "Shizuku logcat detector failed", throwable)
         }
         running.set(false)
+        onRunningChanged(false)
     }
 
     private fun readLines(reader: BufferedReader) {
