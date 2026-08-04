@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ClipboardManager;
 import android.app.Activity;
+import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
@@ -17,6 +18,8 @@ import androidx.annotation.NonNull;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.HashSet;
+import java.util.Set;
 
 import io.github.hypercopy.Config;
 import io.github.libxposed.api.XposedModule;
@@ -67,23 +70,10 @@ public class HookEntry extends XposedModule {
         logDebug("installing ClipboardService hooks, source=" + source);
         try {
             Class<?> clipboardServiceClass = Class.forName(CLIPBOARD_SERVICE_CLASS, false, classLoader);
-            int hookedCount = 0;
-            for (Method method : clipboardServiceClass.getDeclaredMethods()) {
-                if (!isSetPrimaryClipMethod(method)) continue;
-                method.setAccessible(true);
-                logDebug("hook ClipboardService method: " + method.toGenericString());
-                hook(method).setId("hypercopy_clipboard_" + method.toGenericString()).intercept(chain -> {
-                    Object result = chain.proceed();
-                    try {
-                        ClipData clipData = findClipData(chain.getArgs().toArray());
-                        Context context = findContext(chain.getThisObject());
-                        sendTextIfNeeded(context, clipData, chain.getArgs().toArray());
-                    } catch (Throwable throwable) {
-                        logWarn("clipboard hook callback failed", throwable);
-                    }
-                    return result;
-                });
-                hookedCount++;
+            Set<Method> hookedMethods = new HashSet<>();
+            int hookedCount = hookClipboardMethods(clipboardServiceClass, hookedMethods);
+            for (Class<?> declaredClass : clipboardServiceClass.getDeclaredClasses()) {
+                hookedCount += hookClipboardMethods(declaredClass, hookedMethods);
             }
             hooksInstalled = hookedCount > 0;
             if (hooksInstalled) registerClearReceiverWithRetry(0);
@@ -96,6 +86,31 @@ public class HookEntry extends XposedModule {
             logError("Failed to hook ClipboardService", throwable);
             return false;
         }
+    }
+
+    private int hookClipboardMethods(Class<?> targetClass, Set<Method> hookedMethods) {
+        int hookedCount = 0;
+        for (Method method : targetClass.getDeclaredMethods()) {
+            if (!isSetPrimaryClipMethod(method) || !hookedMethods.add(method)) continue;
+            method.setAccessible(true);
+            logDebug("hook ClipboardService method: " + method.toGenericString());
+            hook(method).setId("hypercopy_clipboard_" + method.toGenericString()).intercept(chain -> {
+                int callingUid = Binder.getCallingUid();
+                Object[] args = chain.getArgs().toArray();
+                Object result = chain.proceed();
+                try {
+                    ClipData clipData = findClipData(args);
+                    Context context = findContext(chain.getThisObject());
+                    if (context == null) context = findSystemContext();
+                    sendTextIfNeeded(context, clipData, args, callingUid);
+                } catch (Throwable throwable) {
+                    logWarn("clipboard hook callback failed", throwable);
+                }
+                return result;
+            });
+            hookedCount++;
+        }
+        return hookedCount;
     }
 
     private static boolean isSetPrimaryClipMethod(Method method) {
@@ -114,15 +129,22 @@ public class HookEntry extends XposedModule {
     }
 
     private static Context findContext(Object service) {
-        if (service == null) return null;
+        return findContext(service, new HashSet<>(), 0);
+    }
+
+    private static Context findContext(Object service, Set<Object> visited, int depth) {
+        if (service == null || depth > 2 || !visited.add(service)) return null;
         Class<?> current = service.getClass();
         while (current != null) {
             for (Field field : current.getDeclaredFields()) {
-                if (!Context.class.isAssignableFrom(field.getType())) continue;
                 try {
                     field.setAccessible(true);
                     Object value = field.get(service);
                     if (value instanceof Context) return (Context) value;
+                    if (field.isSynthetic() || field.getName().startsWith("this$")) {
+                        Context context = findContext(value, visited, depth + 1);
+                        if (context != null) return context;
+                    }
                 } catch (Throwable ignored) {
                 }
             }
@@ -193,7 +215,7 @@ public class HookEntry extends XposedModule {
         }
     }
 
-    private void sendTextIfNeeded(Context context, ClipData clipData, Object[] args) {
+    private void sendTextIfNeeded(Context context, ClipData clipData, Object[] args, int callingUid) {
         if (context == null || clipData == null || clipData.getItemCount() == 0) return;
         CharSequence text = extractPlainText(context, clipData);
         if (text == null) return;
@@ -205,23 +227,32 @@ public class HookEntry extends XposedModule {
         if (value.equals(lastText) && now - lastSentAt < DUPLICATE_WINDOW_MILLIS) return;
         lastText = value;
         lastSentAt = now;
-        String sourcePackage = findSourcePackage(context, args);
+        String sourcePackage = findSourcePackage(context, args, callingUid);
+        int sourceUserId = callingUid / 100_000;
 
         Intent intent = new Intent(Config.ACTION_HANDLE_CLIPBOARD_TEXT)
             .setComponent(new ComponentName(Config.APPLICATION_ID, RECEIVER_CLASS))
             .putExtra(Config.EXTRA_CLIPBOARD_TEXT, value)
             .putExtra(Config.EXTRA_CLIPBOARD_SOURCE, sourcePackage)
             .addFlags(Intent.FLAG_RECEIVER_FOREGROUND | Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
-        logDebug("send clipboard text to app, length=" + value.length() + ", source=" + sourcePackage);
-        context.sendBroadcast(intent);
+        logDebug("send clipboard text to app, length=" + value.length() + ", source=" + sourcePackage
+            + ", uid=" + callingUid + ", user=" + sourceUserId);
+        long identity = Binder.clearCallingIdentity();
+        try {
+            context.sendBroadcastAsUser(intent, android.os.Process.myUserHandle());
+        } finally {
+            Binder.restoreCallingIdentity(identity);
+        }
     }
 
-    private static String findSourcePackage(Context context, Object[] args) {
+    private static String findSourcePackage(Context context, Object[] args, int callingUid) {
+        String[] callingPackages = context.getPackageManager().getPackagesForUid(callingUid);
+        if (callingPackages != null && callingPackages.length > 0) return callingPackages[0];
         if (args == null) return "";
         for (Object arg : args) {
             if (!(arg instanceof String)) continue;
             String value = ((String) arg).trim();
-            if (isInstalledPackage(context, value)) return value;
+            if (looksLikePackageName(value)) return value;
         }
         for (Object arg : args) {
             if (!(arg instanceof Integer)) continue;
@@ -233,14 +264,8 @@ public class HookEntry extends XposedModule {
         return "";
     }
 
-    private static boolean isInstalledPackage(Context context, String value) {
-        if (value.isEmpty() || !value.contains(".") || value.contains(" ")) return false;
-        try {
-            context.getPackageManager().getApplicationInfo(value, 0);
-            return true;
-        } catch (Throwable ignored) {
-            return false;
-        }
+    private static boolean looksLikePackageName(String value) {
+        return !value.isEmpty() && value.contains(".") && !value.contains(" ");
     }
 
     private static CharSequence extractPlainText(Context context, ClipData clipData) {
