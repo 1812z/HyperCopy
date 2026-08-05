@@ -122,6 +122,7 @@
     <string name="action_add_rule">添加规则</string>
     <string name="action_import_rule">导入规则</string>
     <string name="action_export_rule">导出规则</string>
+    <string name="action_share_rule">分享到云规则仓库</string>
     <string name="action_download_rule">下载规则</string>
     <string name="action_update_rule">更新规则</string>
     <string name="action_request_permission">请求权限</string>

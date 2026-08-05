@@ -49,6 +49,7 @@ import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Forward
+import top.yukonga.miuix.kmp.icon.extended.UploadCloud
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.util.UUID
 
@@ -118,6 +119,13 @@ fun RuleEditorPage(
                         },
                     ) {
                         Icon(imageVector = MiuixIcons.Forward, contentDescription = stringResource(R.string.action_export_rule))
+                    }
+                    IconButton(
+                        onClick = {
+                            context.startActivity(Intent(Intent.ACTION_VIEW, githubRuleSubmissionUri(editingRule)))
+                        },
+                    ) {
+                        Icon(imageVector = MiuixIcons.UploadCloud, contentDescription = stringResource(R.string.action_share_rule))
                     }
                 }
             }
@@ -214,6 +222,27 @@ fun RuleEditorPage(
         }
     }
 }
+
+private fun githubRuleSubmissionUri(rule: RuleConfig): Uri {
+    val folder = if (rule.category == RuleCategory.Link) "link" else "text"
+    val safeName = rule.name.toRuleFileNamePart().ifBlank { "rule" }
+    val safePackageName = rule.target.packageName.toRuleFileNamePart()
+    val fileName = listOf(safeName, safePackageName).filter { it.isNotBlank() }.joinToString("_") + ".json"
+    return Uri.Builder()
+        .scheme("https")
+        .authority("github.com")
+        .appendPath("1812z")
+        .appendPath("HyperCopy_Rules")
+        .appendPath("new")
+        .appendPath("main")
+        .appendPath(folder)
+        .appendQueryParameter("filename", fileName)
+        .appendQueryParameter("value", rule.toJson().toString(2))
+        .appendQueryParameter("message", "Add $fileName")
+        .build()
+}
+
+private fun String.toRuleFileNamePart(): String = trim().replace(Regex("[\\\\/:*?\"<>|]"), "_")
 
 @Composable
 private fun ClearClipboardAfterJumpSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {

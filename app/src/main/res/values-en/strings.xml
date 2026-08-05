@@ -114,6 +114,7 @@
     <string name="action_add_rule">Add rule</string>
     <string name="action_import_rule">Import rule</string>
     <string name="action_export_rule">Export rule</string>
+    <string name="action_share_rule">Share to cloud rules</string>
     <string name="action_download_rule">Download rule</string>
     <string name="action_update_rule">Update rule</string>
     <string name="action_request_permission">Request permission</string>
