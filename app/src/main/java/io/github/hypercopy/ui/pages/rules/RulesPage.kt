@@ -254,23 +254,46 @@ fun RulesPage(
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
-            RuleCategoryTabs(
-                selectedCategory = selectedCategory,
-                includeSystem = true,
-                onSelected = {
-                    selectedCategory = it
-                    resultText = ruleResultWaiting
-                    selectedRuleIds = emptySet()
-                    if (it == RulePageCategory.System) loadSystemLinks()
-                },
-                modifier = Modifier.fillMaxWidth().padding(start = 12.dp, top = topContentPadding, end = 12.dp, bottom = 4.dp),
-                colors = TabRowDefaults.tabRowColors(
-                    backgroundColor = Color.White,
-                    contentColor = MiuixTheme.colorScheme.onSurfaceContainerHigh,
-                    selectedBackgroundColor = MiuixTheme.colorScheme.surfaceContainerHigh,
-                    selectedContentColor = Color.Black,
-                ),
-            )
+            when {
+                sortMode && selectedCategory != RulePageCategory.System -> RuleEditBar(
+                    modifier = Modifier.padding(start = 12.dp, top = topContentPadding, end = 12.dp, bottom = 4.dp),
+                    onCloseClick = { onSortModeChange(false) },
+                )
+
+                selectionMode && selectedCategory != RulePageCategory.System -> RuleSelectionBar(
+                    selectedCount = selectedRuleIds.size,
+                    allSelected = selectedRuleIds.size == categoryRules.size,
+                    modifier = Modifier.padding(start = 12.dp, top = topContentPadding, end = 12.dp, bottom = 4.dp),
+                    onCloseClick = {
+                        selectedRuleIds = emptySet()
+                        if (editMode) onEditModeChange(false)
+                    },
+                    onSelectAllClick = {
+                        selectedRuleIds = if (selectedRuleIds.size == categoryRules.size) emptySet() else categoryRuleIds
+                    },
+                    onDeleteClick = {
+                        if (selectedRuleIds.isNotEmpty()) showDeleteDialog = true
+                    },
+                )
+
+                else -> RuleCategoryTabs(
+                    selectedCategory = selectedCategory,
+                    includeSystem = true,
+                    onSelected = {
+                        selectedCategory = it
+                        resultText = ruleResultWaiting
+                        selectedRuleIds = emptySet()
+                        if (it == RulePageCategory.System) loadSystemLinks()
+                    },
+                    modifier = Modifier.fillMaxWidth().padding(start = 12.dp, top = topContentPadding, end = 12.dp, bottom = 4.dp),
+                    colors = TabRowDefaults.tabRowColors(
+                        backgroundColor = MiuixTheme.colorScheme.surface,
+                        contentColor = MiuixTheme.colorScheme.onSurfaceContainerHigh,
+                        selectedBackgroundColor = MiuixTheme.colorScheme.surfaceContainerHigh,
+                        selectedContentColor = MiuixTheme.colorScheme.onSurface,
+                    ),
+                )
+            }
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(start = 12.dp, top = 4.dp, end = 12.dp, bottom = bottomContentPadding + 84.dp),
@@ -439,58 +462,6 @@ fun RulesPage(
                 }
             }
             }
-        }
-
-        if (sortMode && selectedCategory != RulePageCategory.System) {
-            RuleEditBar(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(start = 12.dp, top = topContentPadding, end = 12.dp),
-                onCloseClick = { onSortModeChange(false) },
-            )
-        }
-
-        if (editMode && selectedCategory != RulePageCategory.System) {
-            RuleSelectionBar(
-                selectedCount = selectedRuleIds.size,
-                allSelected = selectedRuleIds.size == categoryRules.size,
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(start = 12.dp, top = topContentPadding, end = 12.dp),
-                onCloseClick = {
-                    selectedRuleIds = emptySet()
-                    onEditModeChange(false)
-                },
-                onSelectAllClick = {
-                    selectedRuleIds = if (selectedRuleIds.size == categoryRules.size) {
-                        emptySet()
-                    } else {
-                        categoryRuleIds
-                    }
-                },
-                onDeleteClick = {
-                    if (selectedRuleIds.isNotEmpty()) showDeleteDialog = true
-                },
-            )
-        }
-
-        if (selectedRuleIds.isNotEmpty() && !sortMode && !editMode) {
-            RuleSelectionBar(
-                selectedCount = selectedRuleIds.size,
-                allSelected = selectedRuleIds.size == categoryRules.size,
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(start = 12.dp, top = topContentPadding, end = 12.dp),
-                onCloseClick = { selectedRuleIds = emptySet() },
-                onSelectAllClick = {
-                    selectedRuleIds = if (selectedRuleIds.size == categoryRules.size) {
-                        emptySet()
-                    } else {
-                        categoryRuleIds
-                    }
-                },
-                onDeleteClick = { showDeleteDialog = true },
-            )
         }
 
         if (selectedCategory != RulePageCategory.System && !sortMode && !selectionMode) {
