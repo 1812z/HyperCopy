@@ -70,16 +70,7 @@ fun RuleConfig.triggerPatterns(): List<String> = triggerRegexes.ifEmpty { listOf
 fun RuleConfig.extractionPatterns(): List<String> = extractionRegexes.ifEmpty { listOf(parameterRegex) }.filter { it.isNotBlank() }
 
 fun RuleTarget.toIntent(parameters: Map<String, String>): Intent {
-    val urlResolved = URL_PLACEHOLDER_REGEX.replace(template) { match ->
-        val key = match.groupValues[1]
-        parameters[key]?.let { extractFirstInputUrl(it) ?: it }.orEmpty()
-    }
-    val resolved = parameters.entries.fold(urlResolved) { value, entry ->
-        val replacement = if (entry.key == "input" || entry.key == "redirectUrl") entry.value else Uri.encode(entry.value)
-        value
-            .replace("${'$'}{raw:${entry.key}}", entry.value)
-            .replace("${'$'}{${entry.key}}", replacement)
-    }
+    val resolved = resolveTemplate(parameters)
     return when (type) {
         RuleTargetType.Intent -> runCatching { Intent.parseUri(resolved, Intent.URI_INTENT_SCHEME) }
             .getOrElse { Intent(action, Uri.parse(resolved)) }
@@ -90,4 +81,22 @@ fun RuleTarget.toIntent(parameters: Map<String, String>): Intent {
     }
 }
 
+internal fun RuleTarget.resolveTemplate(
+    parameters: Map<String, String>,
+    encode: (String) -> String = Uri::encode,
+): String {
+    val urlResolved = URL_PLACEHOLDER_REGEX.replace(template) { match ->
+        val key = match.groupValues[1]
+        parameters[key]?.let { extractFirstInputUrl(it) ?: it }.orEmpty()
+    }
+    val resolved = parameters.entries.fold(urlResolved) { value, entry ->
+        val replacement = if (entry.key == "input" || entry.key == "redirectUrl") entry.value else encode(entry.value)
+        value
+            .replace("${'$'}{raw:${entry.key}}", entry.value)
+            .replace("${'$'}{${entry.key}}", replacement)
+    }
+    return TEMPLATE_PLACEHOLDER_REGEX.replace(resolved, "")
+}
+
 private val URL_PLACEHOLDER_REGEX = Regex("""\$\{url:([^}]+)\}""")
+private val TEMPLATE_PLACEHOLDER_REGEX = Regex("""\$\{(?:raw:)?[^}]+\}""")
