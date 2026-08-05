@@ -273,10 +273,10 @@ private fun CloudRulesHeader(
         onSelected = onSelected,
         modifier = Modifier.fillMaxWidth().padding(start = 12.dp, top = topContentPadding, end = 12.dp, bottom = 4.dp),
         colors = TabRowDefaults.tabRowColors(
-            backgroundColor = Color.White,
+            backgroundColor = MiuixTheme.colorScheme.surface,
             contentColor = MiuixTheme.colorScheme.onSurfaceContainerHigh,
             selectedBackgroundColor = MiuixTheme.colorScheme.surfaceContainerHigh,
-            selectedContentColor = Color.Black,
+            selectedContentColor = MiuixTheme.colorScheme.onSurface,
         ),
     )
 }
