@@ -335,10 +335,15 @@ private fun HomeLinkAction(icon: ImageVector, title: String, summary: String, on
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-            Text(text = title, style = MiuixTheme.textStyles.headline1)
+            Text(
+                text = title,
+                fontSize = MiuixTheme.textStyles.headline1.fontSize,
+                fontWeight = FontWeight.Medium,
+                color = MiuixTheme.colorScheme.onSurface,
+            )
             Text(
                 text = summary,
-                style = MiuixTheme.textStyles.body2,
+                fontSize = MiuixTheme.textStyles.body2.fontSize,
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 modifier = Modifier.padding(top = 2.dp),
             )
