@@ -20,7 +20,6 @@
     <string name="info_app_version">应用版本</string>
     <string name="info_android_version">Android 版本</string>
     <string name="info_lsposed_version">LSPosed 版本</string>
-    <string name="info_build_date">构建日期</string>
     <string name="info_device_model">设备型号</string>
     <string name="info_unknown">未知</string>
     <string name="home_work_mode">工作模式</string>
@@ -93,8 +92,9 @@
     <string name="app_list_ignore_jump">避免跳回来源应用</string>
     <string name="app_list_ignore_jump_summary">复制内容的来源应用与链接目标应用相同时，不显示跳转提示</string>
 
-    <!-- 关于 -->
-    <string name="about">关于</string>
+    <!-- 主页链接 -->
+    <string name="support_development">支持开发</string>
+    <string name="support_development_summary">支持项目开发</string>
     <string name="open_home_page">打开主页</string>
     <string name="open_home_page_summary">打开 HyperCopy 项目主页</string>
 

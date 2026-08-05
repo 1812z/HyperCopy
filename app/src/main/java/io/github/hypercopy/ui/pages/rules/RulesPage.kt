@@ -72,8 +72,10 @@ import io.github.hypercopy.ui.components.TestRuleCard
 import io.github.hypercopy.ui.components.ruleCategories
 import io.github.hypercopy.ui.components.titleRes
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.TabRowDefaults
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowDialog
 import kotlin.concurrent.thread
 import kotlin.math.ceil
@@ -250,24 +252,30 @@ fun RulesPage(
         if (selectedCategory == RulePageCategory.System) loadSystemLinks()
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        LazyColumn(
-            modifier = modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 12.dp, top = topContentPadding, end = 12.dp, bottom = bottomContentPadding + 84.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            item {
-                RuleCategoryTabs(
-                    selectedCategory = selectedCategory,
-                    includeSystem = true,
-                    onSelected = {
-                        selectedCategory = it
-                        resultText = ruleResultWaiting
-                        selectedRuleIds = emptySet()
-                        if (it == RulePageCategory.System) loadSystemLinks()
-                    },
-                )
-            }
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            RuleCategoryTabs(
+                selectedCategory = selectedCategory,
+                includeSystem = true,
+                onSelected = {
+                    selectedCategory = it
+                    resultText = ruleResultWaiting
+                    selectedRuleIds = emptySet()
+                    if (it == RulePageCategory.System) loadSystemLinks()
+                },
+                modifier = Modifier.fillMaxWidth().padding(start = 12.dp, top = topContentPadding, end = 12.dp, bottom = 4.dp),
+                colors = TabRowDefaults.tabRowColors(
+                    backgroundColor = Color.White,
+                    contentColor = MiuixTheme.colorScheme.onSurfaceContainerHigh,
+                    selectedBackgroundColor = MiuixTheme.colorScheme.surfaceContainerHigh,
+                    selectedContentColor = Color.Black,
+                ),
+            )
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(start = 12.dp, top = 4.dp, end = 12.dp, bottom = bottomContentPadding + 84.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
             if (selectedCategory == RulePageCategory.System) {
                 item {
                     SystemLinkHandlingCard(
@@ -429,6 +437,7 @@ fun RulesPage(
                         },
                     )
                 }
+            }
             }
         }
 

@@ -7,14 +7,17 @@ import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -30,8 +33,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -47,9 +53,6 @@ import io.github.hypercopy.clipboard.monitor.ShizukuPermission
 import io.github.hypercopy.data.rules.RuleRepository
 import io.github.hypercopy.ui.framework.ClipboardMonitorMode
 import io.github.libxposed.service.XposedService
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -60,11 +63,11 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
+import top.yukonga.miuix.kmp.icon.extended.Community
 import top.yukonga.miuix.kmp.icon.extended.Copy
+import top.yukonga.miuix.kmp.icon.extended.Link
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.height
 
 @Composable
 fun HomePage(
@@ -76,6 +79,7 @@ fun HomePage(
     bottomContentPadding: Dp = 16.dp,
 ) {
     val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val coroutineScope = rememberCoroutineScope()
     val systemInfo = remember { homeSystemInfo(context) }
@@ -149,6 +153,22 @@ fun HomePage(
             )
         }
         item { InfoCard(systemInfo = systemInfo, xposedService = xposedService, showLsposedVersion = !isShizukuMode) }
+        item {
+            Card {
+                HomeLinkAction(
+                    icon = MiuixIcons.Community,
+                    title = stringResource(R.string.support_development),
+                    summary = stringResource(R.string.support_development_summary),
+                    onClick = { uriHandler.openUri(SUPPORT_URL) },
+                )
+                HomeLinkAction(
+                    icon = MiuixIcons.Link,
+                    title = stringResource(R.string.open_home_page),
+                    summary = stringResource(R.string.open_home_page_summary),
+                    onClick = { uriHandler.openUri(HOME_PAGE_URL) },
+                )
+            }
+        }
     }
 }
 
@@ -273,8 +293,11 @@ private fun MonitorModeCard(
     onRequestPermission: () -> Unit,
     onOpenBatterySettings: () -> Unit,
 ) {
+    val showPermissionStatus = selectedMode == ClipboardMonitorMode.Shizuku || !permissionGranted
+    val showStatusRows = showPermissionStatus || !batteryUnrestricted
+
     Card {
-        Column(modifier = Modifier.fillMaxWidth().padding(bottom = 14.dp)) {
+        Column(modifier = Modifier.fillMaxWidth().padding(bottom = if (showStatusRows) 14.dp else 0.dp)) {
             OverlayDropdownPreference(
                 title = stringResource(R.string.clipboard_monitor_mode),
                 summary = stringResource(R.string.clipboard_monitor_mode_summary),
@@ -283,13 +306,15 @@ private fun MonitorModeCard(
                 insideMargin = PaddingValues(horizontal = 18.dp, vertical = 14.dp),
                 onSelectedIndexChange = { onModeChange(options[it].value) },
             )
-            StatusActionRow(
-                title = stringResource(if (selectedMode == ClipboardMonitorMode.Shizuku) R.string.permission_shizuku_status else R.string.permission_root_status),
-                content = stringResource(if (permissionGranted) R.string.permission_granted else R.string.permission_missing),
-                showAction = !permissionGranted,
-                actionContentDescription = stringResource(R.string.action_request_permission),
-                onActionClick = onRequestPermission,
-            )
+            if (showPermissionStatus) {
+                StatusActionRow(
+                    title = stringResource(if (selectedMode == ClipboardMonitorMode.Shizuku) R.string.permission_shizuku_status else R.string.permission_root_status),
+                    content = stringResource(if (permissionGranted) R.string.permission_granted else R.string.permission_missing),
+                    showAction = !permissionGranted,
+                    actionContentDescription = stringResource(R.string.action_request_permission),
+                    onActionClick = onRequestPermission,
+                )
+            }
             if (!batteryUnrestricted) {
                 StatusActionRow(
                     title = stringResource(R.string.battery_status),
@@ -300,6 +325,30 @@ private fun MonitorModeCard(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun HomeLinkAction(icon: ImageVector, title: String, summary: String, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().clickable(role = Role.Button, onClick = onClick).padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+            Text(text = title, style = MiuixTheme.textStyles.headline1)
+            Text(
+                text = summary,
+                style = MiuixTheme.textStyles.body2,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                modifier = Modifier.padding(top = 2.dp),
+            )
+        }
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MiuixTheme.colorScheme.onSurface,
+            modifier = Modifier.size(24.dp),
+        )
     }
 }
 
@@ -372,7 +421,6 @@ private fun InfoCard(systemInfo: HomeSystemInfo, xposedService: XposedService?, 
             if (showLsposedVersion) {
                 InfoText(title = stringResource(R.string.info_lsposed_version), content = lsposedVersion(xposedService).ifBlank { unknown })
             }
-            InfoText(title = stringResource(R.string.info_build_date), content = systemInfo.buildDate.ifBlank { unknown })
             InfoText(title = stringResource(R.string.info_device_model), content = systemInfo.deviceModel.ifBlank { unknown }, bottomPadding = 0.dp)
         }
     }
@@ -398,7 +446,6 @@ private data class HomeSystemInfo(
     val systemVersion: String,
     val appVersion: String,
     val androidVersion: String,
-    val buildDate: String,
     val deviceModel: String,
 )
 
@@ -410,7 +457,6 @@ private fun homeSystemInfo(context: Context): HomeSystemInfo {
         systemVersion = Build.DISPLAY,
         appVersion = "$versionName ($versionCode)",
         androidVersion = "${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})",
-        buildDate = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(packageInfo.lastUpdateTime)),
         deviceModel = listOf(Build.MANUFACTURER, Build.MODEL).joinToString(" ").trim(),
     )
 }
@@ -460,3 +506,6 @@ private fun workModeLabel(value: String): String = stringResource(
         R.string.clipboard_monitor_mode_lsposed
     },
 )
+
+private const val HOME_PAGE_URL = "https://hypercopy.1812z.top/"
+private const val SUPPORT_URL = "https://hypercopy.1812z.top/donors.html"

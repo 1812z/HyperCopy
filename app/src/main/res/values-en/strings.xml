@@ -17,7 +17,6 @@
     <string name="info_app_version">App version</string>
     <string name="info_android_version">Android version</string>
     <string name="info_lsposed_version">LSPosed version</string>
-    <string name="info_build_date">Build date</string>
     <string name="info_device_model">Device model</string>
     <string name="info_unknown">Unknown</string>
     <string name="home_work_mode">Work mode</string>
@@ -87,7 +86,8 @@
     <string name="app_list_ignore_jump">Prevent jumps back to source app</string>
     <string name="app_list_ignore_jump_summary">Do not show a jump prompt when the source app is also the link target</string>
 
-    <string name="about">About</string>
+    <string name="support_development">Support development</string>
+    <string name="support_development_summary">Support the development of HyperCopy</string>
     <string name="open_home_page">Open homepage</string>
     <string name="open_home_page_summary">Open the HyperCopy project homepage</string>
 

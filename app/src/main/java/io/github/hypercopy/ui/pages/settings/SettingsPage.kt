@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -31,7 +30,6 @@ import top.yukonga.miuix.kmp.icon.extended.Community
 import top.yukonga.miuix.kmp.icon.extended.Copy
 import top.yukonga.miuix.kmp.icon.extended.Download
 import top.yukonga.miuix.kmp.icon.extended.File
-import top.yukonga.miuix.kmp.icon.extended.Link
 import top.yukonga.miuix.kmp.icon.extended.ListView
 import top.yukonga.miuix.kmp.icon.extended.Theme
 import top.yukonga.miuix.kmp.icon.extended.Translate
@@ -68,7 +66,6 @@ fun SettingsPage(
     topContentPadding: Dp = 12.dp,
     bottomContentPadding: Dp = 16.dp,
 ) {
-    val uriHandler = LocalUriHandler.current
     val logLevelOptions = logLevelOptions()
     val languageOptions = languageOptions()
     val jumpNotificationModeOptions = jumpNotificationModeOptions()
@@ -183,18 +180,6 @@ fun SettingsPage(
                 )
             }
         }
-
-        item { SmallTitle(text = stringResource(R.string.about)) }
-        item {
-            Card {
-                SettingsAction(
-                    icon = MiuixIcons.Link,
-                    title = stringResource(R.string.open_home_page),
-                    summary = stringResource(R.string.open_home_page_summary),
-                    onClick = { uriHandler.openUri(GITHUB_URL) },
-                )
-            }
-        }
     }
 }
 
@@ -239,4 +224,3 @@ private fun clonedAppUserOptions(users: List<AndroidUser>): List<ClonedAppUserOp
 }
 
 private val SettingsItemMargin = PaddingValues(horizontal = 18.dp, vertical = 14.dp)
-private const val GITHUB_URL = "https://github.com/1812z/HyperCopy"

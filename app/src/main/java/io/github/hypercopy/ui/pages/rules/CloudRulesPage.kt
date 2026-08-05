@@ -51,6 +51,7 @@ import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.SmallTitle
+import top.yukonga.miuix.kmp.basic.TabRowDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -198,13 +199,7 @@ fun CloudRulesPage(
     Column(modifier = modifier.fillMaxSize()) {
         CloudRulesHeader(
             topContentPadding = topContentPadding,
-            searchQuery = searchQuery,
-            onSearchQueryChange = { searchQuery = it },
-        )
-        RuleCategoryTabs(
             selectedCategory = selectedCategory,
-            modifier = Modifier.padding(horizontal = 12.dp),
-            includeSystem = false,
             onSelected = {
                 selectedCategory = it
                 searchQuery = ""
@@ -216,11 +211,6 @@ fun CloudRulesPage(
                 error != null && cloudRules.isEmpty() -> CloudRulesError(
                     message = error!!,
                     onRetry = { loadRules(selectedCategory) },
-                    bottomContentPadding = bottomContentPadding,
-                )
-
-                filteredRules.isEmpty() -> CloudRulesEmpty(
-                    isSearching = searchQuery.isNotBlank(),
                     bottomContentPadding = bottomContentPadding,
                 )
 
@@ -243,13 +233,25 @@ fun CloudRulesPage(
                             ),
                         )
                     }
-                    items(filteredRules, key = { it.fileName }) { rule ->
-                        CloudRuleCard(
-                            rule = rule,
-                            downloaded = rule.stableId() in downloadedIds,
-                            downloading = downloadingIds[rule.fileName] == true,
-                            onDownload = { handleDownload(rule) },
+                    item {
+                        HyperSearchBar(
+                            query = searchQuery,
+                            onQueryChange = { searchQuery = it },
+                            label = stringResource(R.string.app_list_search_hint),
+                            modifier = Modifier.fillMaxWidth(),
                         )
+                    }
+                    if (filteredRules.isEmpty()) {
+                        item { CloudRulesEmptyCard(isSearching = searchQuery.isNotBlank()) }
+                    } else {
+                        items(filteredRules, key = { it.fileName }) { rule ->
+                            CloudRuleCard(
+                                rule = rule,
+                                downloaded = rule.stableId() in downloadedIds,
+                                downloading = downloadingIds[rule.fileName] == true,
+                                onDownload = { handleDownload(rule) },
+                            )
+                        }
                     }
                 }
             }
@@ -262,19 +264,21 @@ private fun CloudRule.stableId(): String = "cloud_${folder}_${fileNameWithoutExt
 @Composable
 private fun CloudRulesHeader(
     topContentPadding: Dp,
-    searchQuery: String,
-    onSearchQueryChange: (String) -> Unit,
+    selectedCategory: RulePageCategory,
+    onSelected: (RulePageCategory) -> Unit,
 ) {
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(start = 12.dp, top = topContentPadding, end = 12.dp),
-    ) {
-        HyperSearchBar(
-            query = searchQuery,
-            onQueryChange = onSearchQueryChange,
-            label = stringResource(R.string.app_list_search_hint),
-            modifier = Modifier.fillMaxWidth(),
-        )
-    }
+    RuleCategoryTabs(
+        selectedCategory = selectedCategory,
+        includeSystem = false,
+        onSelected = onSelected,
+        modifier = Modifier.fillMaxWidth().padding(start = 12.dp, top = topContentPadding, end = 12.dp, bottom = 4.dp),
+        colors = TabRowDefaults.tabRowColors(
+            backgroundColor = Color.White,
+            contentColor = MiuixTheme.colorScheme.onSurfaceContainerHigh,
+            selectedBackgroundColor = MiuixTheme.colorScheme.surfaceContainerHigh,
+            selectedContentColor = Color.Black,
+        ),
+    )
 }
 
 @Composable
@@ -323,33 +327,25 @@ private fun CloudRulesError(message: String, onRetry: () -> Unit, bottomContentP
 }
 
 @Composable
-private fun CloudRulesEmpty(isSearching: Boolean, bottomContentPadding: Dp) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 16.dp, top = 24.dp, end = 16.dp, bottom = bottomContentPadding),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        item {
-            Card {
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Text(
-                        text = stringResource(if (isSearching) R.string.cloud_no_match else R.string.cloud_empty),
-                        style = MiuixTheme.textStyles.title3,
-                    )
-                    Text(
-                        text = if (isSearching) {
-                            stringResource(R.string.cloud_no_match_hint)
-                        } else {
-                            stringResource(R.string.cloud_empty_hint)
-                        },
-                        style = MiuixTheme.textStyles.body2,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    )
-                }
-            }
+private fun CloudRulesEmptyCard(isSearching: Boolean) {
+    Card {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = stringResource(if (isSearching) R.string.cloud_no_match else R.string.cloud_empty),
+                style = MiuixTheme.textStyles.title3,
+            )
+            Text(
+                text = if (isSearching) {
+                    stringResource(R.string.cloud_no_match_hint)
+                } else {
+                    stringResource(R.string.cloud_empty_hint)
+                },
+                style = MiuixTheme.textStyles.body2,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            )
         }
     }
 }

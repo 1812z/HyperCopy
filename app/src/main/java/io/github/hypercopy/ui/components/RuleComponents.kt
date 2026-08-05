@@ -39,6 +39,8 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Switch
+import top.yukonga.miuix.kmp.basic.TabRowColors
+import top.yukonga.miuix.kmp.basic.TabRowDefaults
 import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -59,6 +61,7 @@ internal fun RuleCategoryTabs(
     onSelected: (RulePageCategory) -> Unit,
     modifier: Modifier = Modifier,
     includeSystem: Boolean = false,
+    colors: TabRowColors = TabRowDefaults.tabRowColors(),
 ) {
     val titles = if (includeSystem) localRuleCategoryTabTitles else cloudRuleCategoryTabTitles
     TabRowWithContour(
@@ -66,6 +69,7 @@ internal fun RuleCategoryTabs(
         selectedTabIndex = if (includeSystem) selectedCategory.tabIndex() else selectedCategory.cloudTabIndex(),
         onTabSelected = { onSelected(if (includeSystem) localRulePageCategoryFromTab(it) else cloudRulePageCategoryFromTab(it)) },
         modifier = modifier.fillMaxWidth(),
+        colors = colors,
     )
 }
 

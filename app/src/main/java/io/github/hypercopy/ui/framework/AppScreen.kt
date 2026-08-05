@@ -356,7 +356,7 @@ fun AppScreen(
                         ) { pagePadding ->
                             CloudRulesPage(
                                 modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-                                topContentPadding = pagePadding.calculateTopPadding() + 12.dp,
+                                topContentPadding = pagePadding.calculateTopPadding(),
                                 bottomContentPadding = 16.dp,
                                 showInstalledOnly = showInstalledOnly,
                                 cloudSource = cloudSource,
@@ -450,7 +450,7 @@ fun AppScreen(
                                 editMode = ruleEditMode,
                                 onEditModeChange = { ruleEditMode = it },
                                 onRuleActionsAvailableChange = { ruleActionsAvailable = it },
-                                topContentPadding = pagePadding.calculateTopPadding() + 12.dp,
+                                topContentPadding = pagePadding.calculateTopPadding(),
                                 bottomContentPadding = pagePadding.calculateBottomPadding() + 16.dp,
                                 systemLinkUserId = systemLinkUserId,
                             )
