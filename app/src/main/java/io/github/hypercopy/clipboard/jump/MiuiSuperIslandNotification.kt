@@ -24,10 +24,17 @@ object MiuiSuperIslandNotification {
         jumpActions: List<PendingJumpCoordinator.JumpAction>,
     ) {
         val extras = Bundle()
+        // HyperOS versions differ in which focus extras they read. Keep the
+        // legacy bundles and the newer explicit type/version markers together.
+        extras.putInt("miui.focus.version", 2)
+        extras.putInt("miui.focus.type", 1)
         extras.putBundle("miui.focus.actions", actionBundle(context, jumpActions))
         extras.putBundle("miui.focus.pics", pictureBundle(context, packageName))
         notification.extras.putAll(extras)
-        notification.extras.putString("miui.focus.param", islandParams(title, content, jumpActions))
+        val params = islandParams(title, content, jumpActions)
+        notification.extras.putString("miui.focus.param", params)
+        // Some HyperOS builds look for the v2 payload under its own extra.
+        notification.extras.putString("miui.focus.param_v2", params)
     }
 
     private fun actionBundle(context: Context, jumpActions: List<PendingJumpCoordinator.JumpAction>): Bundle {

@@ -24,6 +24,7 @@ enum class JumpNotificationMode(val value: String) {
     Normal(Config.JUMP_NOTIFICATION_MODE_NORMAL),
     Live(Config.JUMP_NOTIFICATION_MODE_LIVE),
     MiuiIsland(Config.JUMP_NOTIFICATION_MODE_MIUI_ISLAND),
+    SystemCopy(Config.JUMP_NOTIFICATION_MODE_SYSTEM_COPY),
 }
 
 fun appLanguageFromValue(value: String): AppLanguage = when (value) {
@@ -47,5 +48,6 @@ fun jumpNotificationModeFromValue(value: String): JumpNotificationMode = when (v
     Config.JUMP_NOTIFICATION_MODE_NORMAL -> JumpNotificationMode.Normal
     Config.JUMP_NOTIFICATION_MODE_LIVE -> JumpNotificationMode.Live
     Config.JUMP_NOTIFICATION_MODE_MIUI_ISLAND -> JumpNotificationMode.MiuiIsland
+    Config.JUMP_NOTIFICATION_MODE_SYSTEM_COPY -> JumpNotificationMode.SystemCopy
     else -> JumpNotificationMode.None
 }

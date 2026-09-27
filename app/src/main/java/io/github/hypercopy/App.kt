@@ -12,12 +12,16 @@ class App : Application(), XposedServiceHelper.OnServiceListener {
         super.onCreate()
         HyperLog.init(this)
         XposedServiceHelper.registerListener(this)
+        SettingsRepository(this).syncJumpNotificationModeToLsposed()
         ClipboardMonitorController.startForCurrentMode(this)
     }
 
     override fun onServiceBind(service: XposedService) {
         xposedService = service
-        SettingsRepository(this).syncLogLevelToLsposed(service)
+        val settings = SettingsRepository(this)
+        settings.syncLogLevelToLsposed(service)
+        settings.syncJumpNotificationModeToLsposed()
+        settings.syncRuleMatchPatternsToLsposed(service)
         listeners.forEach { it(service) }
     }
 

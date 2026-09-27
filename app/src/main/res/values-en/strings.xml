@@ -53,6 +53,7 @@
     <string name="jump_notification_mode_normal">Normal notification</string>
     <string name="jump_notification_mode_live">Live notification</string>
     <string name="jump_notification_mode_miui_island">HyperIsland</string>
+    <string name="jump_notification_mode_system_copy">System copy direct</string>
     <string name="miui_island_bypass_restriction">Bypass Super Island restriction</string>
     <string name="miui_island_bypass_restriction_summary">Temporarily disconnect xmsf network before sending Xiaomi Super Island notifications. Shizuku mode only.</string>
     <string name="detect_cloned_app">Detect cloned apps</string>
@@ -263,6 +264,8 @@
     <string name="notification_channel_jump_live_description">Android live jump confirmation after copied content matches a rule</string>
     <string name="notification_channel_jump_miui_island_name">Xiaomi Super Island jump</string>
     <string name="notification_channel_jump_miui_island_description">Confirm jumps through Xiaomi Super Island after copied content matches a rule</string>
+    <string name="notification_channel_jump_system_copy_name">System copy direct</string>
+    <string name="notification_channel_jump_system_copy_description">Confirm jumps using the system copy-direct style</string>
     <string name="notification_jump_title">Waiting for jump confirmation</string>
     <string name="notification_jump_text">Tap \"Jump\" to enter the app</string>
     <string name="notification_channel_foreground_service_name">Background clipboard monitor</string>

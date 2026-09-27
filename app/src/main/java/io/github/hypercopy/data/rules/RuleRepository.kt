@@ -1,6 +1,7 @@
 package io.github.hypercopy.data.rules
 
 import android.content.Context
+import io.github.hypercopy.data.settings.SettingsRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 
@@ -48,6 +49,12 @@ class RuleRepository(private val context: Context) {
 
     fun persistRules(rules: List<RuleConfig>) {
         rulesFile().writeText(rulesToJson(rules))
+        SettingsRepository(context).syncRuleMatchPatternsToLsposed(
+            patterns = rules.asSequence()
+                .filter { it.enabled }
+                .flatMap { it.triggerPatterns().asSequence() }
+                .toSet(),
+        )
         ruleChanges.tryEmit(Unit)
     }
 

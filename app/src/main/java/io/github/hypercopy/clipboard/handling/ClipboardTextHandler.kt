@@ -22,21 +22,29 @@ object ClipboardTextHandler {
 
     private var lastText: String = ""
     private var lastHandledAt: Long = 0L
+    private var lastClaimed: Boolean = false
 
-    fun handle(context: Context, text: String, source: String) {
+    @Synchronized
+    fun handle(context: Context, text: String, source: String): Boolean {
         val input = text.trim()
-        if (input.isEmpty() || input.length > Config.CLIPBOARD_TEXT_MAX_LENGTH) return
+        if (input.isEmpty() || input.length > Config.CLIPBOARD_TEXT_MAX_LENGTH) return false
 
         val now = System.currentTimeMillis()
-        if (input == lastText && now - lastHandledAt < DUPLICATE_WINDOW_MILLIS) return
+        if (input == lastText && now - lastHandledAt < DUPLICATE_WINDOW_MILLIS) return lastClaimed
         lastText = input
         lastHandledAt = now
 
         val appContext = context.applicationContext
+        if (source == appContext.packageName) {
+            HyperLog.d(TAG, "ignore clipboard text written by HyperCopy")
+            return claim(false)
+        }
         val settingsRepository = SettingsRepository(appContext)
         val appListWorkMode = settingsRepository.readAppListWorkMode()
         val appListPackages = settingsRepository.readAppListPackages()
-        if (shouldSkipByAppList(source, appListWorkMode, appListPackages)) return
+        if (shouldSkipByAppList(source, appListWorkMode, appListPackages)) {
+            return claim(false)
+        }
 
         val rules = RuleRepository(appContext).readRules()
         val ignoreJumpApp = settingsRepository.readIgnoreJumpApp()
@@ -45,7 +53,7 @@ object ClipboardTextHandler {
             val systemJump = SystemLinkHandler.createJump(appContext, input)
             if (systemJump != null && !shouldIgnoreJump(source, systemJump.packageName, ignoreJumpApp)) {
                 submitJump(appContext, systemJump, settingsRepository.readSystemLinkClearClipboardAfterJump())
-                return
+                return claim(true)
             }
         }
 
@@ -54,7 +62,7 @@ object ClipboardTextHandler {
             val targetPackageName = jumpPackageName(appContext, match.rule.target.packageName, match.intent)
             if (shouldIgnoreJump(source, targetPackageName, ignoreJumpApp)) {
                 HyperLog.d(TAG, "ignore jump in target app before notification: source=$source target=$targetPackageName")
-                return
+                return claim(false)
             }
             submitJump(
                 appContext,
@@ -65,17 +73,19 @@ object ClipboardTextHandler {
                 ),
                 match.rule.clearClipboardAfterJump,
             )
-            return
+            return claim(true)
         }
 
-        val rule = findRule(input, rules) ?: return
+        val rule = findRule(input, rules) ?: run {
+            return claim(false)
+        }
         when (rule.actionMode) {
             RuleActionMode.DirectOpen -> {
                 val intent = rule.directIntent(input, appContext.packageManager)
                 val targetPackageName = jumpPackageName(appContext, rule.target.packageName, intent)
                 if (shouldIgnoreJump(source, targetPackageName, ignoreJumpApp)) {
                     HyperLog.d(TAG, "ignore jump in target app before notification: source=$source target=$targetPackageName")
-                    return
+                    return claim(false)
                 }
                 submitJump(
                     appContext,
@@ -86,12 +96,16 @@ object ClipboardTextHandler {
                     ),
                     rule.clearClipboardAfterJump,
                 )
+                return claim(true)
             }
             RuleActionMode.WebViewResolveAndOpen -> {
-                if (shouldIgnoreJump(source, rule.target.packageName, ignoreJumpApp)) return
+                if (shouldIgnoreJump(source, rule.target.packageName, ignoreJumpApp)) {
+                    return claim(false)
+                }
                 startWebViewResolve(appContext, rule, input)
+                return claim(true)
             }
-            RuleActionMode.ParseAndOpen -> return
+            RuleActionMode.ParseAndOpen -> return claim(false)
         }
     }
 
@@ -136,6 +150,11 @@ object ClipboardTextHandler {
     private fun submitJump(context: Context, jump: PendingJump, clearClipboardAfterJump: Boolean) {
         HyperLog.d(TAG, "submit jump notification: target=${jump.packageName}")
         PendingJumpCoordinator.submit(context, jump, clearClipboardAfterJump)
+    }
+
+    private fun claim(value: Boolean): Boolean {
+        lastClaimed = value
+        return value
     }
 
     private fun shouldIgnoreJump(source: String, targetPackageName: String, ignoreJumpApp: Boolean): Boolean {

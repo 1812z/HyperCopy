@@ -6,6 +6,8 @@ import android.content.pm.PackageManager
 import androidx.core.content.edit
 import io.github.hypercopy.App
 import io.github.hypercopy.Config
+import io.github.hypercopy.data.rules.RuleRepository
+import io.github.hypercopy.data.rules.triggerPatterns
 import io.github.libxposed.service.XposedService
 
 class SettingsRepository(private val context: Context) {
@@ -80,6 +82,34 @@ class SettingsRepository(private val context: Context) {
 
     fun persistJumpNotificationMode(value: String) {
         preferences().edit(commit = true) { putString(Config.KEY_JUMP_NOTIFICATION_MODE, value) }
+        syncJumpNotificationModeToLsposed(value)
+    }
+
+    fun syncJumpNotificationModeToLsposed(value: String = readJumpNotificationMode()) {
+        runCatching {
+            App.xposedService?.getRemotePreferences(Config.PREFS_NAME)
+                ?.edit()
+                ?.putString(Config.KEY_JUMP_NOTIFICATION_MODE, Config.JUMP_NOTIFICATION_MODE_NONE)
+                ?.putString(Config.KEY_LSPOSED_JUMP_NOTIFICATION_MODE, value)
+                ?.commit()
+        }
+    }
+
+    fun syncRuleMatchPatternsToLsposed(
+        service: XposedService? = App.xposedService,
+        patterns: Set<String> = RuleRepository(context).readRules()
+            .asSequence()
+            .filter { it.enabled }
+            .flatMap { it.triggerPatterns().asSequence() }
+            .toSet(),
+    ) {
+        if (service == null) return
+        runCatching {
+            service.getRemotePreferences(Config.PREFS_NAME)
+                .edit()
+                .putStringSet(Config.KEY_LSPOSED_MATCH_PATTERNS, patterns)
+                .commit()
+        }
     }
 
     fun readMiuiIslandBypassRestriction(): Boolean {

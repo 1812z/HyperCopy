@@ -5,7 +5,9 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -519,6 +521,14 @@ fun AppScreen(
                                 onJumpNotificationModeChange = {
                                     jumpNotificationMode = it
                                     settingsRepository.persistJumpNotificationMode(it.value)
+                                    if (it == JumpNotificationMode.SystemCopy && !Settings.canDrawOverlays(context)) {
+                                        context.startActivity(
+                                            Intent(
+                                                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                                Uri.parse("package:${context.packageName}"),
+                                            ),
+                                        )
+                                    }
                                     if (it != JumpNotificationMode.None && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                                         notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                                     }

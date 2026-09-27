@@ -37,6 +37,7 @@ object PendingJumpCoordinator {
     private const val NORMAL_CHANNEL_ID = "hypercopy_jump_normal"
     private const val LIVE_CHANNEL_ID = "hypercopy_jump_live"
     private const val MIUI_ISLAND_CHANNEL_ID = "hypercopy_jump_miui_island"
+    private const val SYSTEM_COPY_CHANNEL_ID = "hypercopy_jump_system_copy"
     private const val NOTIFICATION_ID = 2001
     private const val EXPIRE_MILLIS = 5_000L
     private const val CLIPBOARD_CLEAR_TIMEOUT_MILLIS = 500L
@@ -54,6 +55,12 @@ object PendingJumpCoordinator {
         if (notificationMode == Config.JUMP_NOTIFICATION_MODE_NONE) {
             launch(appContext, jump, clearClipboardAfterJump)
             return
+        }
+        if (notificationMode == Config.JUMP_NOTIFICATION_MODE_SYSTEM_COPY) {
+            pending?.cancel(appContext)
+            pending = null
+            if (MiuiSystemCopy.copy(appContext, jump)) return
+            HyperLog.d(TAG, "system copy jump unavailable, falling back to notification")
         }
         if (!canPostNotification(appContext)) {
             HyperLog.d(TAG, "jump notification permission missing, launch directly")
@@ -149,6 +156,13 @@ object PendingJumpCoordinator {
             .setShowWhen(false)
             .setOnlyAlertOnce(true)
             .setTimeoutAfter(EXPIRE_MILLIS)
+        if (notificationMode == Config.JUMP_NOTIFICATION_MODE_SYSTEM_COPY) {
+            builder
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setCategory(NotificationCompat.CATEGORY_RECOMMENDATION)
+                .setAutoCancel(true)
+                .setOngoing(false)
+        }
         if (appIcon != null) builder.setLargeIcon(appIcon)
         // Live notification mode: request Android promoted ongoing behavior.
         if (notificationMode == Config.JUMP_NOTIFICATION_MODE_LIVE) {
@@ -157,9 +171,14 @@ object PendingJumpCoordinator {
         actions.forEach { action ->
             builder.addAction(android.R.drawable.ic_menu_view, action.title, action.pendingIntent)
         }
+        actions.firstOrNull()?.let { builder.setContentIntent(it.pendingIntent) }
         val notification = builder
             .build()
-            .apply { flags = flags or Notification.FLAG_ONGOING_EVENT }
+            .apply {
+                if (notificationMode != Config.JUMP_NOTIFICATION_MODE_SYSTEM_COPY) {
+                    flags = flags or Notification.FLAG_ONGOING_EVENT
+                }
+            }
         // Xiaomi Super Island mode: add MIUI focus extras before notify().
         if (notificationMode == Config.JUMP_NOTIFICATION_MODE_MIUI_ISLAND) {
             MiuiSuperIslandNotification.apply(context, notification, title, content, entry.jump.packageName, actions)
@@ -329,6 +348,7 @@ object PendingJumpCoordinator {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val (nameRes, descriptionRes) = when (notificationMode) {
             Config.JUMP_NOTIFICATION_MODE_MIUI_ISLAND -> R.string.notification_channel_jump_miui_island_name to R.string.notification_channel_jump_miui_island_description
+            Config.JUMP_NOTIFICATION_MODE_SYSTEM_COPY -> R.string.notification_channel_jump_system_copy_name to R.string.notification_channel_jump_system_copy_description
             Config.JUMP_NOTIFICATION_MODE_NORMAL -> R.string.notification_channel_jump_normal_name to R.string.notification_channel_jump_normal_description
             else -> R.string.notification_channel_jump_live_name to R.string.notification_channel_jump_live_description
         }
@@ -345,6 +365,7 @@ object PendingJumpCoordinator {
     private fun channelId(notificationMode: String): String {
         return when (notificationMode) {
             Config.JUMP_NOTIFICATION_MODE_MIUI_ISLAND -> MIUI_ISLAND_CHANNEL_ID
+            Config.JUMP_NOTIFICATION_MODE_SYSTEM_COPY -> SYSTEM_COPY_CHANNEL_ID
             Config.JUMP_NOTIFICATION_MODE_NORMAL -> NORMAL_CHANNEL_ID
             else -> LIVE_CHANNEL_ID
         }

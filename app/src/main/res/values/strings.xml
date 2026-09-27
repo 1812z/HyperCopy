@@ -58,6 +58,7 @@
     <string name="jump_notification_mode_normal">普通通知</string>
     <string name="jump_notification_mode_live">实时通知</string>
     <string name="jump_notification_mode_miui_island">小米超级岛</string>
+    <string name="jump_notification_mode_system_copy">系统复制直达</string>
     <string name="miui_island_bypass_restriction">绕过超级岛限制</string>
     <string name="miui_island_bypass_restriction_summary">发送小米超级岛通知前临时断开 xmsf 网络，仅 Shizuku 模式可用</string>
     <string name="detect_cloned_app">检测双开应用</string>
@@ -278,6 +279,8 @@
     <string name="notification_channel_jump_live_description">复制命中规则后的安卓实时跳转确认</string>
     <string name="notification_channel_jump_miui_island_name">小米超级岛跳转</string>
     <string name="notification_channel_jump_miui_island_description">复制命中规则后通过小米超级岛确认跳转</string>
+    <string name="notification_channel_jump_system_copy_name">系统复制直达</string>
+    <string name="notification_channel_jump_system_copy_description">使用系统复制直达样式确认跳转</string>
     <string name="notification_jump_title">等待跳转确认</string>
     <string name="notification_jump_text">点击"跳转"以进入应用</string>
     <string name="notification_channel_foreground_service_name">后台剪贴板监听</string>

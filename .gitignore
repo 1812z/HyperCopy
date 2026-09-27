@@ -3,3 +3,8 @@
 /.kotlin
 /.workbuddy
 local.properties
+/build
+/work
+/*.zip
+*.apk
+/hypercopy_overlay_*.png

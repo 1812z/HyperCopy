@@ -11,6 +11,8 @@ object Config {
     const val KEY_COLOR_MODE = "color_mode"
     const val KEY_CLIPBOARD_MONITOR_MODE = "clipboard_monitor_mode"
     const val KEY_JUMP_NOTIFICATION_MODE = "jump_notification_mode"
+    const val KEY_LSPOSED_JUMP_NOTIFICATION_MODE = "lsposed_jump_notification_mode"
+    const val KEY_LSPOSED_MATCH_PATTERNS = "lsposed_match_patterns"
     const val KEY_MIUI_ISLAND_BYPASS_RESTRICTION = "miui_island_bypass_restriction"
     const val KEY_APP_LIST_WORK_MODE = "app_list_work_mode"
     const val KEY_IGNORE_JUMP_APP = "ignore_jump_app"
@@ -29,6 +31,9 @@ object Config {
     const val EXTRA_CLIPBOARD_SOURCE = "io.github.hypercopy.extra.CLIPBOARD_SOURCE"
     const val EXTRA_PENDING_JUMP_ID = "io.github.hypercopy.extra.PENDING_JUMP_ID"
     const val EXTRA_PENDING_JUMP_USER_ID = "io.github.hypercopy.extra.PENDING_JUMP_USER_ID"
+    const val CLIPBOARD_MATCH_PROVIDER_AUTHORITY = "io.github.hypercopy.clipboard.match"
+    const val CLIPBOARD_MATCH_PROVIDER_METHOD = "handle_matched_clipboard"
+    const val CLIPBOARD_MATCH_PROVIDER_RESULT = "handled"
 
     const val LOG_LEVEL_OFF = 0
     const val LOG_LEVEL_BASIC = 1
@@ -49,6 +54,7 @@ object Config {
     const val JUMP_NOTIFICATION_MODE_NORMAL = "normal"
     const val JUMP_NOTIFICATION_MODE_LIVE = "live"
     const val JUMP_NOTIFICATION_MODE_MIUI_ISLAND = "miui_island"
+    const val JUMP_NOTIFICATION_MODE_SYSTEM_COPY = "system_copy"
 
     const val APP_LIST_WORK_MODE_WHITELIST = "whitelist"
     const val APP_LIST_WORK_MODE_BLACKLIST = "blacklist"

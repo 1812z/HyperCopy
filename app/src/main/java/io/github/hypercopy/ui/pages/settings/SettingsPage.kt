@@ -212,6 +212,7 @@ private fun jumpNotificationModeOptions() = listOf(
     JumpNotificationModeOption(stringResource(R.string.jump_notification_mode_normal), JumpNotificationMode.Normal),
     JumpNotificationModeOption(stringResource(R.string.jump_notification_mode_live), JumpNotificationMode.Live),
     JumpNotificationModeOption(stringResource(R.string.jump_notification_mode_miui_island), JumpNotificationMode.MiuiIsland),
+    JumpNotificationModeOption(stringResource(R.string.jump_notification_mode_system_copy), JumpNotificationMode.SystemCopy),
 )
 
 @Composable
